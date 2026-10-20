@@ -1,5 +1,6 @@
 from typing import Any, TypedDict
 
+
 class AgentState(TypedDict):
     """
     Represents the shared state that travels through the LangGraph nodes.
