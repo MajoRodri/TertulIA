@@ -1,0 +1,39 @@
+# Perfil de sector: café-cowork (caso de la demo, Atocha).
+#
+# Este archivo NO lleva cifras: dice qué buscar y qué costes pedir.
+# Los importes salen de fuentes consultadas o los introduce la persona usuaria.
+# Lo valida SectorProfile (src/tertulia/crew/sector.py).
+
+business_type: cafe_cowork        # igual que el nombre del archivo y que BusinessBrief.business_type
+display_name: Café-cowork
+description: >-
+  Cafetería de especialidad con zona de trabajo por suscripción,
+  con puestos flexibles para estudiantes y profesionales.
+
+# Punto de equilibrio (herramienta de Yohanna): qué se cuenta como "unidad vendida".
+unit: member
+unit_label: miembro del cowork
+
+# Competencia (servidor MCP de Helen): categorías para search_competitors().
+competitor_categories:
+  - cafe
+  - coworking
+
+# Costes fijos mensuales que hay que conseguir. Solo el concepto, nunca el importe.
+fixed_cost_items:
+  - key: rent
+    label: Alquiler del local
+  - key: staff
+    label: Personal
+  - key: utilities
+    label: Suministros (luz, agua, internet)
+  - key: insurance
+    label: Seguros
+  - key: maintenance
+    label: Mantenimiento y limpieza
+
+# Preguntas que guían al Investigador.
+research_questions:
+  - ¿Cuántas cafeterías y espacios de coworking hay en el barrio y qué precios tienen?
+  - ¿Qué valoran o critican los clientes en las reseñas de la competencia?
+  - ¿Qué tipo de público se mueve por la zona (estudiantes, trabajadores, viajeros)?
