@@ -1,5 +1,6 @@
 from typing import TypedDict
-from tertulia.schemas import BusinessBrief, Source, Finding, Verdict, TraceEntry
+
+from tertulia.schemas import BusinessBrief, Finding, Source, TraceEntry, Verdict
 
 
 class AgentState(TypedDict):
