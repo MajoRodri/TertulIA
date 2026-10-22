@@ -1,1 +1,1 @@
-"""Agentes, tareas y perfiles de sector (d: María Isabel)."""
+"""Agentes, tareas y perfiles de sector (dueña: María Isabel)."""
