@@ -1,0 +1,32 @@
+import { approveReport } from "../api.js";
+
+export function initApproval(jobId) {
+  const btnApprove = document.getElementById("btn-approve");
+  const btnReject  = document.getElementById("btn-reject");
+
+  btnApprove.addEventListener("click", async () => {
+    btnApprove.disabled = true;
+    btnApprove.textContent = "Generando informe…";
+    try {
+      const blob = await approveReport(jobId);
+      triggerDownload(blob, `report_tertulia_${jobId}.pdf`);
+      btnApprove.textContent = "✓ Informe descargado";
+    } catch (err) {
+      btnApprove.disabled = false;
+      btnApprove.textContent = "Aprobar y descargar informe";
+      console.error(err);
+    }
+  });
+
+  btnReject.addEventListener("click", () => {
+    document.getElementById("panel-approval").classList.add("hidden");
+    document.getElementById("panel-debate").scrollIntoView({ behavior: "smooth" });
+  });
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = Object.assign(document.createElement("a"), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
+}

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TertulIA — Tu guía, tu vía.</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <img src="../assets/logo.png" alt="TertulIA" class="brand-logo" />
+        <span class="brand-tagline">Tu guía, tu vía.</span>
+      </div>
+      <div class="profile-wrap">
+        <label for="profile-select">Perfil</label>
+        <select id="profile-select" class="profile-select">
+          <option value="analyst">Analista de consultora</option>
+          <option value="entrepreneur">Emprendedor</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+
+    <div class="hero-cards" aria-hidden="true">
+
+      <div class="hero-agent-card">
+        <div class="hac-header">
+          <div class="hac-avatar" style="background:var(--azul)">IN</div>
+          <div>
+            <div class="hac-name">Investigador</div>
+            <div class="hac-role">Análisis de mercado</div>
+          </div>
+        </div>
+        <p class="hac-text">Encontré <span class="hac-accent">14 negocios</span> similares en 1 km — solo 3 con coworking real.</p>
+      </div>
+
+      <div class="hero-agent-card">
+        <div class="hac-header">
+          <div class="hac-avatar" style="background:var(--turquesa)">AN</div>
+          <div>
+            <div class="hac-name">Analista</div>
+            <div class="hac-role">Viabilidad financiera</div>
+          </div>
+        </div>
+        <p class="hac-text">Punto de equilibrio: <span class="hac-accent">68 clientes/día</span> al 45% de ocupación.</p>
+      </div>
+
+      <div class="hero-agent-card">
+        <div class="hac-header">
+          <div class="hac-avatar" style="background:#6C5CE7">RE</div>
+          <div>
+            <div class="hac-name">Redactor</div>
+            <div class="hac-role">Síntesis del informe</div>
+          </div>
+        </div>
+        <p class="hac-text">Palanca clave: <span class="hac-accent">eventos temáticos</span> fuera del horario de coworking.</p>
+      </div>
+
+      <div class="hero-agent-card">
+        <div class="hac-header">
+          <div class="hac-avatar" style="background:var(--naranja)">RV</div>
+          <div>
+            <div class="hac-name">Revisor</div>
+            <div class="hac-role">Control de calidad</div>
+          </div>
+        </div>
+        <p class="hac-text">Ajusto ocupación a <span class="hac-accent">45%</span> en escenario base. Riesgo: <span class="hac-accent">agosto −35%</span>.</p>
+      </div>
+
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-dot"></span>
+        Inteligencia colectiva para negocios locales
+      </div>
+
+      <img src="../assets/brand/logo.png" alt="TertulIA" class="hero-logo" />
+
+      <h1 class="hero-headline">
+        Analiza cualquier<br/>
+        <em>negocio local</em><br/>
+        con 4 agentes IA
+      </h1>
+
+      <p class="hero-sub">
+        Investigan, debaten y se corrigen entre sí hasta llegar a un veredicto con fuentes reales. Tú apruebas. Tú decides.
+      </p>
+
+      <div class="hero-cta">
+        <button class="btn btn-primary" id="btn-hero-start">Empezar análisis →</button>
+        <button class="btn btn-secondary" id="btn-hero-how">Cómo funciona</button>
+      </div>
+
+      <div class="hero-trust">
+        <div class="hero-trust-item">
+          <span class="hero-trust-num">4</span>
+          <span class="hero-trust-label">agentes<br/>especializados</span>
+        </div>
+        <div class="hero-trust-sep"></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-num">3</span>
+          <span class="hero-trust-label">rondas de<br/>revisión</span>
+        </div>
+        <div class="hero-trust-sep"></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-num">1</span>
+          <span class="hero-trust-label">aprobación<br/>humana</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-scroll" id="hero-scroll" role="button" aria-label="Ir al formulario">
+      <span>Empieza</span>
+      <div class="scroll-arrow"></div>
+    </div>
+
+  </section>
+
+  <!-- How it works -->
+  <section class="how-section" id="how-section">
+    <div class="how-inner">
+      <span class="eyebrow">El proceso</span>
+      <h2>Cómo funciona TertulIA</h2>
+      <p class="section-sub">Un análisis completo en cuatro pasos, sin esperar a una consultora.</p>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-step-num">1</div>
+          <div class="how-step-title">Define el encargo</div>
+          <p class="how-step-desc">Sector, barrio y presupuesto. Con eso es suficiente para empezar.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">2</div>
+          <div class="how-step-title">Los agentes debaten</div>
+          <p class="how-step-desc">Investigador, Analista, Redactor y Revisor trabajan en vivo y se corrigen entre sí.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">3</div>
+          <div class="how-step-title">Veredicto con semáforo</div>
+          <p class="how-step-desc">Verde, amarillo o rojo con nivel de confianza y motivos concretos.</p>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">4</div>
+          <div class="how-step-title">Tú apruebas</div>
+          <p class="how-step-desc">Si el análisis te convence, generas el informe PDF con un clic.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main analysis flow -->
+  <main class="main page-wrap">
+
+    <!-- Progress stepper -->
+    <nav class="stepper" aria-label="Progreso">
+      <div class="step active" id="step-1">
+        <div class="step-dot">1</div>
+        <span class="step-label">Encargo</span>
+      </div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step" id="step-2">
+        <div class="step-dot">2</div>
+        <span class="step-label">Debate</span>
+      </div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step" id="step-3">
+        <div class="step-dot">3</div>
+        <span class="step-label">Veredicto</span>
+      </div>
+      <div class="step-line" id="line-3"></div>
+      <div class="step" id="step-4">
+        <div class="step-dot">4</div>
+        <span class="step-label">Aprobar</span>
+      </div>
+    </nav>
+
+    <!-- Entrepreneur notice -->
+    <div id="notice-entrepreneur" class="notice entrepreneur hidden">
+      <span class="notice-icon">💡</span>
+      <span>Este análisis es orientativo. Para un estudio completo, <strong>habla con una consultora</strong>.</span>
+    </div>
+
+    <!-- Panel 1: Brief -->
+    <section id="panel-brief" class="panel">
+      <div class="panel-header">
+        <span class="eyebrow">Paso 1</span>
+        <h2>Define tu encargo</h2>
+      </div>
+
+      <form id="form-brief" novalidate>
+        <div class="form-grid">
+
+          <div class="form-field">
+            <label for="sector">Tipo de negocio</label>
+            <select id="sector" name="sector" required>
+              <option value="">Selecciona un sector…</option>
+              <option value="cafe_cowork">Café-Cowork</option>
+              <option value="hospitality">Hostelería</option>
+              <option value="retail">Comercio local</option>
+              <option value="health">Salud y bienestar</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="neighborhood">Barrio o zona</label>
+            <input type="text" id="neighborhood" name="neighborhood" placeholder="Ej. Atocha, Madrid" required />
+          </div>
+
+          <div class="form-field">
+            <label for="budget">Presupuesto estimado (€)</label>
+            <input type="number" id="budget" name="budget" placeholder="Ej. 80000" min="0" />
+          </div>
+
+          <div class="form-field">
+            <label for="area">Superficie (m²)</label>
+            <input type="number" id="area" name="area" placeholder="Ej. 120" min="0" />
+          </div>
+
+          <div class="form-field full-width">
+            <label for="context">Contexto adicional (opcional)</label>
+            <textarea id="context" name="context" rows="3" placeholder="Describe cualquier detalle relevante sobre el proyecto…"></textarea>
+          </div>
+
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="btn-analyze">Analizar →</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Panel 2: Live debate -->
+    <section id="panel-debate" class="panel hidden">
+      <div class="panel-header">
+        <span class="eyebrow">Paso 2 · En curso</span>
+        <h2>Debate entre agentes</h2>
+      </div>
+      <div class="debate-feed" id="debate-feed" role="log" aria-live="polite"></div>
+    </section>
+
+    <!-- Panel 3: Verdict -->
+    <section id="panel-verdict" class="panel hidden">
+      <div class="panel-header">
+        <span class="eyebrow">Paso 3</span>
+        <h2>Veredicto</h2>
+      </div>
+
+      <div class="traffic-wrap">
+        <div class="traffic-lights" aria-label="Semáforo de viabilidad">
+          <div class="traffic-dot green"  id="dot-green"  title="Alta viabilidad"></div>
+          <div class="traffic-dot yellow" id="dot-yellow" title="Viabilidad media"></div>
+          <div class="traffic-dot red"    id="dot-red"    title="Baja viabilidad"></div>
+        </div>
+
+        <div class="verdict-info">
+          <div class="verdict-label"     id="verdict-label">—</div>
+          <div class="verdict-confidence" id="verdict-confidence">Confianza: —</div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" id="confidence-fill" style="width:0%"></div>
+          </div>
+          <div class="reasons-list" id="reasons-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 4: Approval -->
+    <section id="panel-approval" class="panel hidden">
+      <div class="panel-header">
+        <span class="eyebrow">Paso 4</span>
+        <h2>Aprobación humana</h2>
+      </div>
+
+      <div class="approval-wrap">
+        <p class="approval-desc">
+          Revisa el análisis. Si estás de acuerdo, aprueba para generar el informe final en PDF.
+        </p>
+        <div class="approval-actions">
+          <button class="btn btn-secondary" id="btn-reject">Revisar de nuevo</button>
+          <button class="btn btn-approve"   id="btn-approve">Aprobar y descargar informe</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
