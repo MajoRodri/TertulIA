@@ -1,0 +1,106 @@
+# Tareas del crew de TertulIA (dueña: María Isabel).
+#
+# Cada tarea tiene:
+#   description      qué debe hacer el agente (las variables {..} las rellena crew.py)
+#   expected_output  qué debe entregar
+#   agent            clave de un agente de agents.yaml
+#   context          tareas anteriores cuyo resultado recibe (opcional)
+#
+# Las tareas se ejecutan en el orden en que aparecen. El bucle de revisión
+# (volver a redactar si el revisor encuentra problemas, como máximo 3 veces) lo
+# controla el grafo, no este archivo: el grafo pasa los comentarios del revisor
+# en la variable {review_feedback}.
+#
+# Los identificadores (src-001, fnd-001...) y la confianza los asigna el grafo:
+# ningún agente debe inventarlos.
+
+research_task:
+  description: >-
+    Investiga el entorno para abrir un {display_name} en {neighbourhood} ({city}).
+
+    Busca competidores de estas categorías: {competitor_categories}.
+
+    Responde a estas preguntas: {research_questions}
+
+    Usa solo las herramientas que tienes. Para cada dato indica la fuente
+    (título, enlace y herramienta usada). Si una pregunta no se puede responder
+    con datos, escríbelo como "sin dato". No inventes nombres, cifras ni enlaces.
+  expected_output: >-
+    Una lista de hallazgos. Cada hallazgo tiene: la afirmación en español, el
+    valor y su unidad si es una cifra, y la fuente de la que sale. Al final, la
+    lista de preguntas que quedaron sin dato.
+  agent: researcher
+
+vision_task:
+  description: >-
+    Analiza estas imágenes del barrio o de la competencia: {images}
+
+    Describe solo lo que se ve con claridad y sea útil para evaluar un
+    {display_name} en {neighbourhood}. Si no hay imágenes, responde
+    únicamente "sin imágenes" y no inventes nada.
+  expected_output: >-
+    Una lista de observaciones, cada una con la imagen de la que sale, o el
+    texto "sin imágenes".
+  agent: vision
+
+analysis_task:
+  description: >-
+    Calcula el punto de equilibrio mensual de un {display_name} en
+    {neighbourhood}. La unidad vendida es: {unit_label}.
+
+    Costes fijos mensuales que necesitas: {fixed_cost_items}
+
+    Datos aportados por la persona usuaria: presupuesto inicial {budget};
+    alquiler conocido {known_rent}.
+
+    Usa la herramienta de punto de equilibrio y, si hace falta un gráfico o
+    una tabla, la de ejecución de código. Usa solo cifras que aparezcan en la
+    investigación o en los datos de la persona usuaria. Cualquier coste sin
+    cifra se marca como "sin dato".
+  expected_output: >-
+    Los resultados del cálculo, uno por cifra y con su unidad, indicando qué
+    herramienta los produjo. La lista de datos que faltaron y cómo afectan al
+    resultado. Las rutas de los gráficos generados, si los hay.
+  agent: analyst
+  context:
+    - research_task
+    - vision_task
+
+writing_task:
+  description: >-
+    Redacta en español el informe de viabilidad de un {display_name} en
+    {neighbourhood} ({city}) a partir de la investigación, las imágenes y el
+    análisis.
+
+    Comentarios de la revisión anterior que debes corregir: {review_feedback}
+
+    Propón un semáforo (verde, ámbar o rojo) con sus motivos. No añadas cifras
+    que no estén en los hallazgos. Incluye una sección con los datos que faltan
+    y otra con las advertencias.
+
+    El punto de equilibrio se calcula solo con una unidad de venta
+    ({unit_label}). Indícalo en el semáforo con una nota aclaratoria: qué
+    ingresos cuenta el cálculo y cuáles deja fuera.
+  expected_output: >-
+    Un informe en Markdown con: resumen, competencia, análisis económico,
+    datos que faltan, advertencias y semáforo propuesto con sus motivos.
+  agent: writer
+  context:
+    - research_task
+    - vision_task
+    - analysis_task
+
+review_task:
+  description: >-
+    Revisa el borrador del informe sobre un {display_name} en {neighbourhood}.
+    Comprueba que cada cifra aparece en la investigación o en el análisis, que
+    no hay contradicciones, que los datos que faltan están a la vista y que el
+    semáforo se justifica con los hallazgos.
+  expected_output: >-
+    Una línea inicial que diga "APROBADO" o "CAMBIOS NECESARIOS", seguida de la
+    lista de problemas encontrados, cada uno con lo que hay que corregir.
+  agent: reviewer
+  context:
+    - research_task
+    - analysis_task
+    - writing_task
