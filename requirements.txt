@@ -19,6 +19,7 @@ weasyprint>=62.0
 
 # MCP
 mcp~=1.28.1
+httpx>=0.27 # librería para hacer peticiones HTTP
 
 # Tests
 pytest>=8.3.0

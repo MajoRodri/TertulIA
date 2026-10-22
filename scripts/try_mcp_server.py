@@ -5,14 +5,16 @@ Run from the repo root:  python scripts/try_mcp_server.py
 
 import asyncio
 import json
+import os
 import sys
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 SERVER = StdioServerParameters(
-    command=sys.executable,  # the same Python of the virtual environment
+    command=sys.executable,
     args=["src/tertulia/mcp/servers/neighbourhood_data/server.py"],
+    env={**os.environ, "PYTHONPATH": "src"},
 )
 
 
