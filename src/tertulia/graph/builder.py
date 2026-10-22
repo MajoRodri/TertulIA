@@ -1,9 +1,11 @@
 """Graph assembly and configuration for TertulIA."""
 
-from langgraph.graph import StateGraph, START, END
-from .state import AgentState
-from .nodes import research_node, analyst_node, writer_node, reviewer_node
+from langgraph.graph import END, START, StateGraph
+
 from .edges import should_continue
+from .nodes import analyst_node, research_node, reviewer_node, writer_node
+from .state import AgentState
+
 
 def human_approval_node(state: AgentState) -> dict:
     """
@@ -12,6 +14,7 @@ def human_approval_node(state: AgentState) -> dict:
     """
     print("[NODO] Aprobación Humana: Pausa simulada. Generando informe final...")
     return {"human_approved": True}
+
 
 # 1. Inicializamos el grafo con nuestro molde de datos (AgentState)
 workflow = StateGraph(AgentState)
@@ -34,8 +37,8 @@ workflow.add_conditional_edges(
     "reviewer",
     should_continue,
     {
-        "writer": "writer",                  # Si rechaza, vuelve al redactor
-        "human_approval": "human_approval"   # Si aprueba, va a la pausa humana
+        "writer": "writer",
+        "human_approval": "human_approval"
     }
 )
 
