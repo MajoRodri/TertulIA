@@ -77,6 +77,10 @@ writing_task:
     Propón un semáforo (verde, ámbar o rojo) con sus motivos. No añadas cifras
     que no estén en los hallazgos. Incluye una sección con los datos que faltan
     y otra con las advertencias.
+
+    El punto de equilibrio se calcula solo con una unidad de venta
+    ({unit_label}). Indícalo en el semáforo con una nota aclaratoria: qué
+    ingresos cuenta el cálculo y cuáles deja fuera.
   expected_output: >-
     Un informe en Markdown con: resumen, competencia, análisis económico,
     datos que faltan, advertencias y semáforo propuesto con sus motivos.
