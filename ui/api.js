@@ -46,11 +46,53 @@ export async function approveReport(jobId) {
   return res.blob();
 }
 
+// POST /api/chat/{jobId}  →  SSE stream of agent responses
+export async function sendChatMessage(jobId, message, onMessage) {
+  if (USE_MOCK) {
+    return simulateMockChatResponse(onMessage);
+  }
+  const res = await fetch(`${API_BASE}/api/chat/${jobId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) throw new Error(`Error ${res.status} sending chat message`);
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        const data = JSON.parse(line.slice(6));
+        if (!data.done) onMessage(data);
+      }
+    }
+  }
+}
+
 // ── Mock helpers ──────────────────────────────────────────────
 function simulateMockStream(onMessage, onDone) {
   MOCK_DEBATE.forEach((msg) => setTimeout(() => onMessage(msg), msg.delay));
   const lastDelay = MOCK_DEBATE[MOCK_DEBATE.length - 1].delay;
   setTimeout(onDone, lastDelay + 600);
+}
+
+async function simulateMockChatResponse(onMessage) {
+  const responses = [
+    { agent: "analyst", name: "Analista", role: "Viabilidad financiera",
+      message: "Gracias por el dato adicional. He recalculado las proyecciones teniendo en cuenta lo que comentas. Actualizaré el escenario base antes del veredicto final." },
+    { agent: "reviewer", name: "Revisor", role: "Control de calidad",
+      message: "Incorporo el contexto en la valoración. Ajusto la confianza y los motivos del veredicto en consecuencia." },
+  ];
+  for (const msg of responses) {
+    await new Promise((r) => setTimeout(r, 1200));
+    onMessage(msg);
+  }
 }
 
 function mockPDFBlob() {

@@ -1,6 +1,5 @@
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
 
 from .models import ReportData
 
@@ -14,5 +13,6 @@ def render_html(data: ReportData) -> str:
 
 
 def build_pdf(data: ReportData) -> bytes:
+    from weasyprint import HTML  # lazy: requires GTK native libs
     html_source = render_html(data)
     return HTML(string=html_source).write_pdf()

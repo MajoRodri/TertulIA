@@ -74,6 +74,20 @@ _SKELETON_DEBATE: list[dict] = [
 ]
 
 
+_SKELETON_CHAT_RESPONSES = [
+    {
+        "agent": "analyst", "name": "Analista", "role": "Viabilidad financiera",
+        "message": "Gracias por el dato adicional. He recalculado las proyecciones teniendo en cuenta lo que comentas. Actualizaré el escenario base antes del veredicto final.",
+        "delay": 1.2,
+    },
+    {
+        "agent": "reviewer", "name": "Revisor", "role": "Control de calidad",
+        "message": "Incorporo el contexto en la valoración. Ajusto la confianza y los motivos del veredicto en consecuencia.",
+        "delay": 1.4,
+    },
+]
+
+
 def _skeleton_verdict() -> SchemaVerdict:
     return SchemaVerdict(
         light=TrafficLight.AMBER,
@@ -117,6 +131,9 @@ async def debate_stream(job_id: str):
 async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     messages = []
     for msg in _SKELETON_DEBATE:
+        # Emit a "thinking" event before the actual message
+        thinking = {"thinking": True, "agent": msg["agent"], "name": msg["name"]}
+        yield f"data: {json.dumps(thinking)}\n\n"
         await asyncio.sleep(msg["delay"])
         payload = {k: v for k, v in msg.items() if k != "delay"}
         messages.append(payload)
@@ -125,6 +142,30 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["messages"] = messages
     _jobs[job_id]["verdict"] = _skeleton_verdict()
     _jobs[job_id]["status"] = "done"
+    yield f"data: {json.dumps({'done': True})}\n\n"
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/api/chat/{job_id}")
+async def chat(job_id: str, req: ChatRequest):
+    if job_id not in _jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return StreamingResponse(
+        _stream_chat(job_id, req.message),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
+    _jobs[job_id].setdefault("chat_history", []).append({"role": "user", "text": message})
+    for msg in _SKELETON_CHAT_RESPONSES:
+        await asyncio.sleep(msg["delay"])
+        payload = {k: v for k, v in msg.items() if k != "delay"}
+        yield f"data: {json.dumps(payload)}\n\n"
     yield f"data: {json.dumps({'done': True})}\n\n"
 
 

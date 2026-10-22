@@ -1,6 +1,7 @@
 import { runDebate }   from "./components/debate.js";
 import { showVerdict }  from "./components/semaforo.js";
 import { initApproval } from "./components/aprobacion.js";
+import { initChat }     from "./components/chat.js";
 import { startAnalysis } from "./api.js";
 
 // ── Navigation helpers ────────────────────────────────────────
@@ -65,12 +66,18 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
 
     setStep(2, "done"); setLine(2, true);
     setStep(3, "active");
+    showPanel("panel-chat");
+
+    await initChat(jobId);   // resolves when user clicks "Continuar al veredicto"
+
+    setStep(3, "done"); setLine(3, true);
+    setStep(4, "active");
     showPanel("panel-verdict");
 
     await showVerdict(jobId);
 
-    setStep(3, "done"); setLine(3, true);
-    setStep(4, "active");
+    setStep(4, "done"); setLine(4, true);
+    setStep(5, "active");
     showPanel("panel-approval");
 
     initApproval(jobId);
