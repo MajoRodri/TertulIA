@@ -9,7 +9,7 @@ conceptos de coste necesita la herramienta de punto de equilibrio. Los importes
 salen siempre de fuentes consultadas o de la persona usuaria, nunca de este archivo.
 
 Lo usan:
-- el crew (d: María Isabel), para rellenar las tareas de los agentes;
+- el crew (dueña: María Isabel), para rellenar las tareas de los agentes;
 - ``search_competitors(neighbourhood, category)`` (MCP, Helen), con ``competitor_categories``;
 - ``BreakEvenInput`` (herramientas, Yohanna), con ``unit`` y ``fixed_cost_items``.
 """
