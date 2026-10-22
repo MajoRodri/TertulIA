@@ -1,6 +1,7 @@
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
     """
     # LLM Configuration
     LLM_PROVIDER: str = "gemini"       
-    LLM_MODEL_NAME: str = "gemini-1.5-flash"
+    LLM_MODEL_NAME: str = "gemini-3.8-flash"
     LLM_API_KEY: SecretStr = SecretStr("")
     
     # External APIs
