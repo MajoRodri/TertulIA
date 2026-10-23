@@ -1,9 +1,10 @@
 """TertulIA FastAPI application.
 
-Four endpoints consumed by the UI:
+Endpoints:
   POST /api/analyze          → start a job, returns { job_id }
   GET  /api/debate/{job_id}  → SSE stream of agent messages
-  GET  /api/verdict/{job_id} → Verdict (schemas model, includes final_light / final_confidence)
+  POST /api/chat/{job_id}    → SSE stream of chat responses
+  GET  /api/verdict/{job_id} → Verdict JSON
   POST /api/approve/{job_id} → PDF bytes
 """
 
@@ -45,7 +46,26 @@ app.add_middleware(
 # In-memory store: { job_id: { brief, verdict, messages, status } }
 _jobs: dict[str, dict] = {}
 
-# Skeleton debate messages — replaced by real CrewAI output when agents are ready
+# ── Crew step metadata ────────────────────────────────────────────────────────
+# Each entry: (crew_step_name, list of agent display info + task output key)
+_STEP_META: list[tuple[str, list[dict]]] = [
+    ("research", [
+        {"agent": "researcher", "name": "Investigador",        "role": "Análisis de mercado",  "task": "research_task"},
+        {"agent": "vision",     "name": "Especialista Visual", "role": "Análisis de imágenes", "task": "vision_task"},
+    ]),
+    ("analysis", [
+        {"agent": "analyst",  "name": "Analista", "role": "Viabilidad financiera", "task": "analysis_task"},
+    ]),
+    ("writing", [
+        {"agent": "writer",   "name": "Redactor", "role": "Síntesis del informe",  "task": "writing_task"},
+    ]),
+    ("review", [
+        {"agent": "reviewer", "name": "Revisor",  "role": "Control de calidad",    "task": "review_task"},
+    ]),
+]
+
+# ── Skeleton data (demo / fallback) ──────────────────────────────────────────
+
 _SKELETON_DEBATE: list[dict] = [
     {
         "agent": "researcher", "name": "Investigador", "role": "Análisis de mercado",
@@ -79,7 +99,6 @@ _SKELETON_DEBATE: list[dict] = [
     },
 ]
 
-
 _SKELETON_CHAT_RESPONSES = [
     {
         "agent": "analyst", "name": "Analista", "role": "Viabilidad financiera",
@@ -108,7 +127,60 @@ def _skeleton_verdict() -> SchemaVerdict:
     )
 
 
-# ── Endpoints ────────────────────────────────────────────────────────────────
+def _first_skeleton_for(agent: str) -> dict | None:
+    """First skeleton message matching the given agent id."""
+    for msg in _SKELETON_DEBATE:
+        if msg["agent"] == agent:
+            return {k: v for k, v in msg.items() if k != "delay"}
+    return None
+
+
+# ── Crew helpers ──────────────────────────────────────────────────────────────
+
+async def _prepare_crew(brief: BusinessBrief):
+    """
+    Loads sector profile, builds LLM, and returns closures for the debate loop.
+    Returns None when any dependency is missing (no API key, unknown sector, etc.).
+    """
+    try:
+        from tertulia.crew.crew import llm_from_settings, run_step
+        from tertulia.crew.inputs import build_inputs
+        from tertulia.crew.sector import load_sector
+
+        profile = load_sector(brief.business_type)
+        llm = llm_from_settings()
+        initial_inputs = build_inputs(brief, profile)
+
+        def _run(step: str, inp: dict) -> dict:
+            return run_step(step, inp, llm)
+
+        def _rebuild(acc: dict) -> dict:
+            return build_inputs(
+                brief,
+                profile,
+                research_result=acc.get("research_result"),
+                vision_result=acc.get("vision_result"),
+                analysis_result=acc.get("analysis_result"),
+                draft_report=acc.get("draft_report"),
+            )
+
+        return _run, _rebuild, initial_inputs
+    except Exception:
+        return None
+
+
+def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
+    """Stores step outputs so later steps can reference them via build_inputs."""
+    if step == "research":
+        acc["research_result"] = result.get("research_task", "")
+        acc["vision_result"]   = result.get("vision_task", "")
+    elif step == "analysis":
+        acc["analysis_result"] = result.get("analysis_task", "")
+    elif step == "writing":
+        acc["draft_report"]    = result.get("writing_task", "")
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.post("/api/analyze")
 async def analyze(brief: BusinessBrief):
@@ -135,19 +207,57 @@ async def debate_stream(job_id: str):
 
 
 async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
-    messages = []
-    for msg in _SKELETON_DEBATE:
-        # Emit a "thinking" event before the actual message
-        thinking = {"thinking": True, "agent": msg["agent"], "name": msg["name"]}
-        yield f"data: {json.dumps(thinking)}\n\n"
-        await asyncio.sleep(msg["delay"])
-        payload = {k: v for k, v in msg.items() if k != "delay"}
-        messages.append(payload)
-        yield f"data: {json.dumps(payload)}\n\n"
+    brief: BusinessBrief = _jobs[job_id]["brief"]
+    messages: list[dict] = []
+
+    crew = await _prepare_crew(brief)
+
+    if crew is None:
+        # Skeleton demo — no LLM calls
+        for msg in _SKELETON_DEBATE:
+            yield f"data: {json.dumps({'thinking': True, 'agent': msg['agent'], 'name': msg['name']})}\n\n"
+            await asyncio.sleep(msg["delay"])
+            payload = {k: v for k, v in msg.items() if k != "delay"}
+            messages.append(payload)
+            yield f"data: {json.dumps(payload)}\n\n"
+    else:
+        run_step_fn, rebuild_inputs, inputs = crew
+        accumulated: dict = {}
+
+        for step_name, agents_meta in _STEP_META:
+            first = agents_meta[0]
+            yield f"data: {json.dumps({'thinking': True, 'agent': first['agent'], 'name': first['name']})}\n\n"
+
+            try:
+                result: dict[str, str] = await asyncio.to_thread(run_step_fn, step_name, inputs)
+            except Exception:
+                # Per-step fallback so the UI never stalls
+                for meta in agents_meta:
+                    fallback = _first_skeleton_for(meta["agent"])
+                    if fallback:
+                        messages.append(fallback)
+                        yield f"data: {json.dumps(fallback)}\n\n"
+                continue
+
+            _accumulate(step_name, result, accumulated)
+            inputs = rebuild_inputs(accumulated)
+
+            for meta in agents_meta:
+                text = result.get(meta["task"], "").strip()
+                if not text:
+                    continue
+                payload = {
+                    "agent": meta["agent"],
+                    "name":  meta["name"],
+                    "role":  meta["role"],
+                    "message": text,
+                }
+                messages.append(payload)
+                yield f"data: {json.dumps(payload)}\n\n"
 
     _jobs[job_id]["messages"] = messages
-    _jobs[job_id]["verdict"] = _skeleton_verdict()
-    _jobs[job_id]["status"] = "done"
+    _jobs[job_id]["verdict"]  = _skeleton_verdict()
+    _jobs[job_id]["status"]   = "done"
     yield f"data: {json.dumps({'done': True})}\n\n"
 
 
@@ -196,7 +306,6 @@ async def approve(job_id: str):
         {k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE
     ]
 
-    # Map amber → yellow for the PDF template (report model uses "green"/"yellow"/"red")
     signal_map = {TrafficLight.GREEN: "green", TrafficLight.AMBER: "yellow", TrafficLight.RED: "red"}
     report_signal = signal_map.get(verdict.final_light, "yellow")
 
@@ -234,7 +343,7 @@ async def approve(job_id: str):
     )
 
 
-# ── Static files (must come after all API routes) ────────────────────────────
+# ── Static files (must come after all API routes) ─────────────────────────────
 
 @app.get("/")
 async def root():
