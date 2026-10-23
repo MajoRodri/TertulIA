@@ -35,6 +35,17 @@ STEPS: dict[str, tuple[str, ...]] = {
 APPROVED = "APROBADO"
 
 
+# Se añade a la tarea de un agente que no tiene herramientas. Motivo: en la prueba
+# real del 23 oct, el Investigador sin herramientas inventó cifras, fuentes y enlaces
+# aunque la tarea le pedía no hacerlo. El aviso le dice explícitamente qué NO puede hacer.
+NO_TOOLS_NOTE = (
+    "IMPORTANTE: en esta ejecución NO tienes ninguna herramienta. No puedes consultar "
+    "páginas web, mapas, APIs ni ninguna otra fuente, y no debes escribir datos de "
+    "memoria. No escribas cifras, nombres de negocios ni enlaces. Responde "
+    '"sin dato" a cada pregunta que necesite un dato.'
+)
+
+
 def load_config() -> tuple[dict, dict]:
     """Lee agents.yaml y tasks.yaml."""
 
@@ -77,9 +88,17 @@ def build_step_crew(step: str, llm: BaseLLM) -> Crew:
         agent_name = task_config.pop("agent")
         if agent_name not in agents:
             agents[agent_name] = Agent(config=agents_config[agent_name], llm=llm)
+        if not agents[agent_name].tools:
+            task_config["description"] += "\n\n" + NO_TOOLS_NOTE
         tasks.append(Task(config=task_config, agent=agents[agent_name], name=task_name))
 
-    return Crew(agents=list(agents.values()), tasks=tasks, process=Process.sequential)
+    # tracing=False: CrewAI no pregunta ni sube a sus servidores prompts y respuestas
+    return Crew(
+        agents=list(agents.values()),
+        tasks=tasks,
+        process=Process.sequential,
+        tracing=False,
+    )
 
 
 def run_step(step: str, inputs: dict[str, str], llm: BaseLLM) -> dict[str, str]:
