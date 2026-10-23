@@ -67,7 +67,7 @@
 
 /* ─── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
 body {
   font-family: var(--font-body);
@@ -882,6 +882,134 @@ h3 { font-size: var(--text-xl); }
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ─── Floating launcher widget ───────────────────────────────── */
+.launcher {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s3);
+}
+
+.launcher-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--azul);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: 0 4px 20px rgba(43,78,255,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.launcher-btn:hover {
+  transform: scale(1.07);
+  box-shadow: 0 6px 28px rgba(43,78,255,0.5);
+}
+
+.launcher-btn-logo {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+/* Modal overlay */
+.launcher-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 48, 0.45);
+  backdrop-filter: blur(4px);
+  animation: launcherOpen 0.2s ease;
+}
+
+.launcher-panel.hidden { display: none; }
+
+@keyframes launcherOpen {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal card */
+.launcher-panel-inner {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(15,23,48,0.22);
+  width: min(600px, calc(100vw - 32px));
+  animation: launcherCardIn 0.22s ease;
+}
+
+@keyframes launcherCardIn {
+  from { transform: scale(0.94) translateY(16px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+.launcher-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  border-radius: 20px 20px 0 0;
+  z-index: 1;
+}
+
+.launcher-panel-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 300;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.launcher-panel-sub {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.launcher-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.launcher-close:hover {
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.launcher-panel-body {
+  padding: 20px 24px 24px;
+}
+
+.launcher-panel-body .form-grid {
+  grid-template-columns: 1fr;
 }
 
 /* ─── Agent thinking indicator ───────────────────────────────── */

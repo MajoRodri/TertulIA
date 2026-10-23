@@ -158,8 +158,8 @@
   <!-- Main analysis flow -->
   <main class="main page-wrap">
 
-    <!-- Progress stepper -->
-    <nav class="stepper" aria-label="Progreso">
+    <!-- Progress stepper (hidden until analysis starts) -->
+    <nav class="stepper hidden" id="stepper" aria-label="Progreso">
       <div class="step active" id="step-1">
         <div class="step-dot">1</div>
         <span class="step-label">Encargo</span>
@@ -191,54 +191,6 @@
       <span class="notice-icon">💡</span>
       <span>Este análisis es orientativo. Para un estudio completo, <strong>habla con una consultora</strong>.</span>
     </div>
-
-    <!-- Panel 1: Brief -->
-    <section id="panel-brief" class="panel">
-      <div class="panel-header">
-        <span class="eyebrow">Paso 1</span>
-        <h2>Define tu encargo</h2>
-      </div>
-
-      <form id="form-brief" novalidate>
-        <div class="form-grid">
-
-          <div class="form-field">
-            <label for="sector">Tipo de negocio</label>
-            <select id="sector" name="sector" required>
-              <option value="">Selecciona un sector…</option>
-              <option value="cafe_cowork">Café-Cowork</option>
-              <option value="hospitality">Hostelería</option>
-              <option value="retail">Comercio local</option>
-              <option value="health">Salud y bienestar</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label for="neighborhood">Barrio o zona</label>
-            <input type="text" id="neighborhood" name="neighborhood" placeholder="Ej. Atocha, Madrid" required />
-          </div>
-
-          <div class="form-field">
-            <label for="budget">Presupuesto estimado (€)</label>
-            <input type="number" id="budget" name="budget" placeholder="Ej. 80000" min="0" />
-          </div>
-
-          <div class="form-field">
-            <label for="area">Superficie (m²)</label>
-            <input type="number" id="area" name="area" placeholder="Ej. 120" min="0" />
-          </div>
-
-          <div class="form-field full-width">
-            <label for="context">Contexto adicional (opcional)</label>
-            <textarea id="context" name="context" rows="3" placeholder="Describe cualquier detalle relevante sobre el proyecto…"></textarea>
-          </div>
-
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" id="btn-analyze">Analizar →</button>
-        </div>
-      </form>
-    </section>
 
     <!-- Panel 2: Live debate -->
     <section id="panel-debate" class="panel hidden">
@@ -315,6 +267,85 @@
     </section>
 
   </main>
+
+  <!-- Floating analysis launcher -->
+  <div class="launcher" id="launcher">
+
+    <div class="launcher-panel hidden" id="launcher-panel">
+     <div class="launcher-panel-inner">
+      <div class="launcher-panel-header">
+        <div>
+          <div class="launcher-panel-title">Nuevo análisis</div>
+          <div class="launcher-panel-sub">Define los parámetros del encargo</div>
+        </div>
+        <button class="launcher-close" id="launcher-close" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="launcher-panel-body">
+        <div id="notice-entrepreneur" class="notice entrepreneur hidden">
+          <span class="notice-icon">💡</span>
+          <span>Análisis orientativo. Para un estudio completo, <strong>habla con una consultora</strong>.</span>
+        </div>
+
+        <form id="form-brief" novalidate>
+          <div class="form-grid">
+
+            <div class="form-field">
+              <label for="sector">Tipo de negocio</label>
+              <select id="sector" name="sector" required>
+                <option value="">Selecciona un sector…</option>
+                <option value="cafe_cowork">Café-Cowork</option>
+                <option value="hospitality">Hostelería</option>
+                <option value="retail">Comercio local</option>
+                <option value="health">Salud y bienestar</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label for="neighborhood">Barrio o zona</label>
+              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ej. Atocha, Madrid" required />
+            </div>
+
+            <div class="form-field">
+              <label for="budget">Presupuesto estimado (€)</label>
+              <input type="number" id="budget" name="budget" placeholder="Ej. 80000" min="0" />
+            </div>
+
+            <div class="form-field">
+              <label for="area">Superficie (m²)</label>
+              <input type="number" id="area" name="area" placeholder="Ej. 120" min="0" />
+            </div>
+
+            <div class="form-field">
+              <label for="radius">Radio de búsqueda</label>
+              <select id="radius" name="radius">
+                <option value="300">300 m — 4 min andando</option>
+                <option value="500">500 m — 6 min andando</option>
+                <option value="800" selected>800 m — 10 min andando (recomendado)</option>
+                <option value="1200">1.200 m — 15 min andando</option>
+                <option value="2000">2.000 m — 25 min andando</option>
+              </select>
+            </div>
+
+            <div class="form-field full-width">
+              <label for="context">Contexto adicional (opcional)</label>
+              <textarea id="context" name="context" rows="3" placeholder="Describe cualquier detalle relevante sobre el proyecto…"></textarea>
+            </div>
+
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btn-analyze">Analizar →</button>
+          </div>
+        </form>
+      </div>
+     </div>
+    </div>
+
+    <button class="launcher-btn" id="launcher-btn" aria-label="Nuevo análisis">
+      <img src="/assets/logo.png" alt="TertulIA" class="launcher-btn-logo" />
+    </button>
+
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>

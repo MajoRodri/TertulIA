@@ -11,11 +11,17 @@ import asyncio
 import json
 import uuid
 from datetime import date, datetime, timezone
+from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import RedirectResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+
+# Project root: src/tertulia/api/main.py → 3 levels up
+_ROOT = Path(__file__).resolve().parents[3]
 
 from tertulia.schemas.models import BusinessBrief
 from tertulia.schemas.models import Verdict as SchemaVerdict
@@ -226,3 +232,13 @@ async def approve(job_id: str):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="report_{job_id}.pdf"'},
     )
+
+
+# ── Static files (must come after all API routes) ────────────────────────────
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/app.html")
+
+app.mount("/assets", StaticFiles(directory=str(_ROOT / "assets")), name="assets")
+app.mount("/", StaticFiles(directory=str(_ROOT / "ui")), name="ui")

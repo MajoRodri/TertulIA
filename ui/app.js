@@ -24,13 +24,27 @@ function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
-// ── Hero buttons ─────────────────────────────────────────────
-document.getElementById("btn-hero-start")?.addEventListener("click", () => scrollTo("panel-brief"));
+// ── Launcher widget ───────────────────────────────────────────
+const launcherPanel = document.getElementById("launcher-panel");
+
+function openLauncher()  { launcherPanel.classList.remove("hidden"); }
+function closeLauncher() { launcherPanel.classList.add("hidden"); }
+
+document.getElementById("launcher-btn").addEventListener("click", () =>
+  launcherPanel.classList.toggle("hidden")
+);
+document.getElementById("launcher-close").addEventListener("click", closeLauncher);
+launcherPanel.addEventListener("click", (e) => {
+  if (e.target === launcherPanel) closeLauncher();
+});
+
+// ── Hero buttons open the launcher ───────────────────────────
+document.getElementById("btn-hero-start")?.addEventListener("click", openLauncher);
 document.getElementById("btn-hero-how")?.addEventListener("click",   () => scrollTo("how-section"));
-document.getElementById("hero-scroll")?.addEventListener("click",    () => scrollTo("panel-brief"));
+document.getElementById("hero-scroll")?.addEventListener("click",    openLauncher);
 
 // ── Profile selector ─────────────────────────────────────────
-document.getElementById("profile-select").addEventListener("change", (e) => {
+document.getElementById("profile-select")?.addEventListener("change", (e) => {
   document.getElementById("notice-entrepreneur").classList.toggle("hidden", e.target.value !== "entrepreneur");
 });
 
@@ -51,12 +65,16 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     business_type: document.getElementById("sector").value,
     neighbourhood: document.getElementById("neighborhood").value,
     budget_eur:    parseFloat(document.getElementById("budget")?.value) || null,
+    radius_m:      parseInt(document.getElementById("radius")?.value) || 800,
     notes,
     user_profile:  document.getElementById("profile-select").value,
   };
 
   try {
     const { job_id: jobId } = await startAnalysis(brief);
+
+    closeLauncher();
+    document.getElementById("stepper").classList.remove("hidden");
 
     setStep(1, "done"); setLine(1, true);
     setStep(2, "active");
