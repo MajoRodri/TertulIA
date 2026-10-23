@@ -184,6 +184,8 @@ def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
 
 @app.post("/api/analyze")
 async def analyze(brief: BusinessBrief):
+    from tertulia.guardrails.anonimizacion import anonymize_business_brief
+    brief = anonymize_business_brief(brief)
     job_id = f"job-{uuid.uuid4().hex[:8]}"
     _jobs[job_id] = {
         "brief": brief,

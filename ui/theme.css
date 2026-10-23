@@ -574,16 +574,53 @@ h3 { font-size: var(--text-xl); }
 
 .notice.entrepreneur .notice-icon { color: var(--naranja); }
 
-/* ─── Banner ────────────────────────────────────────────────── */
-.banner-wrap {
-  width: 100%;
-  line-height: 0; /* removes inline gap below video */
+/* ─── Scroll reveal ──────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
 }
-.banner-video {
-  width: 100%;
-  max-height: 100vh;
-  object-fit: cover;
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Analysis overlay (main becomes full-screen when active) ── */
+.main.active {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--canvas);
+  overflow-y: auto;
+  padding: var(--s6) var(--s5);
+}
+
+/* ─── Loading overlay ────────────────────────────────────────── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  transition: opacity 0.5s ease;
+}
+.loading-overlay.hidden  { display: none; }
+.loading-overlay.fading  { opacity: 0; pointer-events: none; }
+
+.loading-video {
+  max-width: min(540px, 88vw);
+  max-height: 70vh;
   display: block;
+}
+
+.loading-label {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  letter-spacing: 0.06em;
 }
 
 /* ─── Hero ───────────────────────────────────────────────────── */
@@ -619,6 +656,65 @@ h3 { font-size: var(--text-xl); }
   height: 400px;
   background: radial-gradient(ellipse, rgba(43,78,255,.07) 0%, transparent 70%);
   pointer-events: none;
+}
+
+/* Animated blob background */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.13;
+  will-change: transform;
+}
+
+.hero-blob--blue {
+  width: 520px;
+  height: 520px;
+  background: var(--azul);
+  top: -12%;
+  left: -6%;
+  animation: blobDrift1 28s ease-in-out infinite alternate;
+}
+
+.hero-blob--teal {
+  width: 420px;
+  height: 420px;
+  background: var(--turquesa);
+  top: 25%;
+  right: -8%;
+  animation: blobDrift2 34s ease-in-out infinite alternate;
+}
+
+.hero-blob--orange {
+  width: 360px;
+  height: 360px;
+  background: var(--naranja);
+  bottom: -8%;
+  left: 38%;
+  animation: blobDrift3 22s ease-in-out infinite alternate;
+}
+
+@keyframes blobDrift1 {
+  from { transform: translate(0, 0)    scale(1);    }
+  to   { transform: translate(8%, 14%) scale(1.12); }
+}
+
+@keyframes blobDrift2 {
+  from { transform: translate(0, 0)     scale(1.05); }
+  to   { transform: translate(-12%, 9%) scale(0.93); }
+}
+
+@keyframes blobDrift3 {
+  from { transform: translate(0, 0)      scale(1);   }
+  to   { transform: translate(-7%, -11%) scale(1.1); }
 }
 
 .hero-content {
@@ -662,7 +758,8 @@ h3 { font-size: var(--text-xl); }
 }
 
 .hero-logo {
-  height: 72px;
+  max-width: min(380px, 70vw);
+  height: auto;
   width: auto;
   margin-bottom: var(--s5);
   animation: heroFadeUp 0.7s 0.15s ease both;
@@ -742,6 +839,7 @@ h3 { font-size: var(--text-xl); }
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
 }
 
 .hero-agent-card {
@@ -752,18 +850,14 @@ h3 { font-size: var(--text-xl); }
   padding: var(--s3) var(--s4);
   width: 220px;
   box-shadow: 0 2px 12px rgba(15,23,48,.06);
-  animation: heroFadeUp 0.6s ease both, floatCard 5s ease-in-out infinite;
+  animation: heroFadeUp 0.6s ease both;
+  will-change: transform, opacity;
 }
 
-.hero-agent-card:nth-child(1) { top: 12%; left: 4%;  animation-delay: 0.6s, 0s;   }
-.hero-agent-card:nth-child(2) { top: 8%;  right: 4%; animation-delay: 0.75s, 0.8s; }
-.hero-agent-card:nth-child(3) { bottom: 18%; left: 2%;  animation-delay: 0.9s, 1.6s; }
-.hero-agent-card:nth-child(4) { bottom: 14%; right: 2%; animation-delay: 1.05s, 2.4s; }
-
-@keyframes floatCard {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-10px); }
-}
+.hero-agent-card:nth-child(1) { top: 12%; left: 4%;  animation-delay: 0.6s;  }
+.hero-agent-card:nth-child(2) { top: 8%;  right: 4%; animation-delay: 0.75s; }
+.hero-agent-card:nth-child(3) { bottom: 18%; left: 2%;  animation-delay: 0.9s;  }
+.hero-agent-card:nth-child(4) { bottom: 14%; right: 2%; animation-delay: 1.05s; }
 
 .hac-header {
   display: flex;
@@ -894,6 +988,102 @@ h3 { font-size: var(--text-xl); }
   font-size: var(--text-sm);
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ─── Study section ──────────────────────────────────────────── */
+.study-section {
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: var(--s7) var(--s5);
+}
+
+.study-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.study-inner > h2        { margin-bottom: var(--s2); }
+.study-inner > .section-sub {
+  color: var(--muted);
+  font-size: var(--text-base);
+  margin-bottom: var(--s7);
+}
+
+.study-block {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--s4) var(--s6);
+  padding: var(--s5) 0;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.study-block-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--azul);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-top: 6px;
+}
+
+.study-block-body h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: var(--s3);
+  line-height: 1.2;
+}
+
+.study-block-body p {
+  color: var(--body-text);
+  font-size: var(--text-base);
+  line-height: 1.7;
+  margin-bottom: var(--s3);
+}
+.study-block-body p:last-child { margin-bottom: 0; }
+
+.study-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s5);
+  margin-top: var(--s6);
+  padding-top: var(--s6);
+  border-top: 1px solid var(--border);
+}
+
+.study-pillar { text-align: center; }
+
+.study-pillar-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--s3);
+}
+
+.study-pillar-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--ink);
+  margin-bottom: var(--s2);
+}
+
+.study-pillar-desc {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .study-block   { grid-template-columns: 1fr; }
+  .study-pillars { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ─── Floating launcher widget ───────────────────────────────── */

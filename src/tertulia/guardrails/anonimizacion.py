@@ -1,6 +1,8 @@
 import re
 from pydantic import BaseModel
 
+from tertulia.schemas.models import BusinessBrief
+
 
 # ── Input model (matches frontend brief shape) ────────────────
 class Brief(BaseModel):
@@ -39,3 +41,10 @@ def anonymize_brief(brief: Brief) -> Brief:
     if not brief.context:
         return brief
     return brief.model_copy(update={"context": _scrub(brief.context)})
+
+
+def anonymize_business_brief(brief: BusinessBrief) -> BusinessBrief:
+    """Return a copy of brief with PII removed from the notes field."""
+    if not brief.notes:
+        return brief
+    return brief.model_copy(update={"notes": _scrub(brief.notes)})
