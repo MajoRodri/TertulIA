@@ -4,6 +4,7 @@ uvicorn[standard]>=0.32.0
 
 # Orquestación de agentes
 crewai>=0.80.0
+google-genai~=1.65.0
 langgraph>=0.2.0
 langchain>=0.3.0
 
@@ -13,6 +14,7 @@ openai>=1.50.0
 
 # Validación de datos
 pydantic>=2.9.0
+pydantic-settings>=2.5
 pyyaml>=6.0
 
 # Análisis y visualización
@@ -24,7 +26,8 @@ weasyprint>=62.0
 jinja2>=3.1.0
 
 # MCP
-mcp>=1.0.0
+mcp~=1.28.1
+httpx>=0.27 # librería para hacer peticiones HTTP
 
 # Tests
 pytest>=8.3.0

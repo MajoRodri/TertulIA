@@ -11,6 +11,7 @@ import pytest
 import yaml
 from crewai import Agent, Task
 
+from tertulia.crew.crew import STEPS
 from tertulia.crew.inputs import TASK_INPUT_KEYS
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "src" / "tertulia" / "crew" / "config"
@@ -80,13 +81,15 @@ def test_every_agent_has_a_task():
     assert {task["agent"] for task in TASKS.values()} == set(AGENTS)
 
 
-def test_context_only_points_to_earlier_tasks():
-    # Las tareas se ejecutan en orden: solo pueden recibir resultados anteriores
-    seen: set[str] = set()
-    for name, task in TASKS.items():
-        for previous in task.get("context", []):
-            assert previous in seen, f"{name} usa {previous}, que aún no se ha ejecutado"
-        seen.add(name)
+def test_tasks_do_not_use_context():
+    # El grafo pasa los resultados anteriores por variables; "context" saltaría el estado
+    using_context = [name for name, task in TASKS.items() if "context" in task]
+    assert not using_context, f"usan context: {using_context}"
+
+
+def test_every_task_belongs_to_one_step():
+    tasks_in_steps = [name for names in STEPS.values() for name in names]
+    assert sorted(tasks_in_steps) == sorted(TASKS)
 
 
 # --- Variables {..} -------------------------------------------------------------
