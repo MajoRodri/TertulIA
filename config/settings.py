@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """
     # LLM Configuration
     LLM_PROVIDER: str = "gemini"       
-    LLM_MODEL_NAME: str = "gemini-3.8-flash"
+    LLM_MODEL_NAME: str = "gemini-3.5-flash-lite"
     LLM_API_KEY: SecretStr = SecretStr("")
     
     # External APIs
