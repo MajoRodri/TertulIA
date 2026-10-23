@@ -1,6 +1,6 @@
 import { runDebate }   from "./components/debate.js";
-import { showVerdict }  from "./components/semaforo.js";
-import { initApproval } from "./components/aprobacion.js";
+import { showVerdict }  from "./components/verdict.js";
+import { initApproval } from "./components/approval.js";
 import { initChat }     from "./components/chat.js";
 import { startAnalysis } from "./api.js";
 
