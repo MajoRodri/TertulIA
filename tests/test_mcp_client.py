@@ -12,6 +12,7 @@ from crewai.tools.tool_failure import ToolFailure, ToolFailureReason
 from pydantic import BaseModel
 
 from tertulia.mcp import client
+from tertulia.mcp.servers.neighbourhood_data import server
 
 
 class _FakeArgs(BaseModel):
@@ -187,3 +188,32 @@ def test_fetch_errors_pass_through_unchanged():
     failure = ToolFailure(message="Refused to fetch", reason=ToolFailureReason.MCP_ERROR)
     tool = client._readable([SimpleNamespace(name="fetch", run=lambda **kwargs: failure)])[0]
     assert tool.run(url="http://192.168.1.1/") is failure
+
+
+# --- 6. Error codes for the graph -------------------------------------------------
+
+
+@pytest.mark.parametrize("code", ["invalid_input", "not_found", "source_unavailable"])
+def test_error_code_is_found_inside_the_mcp_message(code):
+    message = f"Error executing tool search_competitors: [{code}] Something went wrong"
+    assert client.error_code(message) == code
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        # Arguments rejected by the MCP library before reaching our code.
+        "Error executing tool search_competitors: 1 validation error for "
+        "search_competitorsArguments radius_m Input should be a valid integer",
+        "Tool execution timed out after 150 seconds",
+        "Error executing tool fetch: Refused to fetch http://192.168.1.1/robots.txt",
+        "Error executing tool search_competitors: [some_other_code] not one of ours",
+    ],
+)
+def test_error_code_is_none_without_one_of_our_codes(message):
+    assert client.error_code(message) is None
+
+
+def test_error_codes_are_the_ones_the_server_uses():
+    for code in (server.INVALID_INPUT, server.NOT_FOUND, server.SOURCE_UNAVAILABLE):
+        assert client.error_code(f"Error executing tool x: {code} text") == code.strip("[]")

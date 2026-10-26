@@ -54,6 +54,30 @@ RAW_MAX_CHARS = 300_000
 _FETCH_CUT_NOTICE = re.compile(r"<error>Content truncated\..*?</error>", re.DOTALL)
 
 
+# Error codes of our own server (see server.py). The graph reads them from
+# CrewAI's MCP failure events with error_code().
+_ERROR_CODE = re.compile(r"\[(invalid_input|not_found|source_unavailable)\]")
+
+
+def error_code(message: str) -> str | None:
+    """Return the error code of our server found in an MCP error message.
+
+    The result is one of the SEMANTIC codes that the neighbourhood_data server
+    puts in its errors: "invalid_input", "not_found" or "source_unavailable".
+    They are NOT the graph's ERR-XXX codes: the graph maps them to its own
+    codes in its event listener, so the two vocabularies never mix.
+
+    MCP puts text before our message ("Error executing tool search_competitors:
+    [invalid_input] Unknown category..."), so the code is searched anywhere.
+
+    Returns None when the message has no code: errors that did not come from
+    our server (a timeout, a broken connection, arguments rejected before
+    reaching it) and errors from third-party servers such as fetch.
+    """
+    found = _ERROR_CODE.search(message)
+    return found.group(1) if found else None
+
+
 def neighbourhood_data_server() -> MCPServerStdio:
     """Our own read-only server with Madrid neighbourhood data (OpenStreetMap)."""
     return MCPServerStdio(
