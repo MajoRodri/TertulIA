@@ -14,7 +14,7 @@ export async function startAnalysis(brief) {
 }
 
 // GET /api/debate/{jobId}  →  SSE stream
-// Each event: { agent, name, role, message } | { done: true }
+// Each event: { agent, name, role, message } | { paused: true }
 export function openDebateStream(jobId, onMessage, onDone, onError) {
   if (USE_MOCK) {
     simulateMockStream(onMessage, onDone);
@@ -23,7 +23,7 @@ export function openDebateStream(jobId, onMessage, onDone, onError) {
   const es = new EventSource(`${API_BASE}/api/debate/${jobId}`);
   es.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    if (data.done) { es.close(); onDone(); }
+    if (data.paused) { es.close(); onDone(); }
     else onMessage(data);
   };
   es.onerror = () => { es.close(); onError?.(new Error("SSE connection error")); };
@@ -38,12 +38,16 @@ export async function fetchVerdict(jobId) {
   return res.json();
 }
 
-// POST /api/approve/{jobId}  →  PDF blob
-export async function approveReport(jobId) {
-  if (USE_MOCK) return mockPDFBlob();
-  const res = await fetch(`${API_BASE}/api/approve/${jobId}`, { method: "POST" });
+// POST /api/approve/{jobId}  →  PDF blob (approved=true) or { ok, status } (approved=false)
+export async function approveReport(jobId, approved = true) {
+  if (USE_MOCK) return approved ? mockPDFBlob() : { ok: false, status: "rejected" };
+  const res = await fetch(`${API_BASE}/api/approve/${jobId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ approved }),
+  });
   if (!res.ok) throw new Error(`Error ${res.status} approving report`);
-  return res.blob();
+  return approved ? res.blob() : res.json();
 }
 
 // POST /api/chat/{jobId}  →  SSE stream of agent responses

@@ -18,7 +18,8 @@ export function initApproval(jobId) {
     }
   });
 
-  btnReject.addEventListener("click", () => {
+  btnReject.addEventListener("click", async () => {
+    await approveReport(jobId, false).catch(() => {});
     document.getElementById("panel-approval").classList.add("hidden");
     document.getElementById("panel-debate").scrollIntoView({ behavior: "smooth" });
   });

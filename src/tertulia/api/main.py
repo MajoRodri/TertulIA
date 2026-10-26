@@ -24,6 +24,7 @@ from pydantic import BaseModel
 # Project root: src/tertulia/api/main.py → 3 levels up
 _ROOT = Path(__file__).resolve().parents[3]
 
+from tertulia.graph.builder import app as _graph
 from tertulia.schemas.models import BusinessBrief
 from tertulia.schemas.models import Verdict as SchemaVerdict
 from tertulia.schemas.models import TrafficLight
@@ -259,8 +260,19 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
 
     _jobs[job_id]["messages"] = messages
     _jobs[job_id]["verdict"]  = _skeleton_verdict()
-    _jobs[job_id]["status"]   = "done"
-    yield f"data: {json.dumps({'done': True})}\n\n"
+    _jobs[job_id]["status"]   = "paused"
+
+    graph_config = {"configurable": {"thread_id": job_id}}
+    graph_state = {
+        "request": brief,
+        "sources": [], "findings": [], "draft_report": "",
+        "review_round": 0, "reviewer_comments": [],
+        "verdict": _jobs[job_id]["verdict"],
+        "traces": [], "tokens_used": 0,
+        "human_approved": False, "errors": [],
+    }
+    await asyncio.to_thread(_graph.invoke, graph_state, graph_config)
+    yield f"data: {json.dumps({'paused': True})}\n\n"
 
 
 class ChatRequest(BaseModel):
@@ -296,11 +308,26 @@ async def get_verdict(job_id: str):
     return verdict.model_dump()
 
 
+class ApproveRequest(BaseModel):
+    approved: bool = True
+
+
 @app.post("/api/approve/{job_id}")
-async def approve(job_id: str):
+async def approve(job_id: str, req: ApproveRequest | None = None):
     job = _jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+
+    approved = req.approved if req is not None else True
+    graph_config = {"configurable": {"thread_id": job_id}}
+
+    await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": approved})
+    final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+    _jobs[job_id]["traces"] = final.get("traces", [])
+
+    if not approved:
+        _jobs[job_id]["status"] = "rejected"
+        return {"ok": False, "status": "rejected"}
 
     brief: BusinessBrief = job["brief"]
     verdict: SchemaVerdict = job.get("verdict") or _skeleton_verdict()
