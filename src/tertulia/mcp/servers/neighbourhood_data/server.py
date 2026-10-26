@@ -61,6 +61,12 @@ class _ServerSettings(BaseSettings):
 # TertulIA, never the model (it is not a tool argument the model could set).
 DEMO_MODE = _ServerSettings().DEMO_MODE
 
+# Every error message starts with one of these codes, so the graph can classify
+# errors reliably (agreed with David). Keep them in sync with the graph.
+INVALID_INPUT = "[invalid_input]"
+NOT_FOUND = "[not_found]"
+SOURCE_UNAVAILABLE = "[source_unavailable]"
+
 logger = logging.getLogger(__name__)
 server = FastMCP(name="neighbourhood_data")
 
@@ -116,7 +122,7 @@ def _find_centre(neighbourhood: str) -> tuple[float, float]:
     # The name comes from the model, so it is checked before it goes into the
     # query: a name with quotes or brackets could rewrite the query itself.
     if not _VALID_NAME.fullmatch(name):
-        raise ValueError(f"Invalid neighbourhood name: {neighbourhood!r}")
+        raise ValueError(f"{INVALID_INPUT} Invalid neighbourhood name: {neighbourhood!r}")
     query = f"""
 [out:json][timeout:50];
 area["boundary"="administrative"]["admin_level"="8"]["name"="Madrid"]->.city;
@@ -125,7 +131,7 @@ out center tags;
 """
     elements = _run_query(query)
     if not elements:
-        raise ValueError(f"Neighbourhood not found in Madrid: {name}")
+        raise ValueError(f"{NOT_FOUND} Neighbourhood not found in Madrid: {name}")
     # If a name exists as both district (9) and barrio (10), keep the barrio:
     # it is smaller, so its centre is closer to where the venue would be.
     best = max(elements, key=lambda e: int(e["tags"]["admin_level"]))
@@ -160,11 +166,13 @@ def _check_arguments(category: str, radius_m: int) -> None:
     """Reject arguments the model should not use, before any search."""
     if category not in CATEGORY_TAGS:
         allowed = ", ".join(CATEGORY_TAGS)
-        raise ValueError(f"Unknown category: {category!r}. Use one of: {allowed}")
+        raise ValueError(f"{INVALID_INPUT} Unknown category: {category!r}. Use one of: {allowed}")
     # The model chooses the radius: cap it, so a huge one cannot overload the
     # free server or flood the agent with thousands of venues.
     if not MIN_RADIUS_M <= radius_m <= MAX_RADIUS_M:
-        raise ValueError(f"radius_m must be between {MIN_RADIUS_M} and {MAX_RADIUS_M}")
+        raise ValueError(
+            f"{INVALID_INPUT} radius_m must be between {MIN_RADIUS_M} and {MAX_RADIUS_M}"
+        )
 
 
 def _search_venues(lat: float, lon: float, category: str, radius_m: int) -> list[dict]:
@@ -218,9 +226,7 @@ def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(a))
 
 
-def _within_radius(
-    venues: list[dict], lat: float, lon: float, radius_m: int
-) -> list[dict]:
+def _within_radius(venues: list[dict], lat: float, lon: float, radius_m: int) -> list[dict]:
     """Keep the venues that are at most radius_m metres from (lat, lon)."""
     return [
         venue
@@ -263,31 +269,23 @@ def _from_saved(neighbourhood: str, category: str, radius_m: int) -> dict:
     # The name becomes part of a file path: the same check as in _find_centre
     # stops tricks like "../../.env" (no dots or slashes are allowed).
     if not _VALID_NAME.fullmatch(name):
-        raise ValueError(f"Invalid neighbourhood name: {neighbourhood!r}")
+        raise ValueError(f"{INVALID_INPUT} Invalid neighbourhood name: {neighbourhood!r}")
     path = DEMO_DATA_DIR / f"{name.lower()}.json"
     if not path.is_file():
-        saved = (
-            ", ".join(sorted(p.stem for p in DEMO_DATA_DIR.glob("*.json"))) or "none"
-        )
+        saved = ", ".join(sorted(p.stem for p in DEMO_DATA_DIR.glob("*.json"))) or "none"
         raise FileNotFoundError(
-            f"No saved data for {name}. Saved neighbourhoods: {saved}"
+            f"{SOURCE_UNAVAILABLE} No saved data for {name}. Saved neighbourhoods: {saved}"
         )
     data = json.loads(path.read_text(encoding="utf-8"))
     if radius_m > data["radius_m"]:
-        raise ValueError(f"The saved data only covers {data['radius_m']} m")
+        raise ValueError(f"{INVALID_INPUT} The saved data only covers {data['radius_m']} m")
     centre = data["centre"]
     venues = _within_radius(
         data["venues"].get(category, []), centre["lat"], centre["lon"], radius_m
     )
     # retrieved_at is the capture date, never "now": the data is that old.
     return _answer(
-        data["neighbourhood"],
-        category,
-        radius_m,
-        centre,
-        venues,
-        data["captured_at"],
-        True,
+        data["neighbourhood"], category, radius_m, centre, venues, data["captured_at"], True
     )
 
 
@@ -295,9 +293,7 @@ def _from_saved(neighbourhood: str, category: str, radius_m: int) -> dict:
 
 
 @server.tool(annotations=ToolAnnotations(readOnlyHint=True))
-def search_competitors(
-    neighbourhood: str, category: str = "cafe", radius_m: int = 800
-) -> dict:
+def search_competitors(neighbourhood: str, category: str = "cafe", radius_m: int = 800) -> dict:
     """Find competitor venues around a Madrid barrio or district.
 
     Searches OpenStreetMap within radius_m metres (100 to 2000) of the
@@ -317,9 +313,11 @@ def search_competitors(
         logger.warning("Overpass failed, using saved data instead: %r", error)
         try:
             return _from_saved(neighbourhood, category, radius_m)
-        except FileNotFoundError as missing:
+        except FileNotFoundError:
+            # A new message, not the FileNotFoundError one, so the code appears once.
             raise RuntimeError(
-                f"OpenStreetMap is not responding and there is no saved data: {missing}"
+                f"{SOURCE_UNAVAILABLE} OpenStreetMap is not responding and there is "
+                f"no saved data for {neighbourhood!r}"
             ) from error
     now = datetime.now(UTC).isoformat()
     centre = {"lat": lat, "lon": lon}

@@ -230,3 +230,31 @@ def test_demo_mode_never_asks_overpass_and_filters_by_radius(monkeypatch):
 def test_saved_data_rejects_path_tricks():
     with pytest.raises(ValueError, match="Invalid neighbourhood name"):
         server._from_saved("../../.env", "cafe", 800)
+
+
+# --- Error codes (agreed with the graph) ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("call", "code"),
+    [
+        (lambda: server._check_arguments("bar", 800), server.INVALID_INPUT),
+        (lambda: server._check_arguments("cafe", 50_000), server.INVALID_INPUT),
+        (lambda: server._find_centre("../../.env"), server.INVALID_INPUT),
+        (lambda: server._from_saved("Atocha", "cafe", 5000), server.INVALID_INPUT),
+        (lambda: server._from_saved("Delicias", "cafe", 800), server.SOURCE_UNAVAILABLE),
+    ],
+)
+def test_error_messages_start_with_their_code(call, code):
+    with pytest.raises(Exception) as error:
+        call()
+    assert str(error.value).startswith(code)
+
+
+def test_not_found_and_source_unavailable_codes(monkeypatch):
+    monkeypatch.setattr(server, "_run_query", _fake_overpass([], []))
+    with pytest.raises(ValueError, match=r"^\[not_found\]"):
+        server.search_competitors("Narnia", "cafe", 800)
+    monkeypatch.setattr(server, "_run_query", _overpass_down)
+    with pytest.raises(RuntimeError, match=r"^\[source_unavailable\]"):
+        server.search_competitors("Delicias", "cafe", 800)
