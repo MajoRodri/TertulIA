@@ -152,8 +152,14 @@ async def _prepare_crew(brief: BusinessBrief):
         llm = llm_from_settings()
         initial_inputs = build_inputs(brief, profile)
 
+        try:
+            from tertulia.mcp.client import researcher_tools
+            mcp_tools = {"researcher": await asyncio.to_thread(researcher_tools)}
+        except Exception:
+            mcp_tools = {}
+
         def _run(step: str, inp: dict) -> dict:
-            return run_step(step, inp, llm)
+            return run_step(step, inp, llm, mcp_tools)
 
         def _rebuild(acc: dict) -> dict:
             return build_inputs(
@@ -330,7 +336,12 @@ async def approve(job_id: str, req: ApproveRequest | None = None):
         return {"ok": False, "status": "rejected"}
 
     brief: BusinessBrief = job["brief"]
-    verdict: SchemaVerdict = job.get("verdict") or _skeleton_verdict()
+    verdict: SchemaVerdict | None = job.get("verdict")
+    if verdict is None:
+        errors: list = _jobs[job_id].get("errors", [])
+        reason = errors[-1]["message"] if errors else "Presupuesto de tokens agotado sin generar veredicto"
+        return {"ok": False, "reason": reason}
+
     messages: list[dict] = job.get("messages") or [
         {k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE
     ]

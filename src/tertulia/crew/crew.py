@@ -75,7 +75,9 @@ def llm_from_settings() -> LLM:
     )
 
 
-def build_step_crew(step: str, llm: BaseLLM) -> Crew:
+def build_step_crew(
+    step: str, llm: BaseLLM, agent_tools: dict[str, list] | None = None
+) -> Crew:
     """Crew con solo las tareas de ``step`` y los agentes que las hacen."""
     if step not in STEPS:
         raise ValueError(f"unknown step {step!r}. Valid: {', '.join(STEPS)}")
@@ -87,7 +89,8 @@ def build_step_crew(step: str, llm: BaseLLM) -> Crew:
         task_config = dict(tasks_config[task_name])
         agent_name = task_config.pop("agent")
         if agent_name not in agents:
-            agents[agent_name] = Agent(config=agents_config[agent_name], llm=llm)
+            tools = (agent_tools or {}).get(agent_name, [])
+            agents[agent_name] = Agent(config=agents_config[agent_name], llm=llm, tools=tools)
         if not agents[agent_name].tools:
             task_config["description"] += "\n\n" + NO_TOOLS_NOTE
         tasks.append(Task(config=task_config, agent=agents[agent_name], name=task_name))
@@ -101,12 +104,14 @@ def build_step_crew(step: str, llm: BaseLLM) -> Crew:
     )
 
 
-def run_step(step: str, inputs: dict[str, str], llm: BaseLLM) -> dict[str, str]:
+def run_step(
+    step: str, inputs: dict[str, str], llm: BaseLLM, agent_tools: dict[str, list] | None = None
+) -> dict[str, str]:
     """Ejecuta un paso y devuelve el texto de cada tarea: {"research_task": "...", ...}.
 
     ``inputs`` debe venir de ``build_inputs()`` para que no falte ninguna variable.
     """
-    result = build_step_crew(step, llm).kickoff(inputs=inputs)
+    result = build_step_crew(step, llm, agent_tools).kickoff(inputs=inputs)
     return {
         task_name: output.raw
         for task_name, output in zip(STEPS[step], result.tasks_output, strict=True)
