@@ -14,6 +14,7 @@ import pytest  # noqa: E402
 from crewai.llms.base_llm import BaseLLM  # noqa: E402
 
 from tertulia.crew.crew import (  # noqa: E402
+    NO_TOOLS_NOTE,
     STEPS,
     build_llm,
     build_step_crew,
@@ -97,6 +98,23 @@ def test_each_step_builds_its_tasks(step):
 def test_unknown_step_is_rejected():
     with pytest.raises(ValueError, match="unknown step"):
         build_step_crew("marketing", FakeLLM(model="fake"))
+
+
+def test_tracing_is_disabled():
+    # Privacidad: CrewAI no debe subir prompts ni respuestas a sus servidores
+    assert build_step_crew("research", FakeLLM(model="fake")).tracing is False
+
+
+def test_agents_without_tools_are_told_so():
+    # Prueba real del 23 oct: sin este aviso, el Investigador inventó cifras y enlaces
+    crew = build_step_crew("research", FakeLLM(model="fake"))
+    assert all(NO_TOOLS_NOTE in task.description for task in crew.tasks)
+
+
+def test_no_tools_note_reaches_the_model(inputs):
+    llm = FakeLLM(model="fake", received=[])
+    run_step("research", inputs, llm)
+    assert "NO tienes ninguna herramienta" in llm.received[0]
 
 
 def test_build_llm_does_not_call_the_api():
