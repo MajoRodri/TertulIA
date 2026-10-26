@@ -64,9 +64,7 @@ import { startAnalysis } from "./api.js";
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add("visible");
-      observer.unobserve(entry.target);
+      entry.target.classList.toggle("visible", entry.isIntersecting);
     });
   }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
 
@@ -112,11 +110,30 @@ function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
+// ── Show launcher once hero scrolls out of view ───────────────
+(function initLauncherReveal() {
+  const btn  = document.getElementById("launcher-btn");
+  const hero = document.getElementById("hero");
+  if (!btn || !hero) return;
+
+  const observer = new IntersectionObserver(
+    ([entry]) => { btn.classList.toggle("hidden", entry.isIntersecting); },
+    { threshold: 0.1 }
+  );
+  observer.observe(hero);
+})();
+
 // ── Launcher widget ───────────────────────────────────────────
 const launcherPanel = document.getElementById("launcher-panel");
 
-function openLauncher()  { launcherPanel.classList.remove("hidden"); }
-function closeLauncher() { launcherPanel.classList.add("hidden"); }
+function openLauncher()  {
+  launcherPanel.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function closeLauncher() {
+  launcherPanel.classList.add("hidden");
+  document.body.style.overflow = "";
+}
 
 document.getElementById("launcher-btn").addEventListener("click", () =>
   launcherPanel.classList.toggle("hidden")

@@ -120,11 +120,8 @@ h3 { font-size: var(--text-xl); }
 }
 
 .header-inner {
-  max-width: 860px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--s4);
 }
 
@@ -846,9 +843,10 @@ h3 { font-size: var(--text-xl); }
   position: absolute;
   background: var(--card);
   border: 1px solid var(--border);
+  text-align: center;
   border-radius: var(--r-lg);
-  padding: var(--s3) var(--s4);
-  width: 220px;
+  padding: var(--s4);
+  width: 176px;
   box-shadow: 0 2px 12px rgba(15,23,48,.06);
   animation: heroFadeUp 0.6s ease both;
   will-change: transform, opacity;
@@ -859,11 +857,23 @@ h3 { font-size: var(--text-xl); }
 .hero-agent-card:nth-child(3) { bottom: 18%; left: 2%;  animation-delay: 0.9s;  }
 .hero-agent-card:nth-child(4) { bottom: 14%; right: 2%; animation-delay: 1.05s; }
 
-.hac-header {
+.hac-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hac-color) 12%, transparent);
+  border: 2px solid color-mix(in srgb, var(--hac-color) 25%, transparent);
+  overflow: hidden;
   display: flex;
   align-items: center;
-  gap: var(--s2);
-  margin-bottom: var(--s2);
+  justify-content: center;
+  margin: 0 auto var(--s3);
+}
+
+.hac-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hac-avatar {
@@ -879,11 +889,9 @@ h3 { font-size: var(--text-xl); }
   flex-shrink: 0;
 }
 
-.hac-name  { font-size: var(--text-sm); font-weight: 600; color: var(--ink); }
-.hac-role  { font-size: 10px; color: var(--muted); }
-.hac-text  { font-size: 11px; color: var(--body-text); line-height: 1.5; }
-
-.hac-accent { color: var(--naranja); font-weight: 600; }
+.hac-name  { font-size: var(--text-sm); font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.hac-role  { font-size: 10px; color: var(--muted); margin-bottom: var(--s2); }
+.hac-desc  { font-size: 11px; color: var(--body-text); line-height: 1.55; margin: 0; }
 
 /* Scroll indicator */
 .hero-scroll {
@@ -1112,12 +1120,19 @@ h3 { font-size: var(--text-xl); }
   justify-content: center;
   gap: 3px;
   box-shadow: 0 4px 20px rgba(43,78,255,0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.4s ease, box-shadow 0.2s, opacity 0.4s ease;
 }
 
 .launcher-btn:hover {
   transform: scale(1.07);
   box-shadow: 0 6px 28px rgba(43,78,255,0.5);
+}
+
+.launcher-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8) translateY(12px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .launcher-btn-logo {
