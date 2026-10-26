@@ -2,31 +2,64 @@
 
 from tertulia.graph.builder import app
 
+INITIAL_STATE = {
+    "request": {},
+    "sources": [],
+    "findings": [],
+    "draft_report": "",
+    "review_round": 0,
+    "reviewer_comments": [],
+    "verdict": None,
+    "traces": [],
+    "tokens_used": 0,
+    "human_approved": False,
+    "errors": [],
+}
 
-def test_graph_flow_and_review_limit():
+
+def _config(thread_id: str) -> dict:
+    return {"configurable": {"thread_id": thread_id}}
+
+
+def test_graph_pauses_before_human_approval():
     """
-    Tests that the graph correctly flows through the nodes.
-    Because the mock Reviewer always rejects, it should loop 3 times
-    and then move to human approval.
+    The mock reviewer always rejects, so the graph loops 3 times and then
+    pauses before human_approval (human-in-the-loop).
     """
-    initial_state = {
-        "request": {},
-        "sources": [],
-        "findings": [],
-        "draft_report": "",
-        "review_round": 0,
-        "reviewer_comments": [],
-        "verdict": None,
-        "traces": [],
-        "tokens_used": 0,
-        "human_approved": False,
-        "errors": []
-    }
+    config = _config("test-pause")
+    app.invoke(INITIAL_STATE, config)
 
-    # Ejecutamos el grafo
-    final_state = app.invoke(initial_state)
+    state = app.get_state(config)
+    assert state.values["review_round"] == 3
+    assert state.values["human_approved"] is False
+    assert state.next == ("human_approval",)
 
-    # Comprobaciones (Assertions)
-    assert final_state["review_round"] == 3
-    assert final_state["human_approved"] is True
-    assert "Borrador de informe simulado" in final_state["draft_report"]
+
+def test_approval_resumes_graph_and_logs_approve_trace():
+    """update_state + invoke(None) resumes and logs ui.approve."""
+    config = _config("test-approve")
+    app.invoke(INITIAL_STATE, config)
+    app.update_state(config, {"human_approved": True})
+    final = app.invoke(None, config)
+
+    assert final["human_approved"] is True
+    traces = final["traces"]
+    assert len(traces) == 1
+    assert traces[0].actor == "human"
+    assert traces[0].tool == "ui.approve"
+    assert traces[0].inputs == {"human_approved": True}
+
+
+def test_rejection_resumes_graph_and_logs_reject_trace():
+    """update_state + invoke(None) resumes and logs ui.reject."""
+    config = _config("test-reject")
+    app.invoke(INITIAL_STATE, config)
+    app.update_state(config, {"human_approved": False})
+    final = app.invoke(None, config)
+
+    assert final["human_approved"] is False
+    traces = final["traces"]
+    assert len(traces) == 1
+    assert traces[0].actor == "human"
+    assert traces[0].tool == "ui.reject"
+    assert traces[0].inputs == {"human_approved": False}
