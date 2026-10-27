@@ -4,45 +4,65 @@ import { initApproval } from "./components/approval.js";
 import { initChat }     from "./components/chat.js";
 import { startAnalysis } from "./api.js";
 
-// ── Hero cards: converge to center on scroll, staggered, fade near text ──
-(function initHeroScroll() {
-  const hero  = document.getElementById("hero");
-  const cards = [...document.querySelectorAll(".hero-agent-card")];
-  if (!hero || !cards.length) return;
+// ── Hero bubbles: scroll convergence + 1s cycling, pause on hover ──
+(function initHeroBubbles() {
+  const hero    = document.getElementById("hero");
+  const bubbles = [...document.querySelectorAll(".hero-bubble")];
+  if (!hero || !bubbles.length) return;
 
-  // Each card: direction toward center + its own scroll window [start, end]
-  const CARDS = [
-    { x:  0.36, y:  0.26, start: 0.00, end: 0.55 },  // top-left
-    { x: -0.36, y:  0.26, start: 0.08, end: 0.63 },  // top-right
-    { x:  0.36, y: -0.26, start: 0.16, end: 0.71 },  // bottom-left
-    { x: -0.36, y: -0.26, start: 0.24, end: 0.79 },  // bottom-right
+  // Direction and scroll window per bubble (same logic as before)
+  const POSITIONS = [
+    { x:  0.36, y:  0.26, start: 0.00, end: 0.55 },  // tl
+    { x: -0.36, y:  0.26, start: 0.08, end: 0.63 },  // tr
+    { x:  0.36, y: -0.26, start: 0.16, end: 0.71 },  // bl
+    { x: -0.36, y: -0.26, start: 0.24, end: 0.79 },  // br
+    { x: -0.36, y:  0.00, start: 0.12, end: 0.67 },  // mr
   ];
 
-  function update() {
+  let activeIdx = 0;
+  let timer     = null;
+
+  function updateScroll() {
     const { top, height } = hero.getBoundingClientRect();
     const global = Math.max(0, Math.min(1, -top / (height * 0.65)));
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    cards.forEach((card, i) => {
-      const { x, y, start, end } = CARDS[i];
-      const local = Math.max(0, Math.min(1, (global - start) / (end - start)));
+    bubbles.forEach((bubble, i) => {
+      const { x, y, start, end } = POSITIONS[i];
+      const local   = Math.max(0, Math.min(1, (global - start) / (end - start)));
+      const scrollOpacity = Math.max(0, 1 - Math.max(0, (local - 0.75) / 0.25));
+      const isActive = i === activeIdx;
 
-      card.style.transform = `translate(${x * vw * local}px, ${y * vh * local}px)`;
-      // fade out only in the last 25 % of each card's travel
-      card.style.opacity = String(Math.max(0, 1 - Math.max(0, (local - 0.75) / 0.25)));
+      bubble.style.transform = `translate(${x * vw * local}px, ${y * vh * local}px) scale(${isActive ? 1.04 : 0.96})`;
+      bubble.style.opacity   = String(scrollOpacity * (isActive ? 1.0 : 0.45));
     });
   }
 
+  function activate(i) {
+    bubbles.forEach((b, j) => b.classList.toggle("active", j === i));
+    activeIdx = i;
+    updateScroll();
+  }
+
+  function advance() { activate((activeIdx + 1) % bubbles.length); }
+  function start()   { timer = setInterval(advance, 2000); }
+  function stop()    { clearInterval(timer); }
+
+  bubbles.forEach((bubble, i) => {
+    bubble.addEventListener("mouseenter", () => { stop(); activate(i); });
+    bubble.addEventListener("mouseleave", start);
+  });
+
   function enable() {
-    // animation-fill-mode:both beats inline styles; removing it gives JS control
-    cards.forEach(card => { card.style.animation = "none"; });
-    window.addEventListener("scroll", update, { passive: true });
-    update();
+    bubbles.forEach(b => { b.style.animation = "none"; });
+    window.addEventListener("scroll", updateScroll, { passive: true });
+    activate(0);
+    start();
   }
 
   const fallback = setTimeout(enable, 1800);
-  cards[cards.length - 1].addEventListener("animationend", () => {
+  bubbles[bubbles.length - 1].addEventListener("animationend", () => {
     clearTimeout(fallback);
     enable();
   }, { once: true });

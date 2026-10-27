@@ -330,6 +330,7 @@ async def approve(job_id: str, req: ApproveRequest | None = None):
     await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": approved})
     final = await asyncio.to_thread(_graph.invoke, None, graph_config)
     _jobs[job_id]["traces"] = final.get("traces", [])
+    _jobs[job_id]["errors"] = final.get("errors", [])
 
     if not approved:
         _jobs[job_id]["status"] = "rejected"
@@ -339,7 +340,7 @@ async def approve(job_id: str, req: ApproveRequest | None = None):
     verdict: SchemaVerdict | None = job.get("verdict")
     if verdict is None:
         errors: list = _jobs[job_id].get("errors", [])
-        reason = errors[-1]["message"] if errors else "Presupuesto de tokens agotado sin generar veredicto"
+        reason = errors[-1].message if errors else "Presupuesto de tokens agotado sin generar veredicto"
         return {"ok": False, "reason": reason}
 
     messages: list[dict] = job.get("messages") or [

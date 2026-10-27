@@ -385,6 +385,14 @@ h3 { font-size: var(--text-xl); }
   font-size: var(--text-xs);
   font-weight: 700;
   color: #fff;
+  overflow: hidden;
+}
+
+.agent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .agent-avatar.researcher { background: var(--azul); }
@@ -831,7 +839,7 @@ h3 { font-size: var(--text-xl); }
   background: var(--border);
 }
 
-/* Floating agent cards */
+/* Floating agent bubbles */
 .hero-cards {
   position: absolute;
   inset: 0;
@@ -839,59 +847,114 @@ h3 { font-size: var(--text-xl); }
   z-index: 1;
 }
 
-.hero-agent-card {
+.hero-bubble {
   position: absolute;
-  background: var(--card);
-  border: 1px solid var(--border);
-  text-align: center;
-  border-radius: var(--r-lg);
-  padding: var(--s4);
-  width: 176px;
-  box-shadow: 0 2px 12px rgba(15,23,48,.06);
   animation: heroFadeUp 0.6s ease both;
+  pointer-events: auto;
+  cursor: default;
   will-change: transform, opacity;
 }
 
-.hero-agent-card:nth-child(1) { top: 12%; left: 4%;  animation-delay: 0.6s;  }
-.hero-agent-card:nth-child(2) { top: 8%;  right: 4%; animation-delay: 0.75s; }
-.hero-agent-card:nth-child(3) { bottom: 18%; left: 2%;  animation-delay: 0.9s;  }
-.hero-agent-card:nth-child(4) { bottom: 14%; right: 2%; animation-delay: 1.05s; }
+.hb-tl { top: 10%; left: 3%;      animation-delay: 0.6s;  }
+.hb-tr { top:  7%; right: 3%;     animation-delay: 0.75s; }
+.hb-bl { bottom: 17%; left: 2%;   animation-delay: 0.9s;  }
+.hb-br { bottom: 13%; right: 2%;  animation-delay: 1.05s; }
+.hb-mr { top: 43%; right: 20%;    animation-delay: 1.2s;  }
 
-.hac-icon-wrap {
-  width: 56px;
-  height: 56px;
+/* Large avatar circle — the only thing visible at rest */
+.hb-avatar {
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--hac-color) 12%, transparent);
-  border: 2px solid color-mix(in srgb, var(--hac-color) 25%, transparent);
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto var(--s3);
+  border: 2.5px solid color-mix(in srgb, var(--hb-c) 30%, transparent);
+  box-shadow: 0 4px 18px rgba(15,23,48,.12);
+  background: color-mix(in srgb, var(--hb-c) 10%, white);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
 }
 
-.hac-avatar-img {
+.hero-bubble.active .hb-avatar {
+  border-color: color-mix(in srgb, var(--hb-c) 70%, transparent);
+  box-shadow: 0 6px 28px color-mix(in srgb, var(--hb-c) 32%, transparent);
+  transform: scale(1.1);
+}
+
+.hb-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.hac-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
+/* Popup — hidden by default, appears next to the avatar */
+.hb-popup {
+  position: absolute;
+  top: 50%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  width: 162px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.hac-name  { font-size: var(--text-sm); font-weight: 700; color: var(--ink); margin-bottom: 2px; }
-.hac-role  { font-size: 10px; color: var(--muted); margin-bottom: var(--s2); }
-.hac-desc  { font-size: 11px; color: var(--body-text); line-height: 1.55; margin: 0; }
+/* Left-side bubbles: popup opens to the right */
+.hb-tl .hb-popup,
+.hb-bl .hb-popup {
+  left: calc(100% + 14px);
+  transform: translateY(-50%) translateX(-8px);
+}
+.hb-tl.active .hb-popup,
+.hb-bl.active .hb-popup {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Right-side bubbles: popup opens to the left */
+.hb-tr .hb-popup,
+.hb-br .hb-popup,
+.hb-mr .hb-popup {
+  right: calc(100% + 14px);
+  transform: translateY(-50%) translateX(8px);
+}
+.hb-tr.active .hb-popup,
+.hb-br.active .hb-popup,
+.hb-mr.active .hb-popup {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Popup tail — pointing back toward the avatar */
+.hb-popup::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--card);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.hb-tl .hb-popup::before,
+.hb-bl .hb-popup::before {
+  left: -6px;
+  border-bottom: 1.5px solid var(--border);
+  border-left: 1.5px solid var(--border);
+}
+
+.hb-tr .hb-popup::before,
+.hb-br .hb-popup::before,
+.hb-mr .hb-popup::before {
+  right: -6px;
+  border-top: 1.5px solid var(--border);
+  border-right: 1.5px solid var(--border);
+}
+
+.hb-name { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.hb-role { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+.hb-desc { font-size: 11px; color: var(--body-text); line-height: 1.55; margin: 0; }
 
 /* Scroll indicator */
 .hero-scroll {
@@ -1307,7 +1370,7 @@ h3 { font-size: var(--text-xl); }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .hero-agent-card { display: none; }
+  .hero-bubble { display: none; }
 }
 
 @media (max-width: 600px) {

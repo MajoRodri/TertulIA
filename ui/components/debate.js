@@ -2,14 +2,27 @@ import { openDebateStream } from "../api.js";
 
 const feed = document.getElementById("debate-feed");
 
+const AGENT_ICONS = {
+  researcher: "portera",
+  analyst:    "chulapo",
+  writer:     "pregonero",
+  reviewer:   "revisora",
+};
+
+function avatarHtml(agent, name) {
+  const icon = AGENT_ICONS[agent];
+  if (icon) {
+    return `<div class="agent-avatar ${agent}"><img src="/assets/${icon}.png" alt="${name}" /></div>`;
+  }
+  return `<div class="agent-avatar ${agent}" style="${agent ? "" : "background:var(--border)"}">${agent ? name.slice(0, 2).toUpperCase() : ""}</div>`;
+}
+
 function createTypingIndicator(name = "", agent = "") {
   const el = document.createElement("div");
   el.className = "debate-message";
   el.id = "typing-indicator";
   el.innerHTML = `
-    <div class="agent-avatar ${agent}" style="${agent ? "" : "background:var(--border)"}">
-      ${agent ? name.slice(0, 2).toUpperCase() : ""}
-    </div>
+    ${avatarHtml(agent, name)}
     <div class="message-bubble">
       ${name ? `<div class="agent-thinking-label">${name} está analizando…</div>` : ""}
       <div class="typing-indicator">
@@ -24,7 +37,7 @@ function appendMessage({ agent, name, role, message }) {
   const el = document.createElement("div");
   el.className = "debate-message";
   el.innerHTML = `
-    <div class="agent-avatar ${agent}">${name.slice(0, 2).toUpperCase()}</div>
+    ${avatarHtml(agent, name)}
     <div class="message-bubble">
       <div class="message-meta">
         <span class="agent-name">${name}</span>
