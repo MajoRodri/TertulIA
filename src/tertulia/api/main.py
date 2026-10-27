@@ -148,12 +148,14 @@ async def _prepare_crew(brief: BusinessBrief):
 
         try:
             from tertulia.mcp.client import researcher_tools
-            mcp_tools = {"researcher": await asyncio.to_thread(researcher_tools)}
+            mcp_researcher = await asyncio.to_thread(researcher_tools)
         except Exception:
-            mcp_tools = {}
+            mcp_researcher = []
 
         def _run(step: str, inp: dict) -> dict:
-            return run_step(step, inp, llm, mcp_tools)
+            # Pass researcher MCP tools explicitly; other agents get default_tools automatically
+            tools = {"researcher": mcp_researcher} if mcp_researcher else None
+            return run_step(step, inp, llm, tools)
 
         def _rebuild(acc: dict) -> dict:
             return build_inputs(
