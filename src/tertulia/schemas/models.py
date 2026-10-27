@@ -13,9 +13,17 @@ are shown with their Madrid names: Km. 0, La Portera, Chulapo Analytics, ¿Mola?
 """
 
 from enum import StrEnum
+from pathlib import PurePosixPath
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, Field, computed_field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 
 class UserProfile(StrEnum):
@@ -50,6 +58,11 @@ class TrafficLight(StrEnum):
     RED = "red"
 
 
+# Photos the user can upload for the vision agent: images only, for now.
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+MAX_IMAGES = 10
+
+
 class BusinessBrief(BaseModel):
     """The request: what business, where, and for whom. UI name: "Km. 0"."""
 
@@ -65,6 +78,34 @@ class BusinessBrief(BaseModel):
     )
     user_profile: UserProfile = UserProfile.ANALYST
     notes: str = Field(default="", description="Free text, anonymised before use")
+    image_paths: list[str] = Field(
+        default_factory=list,
+        max_length=MAX_IMAGES,
+        description="Photos uploaded by the user for the vision agent, relative to outputs/",
+        examples=[["run-001/uploads/competitor_front.jpg"]],
+    )
+
+    @field_validator("image_paths")
+    @classmethod
+    def image_paths_are_safe(cls, paths: list[str]) -> list[str]:
+        """Only jpg/png files, given as paths relative to outputs/.
+
+        "photo.jpg" means outputs/photo.jpg and "run-001/uploads/a.png" means
+        outputs/run-001/uploads/a.png. A path that could point outside outputs/
+        is refused: one with "..", an absolute one or a Windows drive. The
+        vision agent will open these files, so "../.env" must never get through.
+
+        This is the first check, on the text of the path. The vision module
+        checks again when it opens each file: it resolves the real path and
+        confirms it is still inside the allowed folder (links included).
+        """
+        for path in paths:
+            parts = PurePosixPath(path.replace("\\", "/"))
+            if parts.is_absolute() or ".." in parts.parts or ":" in path:
+                raise ValueError(f"image path must be relative to outputs/: {path!r}")
+            if parts.suffix.lower() not in IMAGE_EXTENSIONS:
+                raise ValueError(f"only jpg and png images are accepted: {path!r}")
+        return paths
 
 
 class Source(BaseModel):
@@ -81,11 +122,16 @@ class Source(BaseModel):
     retrieved_at: AwareDatetime = Field(
         description="When it was really read (for cached data: the capture date)"
     )
-    retrieved_by: str = Field(description="Tool that got it", examples=["mcp.osm_search"])
-    from_cache: bool = Field(
-        default=False, description="True if it comes from saved demo data, not a live call"
+    retrieved_by: str = Field(
+        description="Tool that got it", examples=["mcp.osm_search"]
     )
-    suspicious: bool = Field(default=False, description="Flagged by guardrails.process()")
+    from_cache: bool = Field(
+        default=False,
+        description="True if it comes from saved demo data, not a live call",
+    )
+    suspicious: bool = Field(
+        default=False, description="Flagged by guardrails.process()"
+    )
     injection_patterns: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
@@ -103,7 +149,9 @@ class Finding(BaseModel):
     """
 
     id: str = Field(pattern=r"^fnd-\d{3,}$", examples=["fnd-001"])
-    claim: str = Field(description="The fact, in Spanish, as it will read in the report")
+    claim: str = Field(
+        description="The fact, in Spanish, as it will read in the report"
+    )
     value: float | str | None = None
     unit: str | None = Field(default=None, examples=["EUR/month", "members/month", "%"])
     status: FindingStatus = FindingStatus.OK
@@ -136,7 +184,9 @@ class Verdict(BaseModel):
     """
 
     light: TrafficLight = Field(description="Proposed by the system")
-    confidence: float = Field(ge=0, le=1, description="Computed by the graph, never edited")
+    confidence: float = Field(
+        ge=0, le=1, description="Computed by the graph, never edited"
+    )
     summary: str
     reasons: list[str] = Field(min_length=1)
     finding_ids: list[str] = Field(default_factory=list)
@@ -144,7 +194,9 @@ class Verdict(BaseModel):
     warnings: list[str] = Field(
         default_factory=list, description="E.g. suspicious sources that were discarded"
     )
-    light_override: TrafficLight | None = Field(default=None, description="Set by the analyst")
+    light_override: TrafficLight | None = Field(
+        default=None, description="Set by the analyst"
+    )
     confidence_override: float | None = Field(
         default=None, ge=0, le=1, description="Set by the analyst"
     )
@@ -153,7 +205,9 @@ class Verdict(BaseModel):
 
     @model_validator(mode="after")
     def override_needs_reason(self) -> "Verdict":
-        overridden = self.light_override is not None or self.confidence_override is not None
+        overridden = (
+            self.light_override is not None or self.confidence_override is not None
+        )
         if overridden and not (self.override_reason and self.override_reason.strip()):
             raise ValueError("an override needs a reason")
         return self
