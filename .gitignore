@@ -26,3 +26,6 @@ outputs/**
 # OS
 .DS_Store
 Thumbs.db
+
+# Scripts
+compare_coworkings.py
