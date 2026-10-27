@@ -506,6 +506,7 @@ async def approve(job_id: str, req: ApproveRequest):
         ),
         generated_on=date.today(),
         simulated=job.get("simulated", False),
+        tokens_used=job.get("tokens_used", 0),
     )
 
     try:

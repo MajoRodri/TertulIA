@@ -150,6 +150,16 @@ def _brief_section(data: ReportData) -> list:
     ]
 
 
+_MSG_STYLE = ParagraphStyle(
+    "msg_body",
+    parent=None,
+    fontName="Helvetica", fontSize=9,
+    textColor=_INK, leading=13,
+    leftIndent=8, rightIndent=8,
+    spaceBefore=2, spaceAfter=6,
+)
+
+
 def _debate_section(data: ReportData) -> list:
     if not data.debate:
         return []
@@ -162,22 +172,27 @@ def _debate_section(data: ReportData) -> list:
     col_w = [3.4*cm, _TW - 3.4*cm]
     for i, msg in enumerate(data.debate):
         bg = _CANVAS if i % 2 == 0 else white
-        agent_cell = [
-            Paragraph(msg.name, _STYLES["agent"]),
-            Paragraph(msg.role, _STYLES["role"]),
-        ]
-        row = [agent_cell, Paragraph(msg.message, _STYLES["msg"])]
-        t = Table([[row[0], row[1]]], colWidths=col_w, hAlign="LEFT")
-        t.setStyle(TableStyle([
+        # Header row: agent name + role — always short, safe in a table
+        header = Table(
+            [[Paragraph(msg.name, _STYLES["agent"]), Paragraph(msg.role, _STYLES["role"])]],
+            colWidths=col_w, hAlign="LEFT",
+        )
+        header.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg),
             ("TOPPADDING",    (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
             ("LEFTPADDING",   (0, 0), (-1, -1), 8),
             ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
             ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-            ("LINEBELOW",     (0, 0), (-1, -1), 0.3, _BORDER),
         ]))
-        flowables.append(t)
+        # Message as a standalone Paragraph so ReportLab can split it across pages
+        msg_style = ParagraphStyle(
+            f"msg_{i}", parent=_MSG_STYLE,
+            backColor=bg,
+        )
+        flowables.append(header)
+        flowables.append(Paragraph(msg.message, msg_style))
+        flowables.append(HRFlowable(width="100%", thickness=0.3, color=_BORDER))
 
     flowables.append(Spacer(1, 7*mm))
     return flowables
@@ -253,10 +268,45 @@ def _simulated_notice() -> list:
     return [box, Spacer(1, 5*mm)]
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
-def build_pdf(data: ReportData) -> bytes:
-    buf = io.BytesIO()
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
+_AGENT_IMAGES = {
+    "researcher": "portera.png",
+    "analyst":    "chulapo.png",
+    "vision":     "berto.png",
+    "writer":     "pregonero.png",
+    "reviewer":   "revisora.png",
+}
+
+_SIGNAL_LABELS = {
+    "green":  "VIABLE",
+    "yellow": "VIABLE CON RIESGO",
+    "red":    "NO VIABLE",
+}
+
+
+def render_html(data: ReportData) -> str:
+    from jinja2 import Environment, FileSystemLoader
+    _env = Environment(
+        loader=FileSystemLoader(Path(__file__).parent / "templates"),
+        autoescape=True,
+    )
+    return _env.get_template("report.html").render(
+        data=data,
+        agent_images=_AGENT_IMAGES,
+        signal_labels=_SIGNAL_LABELS,
+    )
+
+
+def _build_pdf_weasyprint(data: ReportData) -> bytes:
+    from weasyprint import HTML
+    html = render_html(data)
+    base_url = (_REPO_ROOT / "ui").as_uri() + "/"
+    return HTML(string=html, base_url=base_url).write_pdf()
+
+
+def _build_pdf_reportlab(data: ReportData) -> bytes:
+    buf = io.BytesIO()
     doc = BaseDocTemplate(
         buf,
         pagesize=A4,
@@ -265,14 +315,12 @@ def build_pdf(data: ReportData) -> bytes:
         title=f"TertulIA · {data.brief.sector} · {data.brief.neighborhood}",
         author="TertulIA",
     )
-    # Store metadata the footer callback needs
     doc.report_date = data.generated_on.strftime("%d/%m/%Y")
     doc.job_id      = data.job_id
 
     frame = Frame(_ML, _MB, _TW, _PAGE_H - _MT - _MB, id="main")
     doc.addPageTemplates([PageTemplate(id="main", frames=[frame],
                                        onPage=_draw_header_footer)])
-
     story = (
         _header(data)
         + (_simulated_notice() if data.simulated else [])
@@ -284,11 +332,9 @@ def build_pdf(data: ReportData) -> bytes:
     return buf.getvalue()
 
 
-# kept for backwards compatibility (email drafts, tests)
-def render_html(data: ReportData) -> str:
-    from jinja2 import Environment, FileSystemLoader
-    _env = Environment(
-        loader=FileSystemLoader(Path(__file__).parent / "templates"),
-        autoescape=True,
-    )
-    return _env.get_template("report.html").render(data=data)
+# ── Public API ─────────────────────────────────────────────────────────────────
+def build_pdf(data: ReportData) -> bytes:
+    try:
+        return _build_pdf_weasyprint(data)
+    except (ImportError, OSError):
+        return _build_pdf_reportlab(data)

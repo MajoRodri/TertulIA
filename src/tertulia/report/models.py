@@ -36,3 +36,4 @@ class ReportData(BaseModel):
     generated_on: date = date.today()
     job_id: str = "—"
     simulated: bool = False
+    tokens_used: int = 0

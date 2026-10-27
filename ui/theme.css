@@ -163,7 +163,6 @@ h3 { font-size: var(--text-xl); }
 .panel-header {
   margin-bottom: var(--s5);
   padding-bottom: var(--s4);
-  border-bottom: 1px solid var(--border);
 }
 
 .panel-header h2 { margin-top: var(--s1); }
@@ -814,12 +813,29 @@ h3 { font-size: var(--text-xl); }
   transform: translateY(0);
 }
 
-/* ─── Analysis overlay (main becomes full-screen when active) ── */
-.main.active {
+/* ─── Analysis overlay — floating window centred on the page ─── */
+.main-backdrop {
+  display: none;
   position: fixed;
   inset: 0;
+  z-index: 849;
+  background: rgba(15, 23, 48, .45);
+  backdrop-filter: blur(3px);
+}
+.main-backdrop.active { display: block; }
+
+.main.active {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(960px, calc(100vw - 40px));
+  height: calc(100vh - 80px);
   z-index: 850;
   background: var(--canvas);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 60px rgba(15, 23, 48, .22);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -866,13 +882,32 @@ h3 { font-size: var(--text-xl); }
   padding-top: var(--s4);
 }
 
-/* ─── Analysis top bar (abandon button) ─────────────────────── */
-.analysis-topbar {
+/* ─── Analysis close button (top-right of floating window) ───── */
+.analysis-close {
+  position: absolute;
+  top: var(--s4);
+  right: var(--s4);
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
   display: flex;
-  justify-content: flex-start;
-  margin-bottom: var(--s3);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
+.analysis-close:hover {
+  color: var(--rojo);
+  border-color: var(--rojo);
+  background: #fee2e2;
+}
+
+/* keep old class name in case anything references it */
 .analysis-exit {
   font-size: var(--text-sm);
   color: var(--muted);
@@ -1781,3 +1816,4 @@ h3 { font-size: var(--text-xl); }
   }
   .reveal { opacity: 1; transform: none; transition: none; }
 }
+

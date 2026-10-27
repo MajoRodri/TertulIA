@@ -344,9 +344,11 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
 
     closeLauncher();
     document.querySelector(".main").classList.add("active");
+    document.getElementById("main-backdrop").classList.add("active");
+    document.getElementById("launcher-btn").classList.add("hidden");
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
-    document.getElementById("analysis-topbar").classList.remove("hidden");
+    document.getElementById("btn-exit").classList.remove("hidden");
     showLoading();
 
     populateBriefSummary(brief, getFormImages());
