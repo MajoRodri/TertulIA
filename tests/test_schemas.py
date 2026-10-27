@@ -22,6 +22,45 @@ def test_brief_defaults_to_madrid_and_analyst():
     assert brief.user_profile == "analyst"
 
 
+def test_brief_has_no_images_by_default():
+    brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha")
+    assert brief.image_paths == []
+
+
+def test_brief_accepts_uploaded_photos():
+    paths = ["run-001/uploads/front.jpg", "run-001/uploads/menu.PNG"]
+    brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=paths)
+    assert brief.image_paths == paths
+
+def test_brief_paths_are_relative_to_outputs():
+    # Any folder inside outputs/ is valid: "photo.jpg" is outputs/photo.jpg.
+    paths = ["photo.jpg", "other_folder/photo.jpeg"]
+    brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=paths)
+    assert brief.image_paths == paths
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../.env",  # goes up out of outputs/
+        "run-001/../../secrets.png",
+        "/etc/passwd.png",  # absolute path
+        "C:/Users/helen/photo.jpg",  # Windows drive
+        "run-001\\..\\..\\photo.jpg",  # Windows separators
+        "run-001/uploads/menu.pdf",  # not an image (PDFs: later)
+        "run-001/uploads/photo",  # no extension
+    ],
+)
+def test_brief_rejects_unsafe_or_non_image_paths(path):
+    with pytest.raises(ValidationError):
+        BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=[path])
+
+
+def test_brief_accepts_at_most_ten_photos():
+    paths = [f"run-001/uploads/photo_{n}.jpg" for n in range(11)]
+    with pytest.raises(ValidationError):
+        BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=paths)
+
+
 def test_external_source_needs_url():
     with pytest.raises(ValidationError):
         Source(
