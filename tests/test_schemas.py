@@ -32,6 +32,11 @@ def test_brief_accepts_uploaded_photos():
     brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=paths)
     assert brief.image_paths == paths
 
+def test_brief_paths_are_relative_to_outputs():
+    # Any folder inside outputs/ is valid: "photo.jpg" is outputs/photo.jpg.
+    paths = ["photo.jpg", "other_folder/photo.jpeg"]
+    brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha", image_paths=paths)
+    assert brief.image_paths == paths
 
 @pytest.mark.parametrize(
     "path",

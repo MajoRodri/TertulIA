@@ -88,10 +88,16 @@ class BusinessBrief(BaseModel):
     @field_validator("image_paths")
     @classmethod
     def image_paths_are_safe(cls, paths: list[str]) -> list[str]:
-        """Only jpg/png files inside outputs/: never a path that points elsewhere.
+        """Only jpg/png files, given as paths relative to outputs/.
 
-        The vision agent will open these files, so a path like "../.env" or
-        "C:/Users/..." could make it read something that is not a photo.
+        "photo.jpg" means outputs/photo.jpg and "run-001/uploads/a.png" means
+        outputs/run-001/uploads/a.png. A path that could point outside outputs/
+        is refused: one with "..", an absolute one or a Windows drive. The
+        vision agent will open these files, so "../.env" must never get through.
+
+        This is the first check, on the text of the path. The vision module
+        checks again when it opens each file: it resolves the real path and
+        confirms it is still inside the allowed folder (links included).
         """
         for path in paths:
             parts = PurePosixPath(path.replace("\\", "/"))
