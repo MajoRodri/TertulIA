@@ -15,7 +15,8 @@ build/
 
 # Datos automáticos (no versionar)
 data/cache/
-outputs/
+outputs/**
+!outputs/.gitkeep
 
 # IDEs
 .vscode/
