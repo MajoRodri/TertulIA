@@ -106,3 +106,82 @@ def test_new_errors_are_appended_to_existing_ones():
     assert len(patch_["errors"]) == 2
     assert patch_["errors"][0] is previous
     assert patch_["errors"][1].code == TOKEN_BUDGET_EXHAUSTED
+
+
+# --- FATAL errors stop the review loop in should_continue --------------------
+
+
+def test_should_continue_goes_to_human_approval_on_fatal_error():
+    from tertulia.graph.edges import should_continue
+    from tertulia.graph.errors import TOKEN_BUDGET_EXHAUSTED, ErrorEntry
+
+    fatal = ErrorEntry(
+        code=TOKEN_BUDGET_EXHAUSTED,
+        node="research",
+        severity=ErrorSeverity.FATAL,
+        message="presupuesto agotado",
+    )
+    state = _state(
+        reviewer_comments=["Rechazo simulado: faltan fuentes."],
+        review_round=1,
+        errors=[fatal],
+    )
+    assert should_continue(state) == "human_approval"
+
+
+def test_should_continue_keeps_looping_with_degradable_errors():
+    from tertulia.graph.edges import should_continue
+    from tertulia.graph.errors import TOOL_FAILURE, ErrorEntry
+
+    degradable = ErrorEntry(
+        code=TOOL_FAILURE,
+        node="research",
+        severity=ErrorSeverity.DEGRADABLE,
+        message="herramienta caída",
+    )
+    state = _state(
+        reviewer_comments=["Rechazo simulado: faltan fuentes."],
+        review_round=1,
+        errors=[degradable],
+    )
+    assert should_continue(state) == "writer"
+
+
+# --- ERR-009: a paused study that expires without a human decision -----------
+
+
+def test_human_approval_records_timeout_error_and_trace():
+    from tertulia.graph.builder import app
+
+    config = {"configurable": {"thread_id": "test-expired"}}
+    app.invoke(_state(), config)
+
+    # Resume as the API would when the study has expired.
+    app.update_state(config, {"expired": True})
+    final = app.invoke(None, config)
+
+    assert final["human_approved"] is False
+    assert final["expired"] is True
+    assert len(final["errors"]) == 1
+    error = final["errors"][0]
+    assert error.code == "ERR-009"
+    assert error.node == "human_approval"
+    assert error.severity == ErrorSeverity.FATAL
+
+    assert len(final["traces"]) == 1
+    trace = final["traces"][0]
+    assert trace.actor == "human"
+    assert trace.tool == "ui.timeout"
+    assert trace.output == {"decision": "expired"}
+
+
+def test_human_approval_does_not_record_timeout_when_not_expired():
+    from tertulia.graph.builder import app
+
+    config = {"configurable": {"thread_id": "test-not-expired"}}
+    app.invoke(_state(), config)
+    app.update_state(config, {"human_approved": True, "expired": False})
+    final = app.invoke(None, config)
+
+    assert final["errors"] == []
+    assert final["traces"][0].tool == "ui.approve"

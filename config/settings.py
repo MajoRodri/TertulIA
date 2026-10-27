@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # Graph Controls & Cost Limits
     MAX_ITERATIONS: int = 3            
     MAX_TOKENS_PER_REPORT: int = 500000 
+    HUMAN_TIMEOUT_S: int = 86400  # 24 h: beyond this, a paused study expires (ERR-009)
 
     # Confidence Penalties (used by schemas.compute_confidence)
     MISSING_PENALTY: float = 0.1

@@ -23,7 +23,7 @@ Cada error tiene un código (`ERR-XXX`) y una severidad. La severidad define qu�
 | ERR-006 | `TOKEN_BUDGET_EXHAUSTED` | **Fatal** | Se ha superado `MAX_TOKENS_PER_REPORT` | El grafo para, va a `human_approval` con `verdict=None` y un warning claro. |
 | ERR-007 | `MAX_ITERATIONS_REACHED` | Degradable | El bucle de revisión llegó al límite sin aprobación del revisor | Se registra como warning, el grafo pasa a `human_approval` con `amber`. |
 | ERR-008 | `GRAPH_INTERNAL` | **Fatal** | Un nodo lanza una excepción no controlada | Se captura en el borde del nodo, se registra y el grafo va a `human_approval` con `verdict=None`. |
-| ERR-009 | `HUMAN_TIMEOUT` | **Fatal** | El humano no responde en un tiempo definido | El grafo termina sin aprobación. `human_approved=False` y error registrado. |
+| ERR-009 | `HUMAN_TIMEOUT` | **Fatal** | El humano no responde en un tiempo definido | El grafo termina sin aprobación. `human_approved=False`, `expired=True` y error registrado. La API marca el job como `expired`. |
 
 Nota: el rechazo humano **no es un error**. Es una decisión. Se traza como `TraceEntry` con `tool="ui.reject"` (Issue #13). El `ERR-009` es distinto: es la ausencia de decisión.
 
@@ -43,7 +43,7 @@ Nota: el rechazo humano **no es un error**. Es una decisión. Se traza como `Tra
 | `analyst` | `ERR-005` (output inválido) | Validación Pydantic en el adaptador (`adapters.py`) |
 | `writer` | `ERR-004`, `ERR-006` | `try/except` en el nodo + comprobación de tokens |
 | `reviewer` | `ERR-004`, `ERR-007` | `try/except` en el nodo + `edges.py` |
-| `human_approval` | `ERR-009` | Timeout en el nodo (pendiente de implementar; ver más abajo) |
+| `human_approval` | `ERR-009` | La API reanuda el grafo con `{"expired": true}` cuando el job supera `HUMAN_TIMEOUT_S` |
 
 ## Representación en el estado, el veredicto y el informe
 
@@ -94,9 +94,28 @@ CrewAI valida los argumentos de las herramientas contra su esquema **antes** de 
 
 ## Lo que queda pendiente (post-demo o Issue #12)
 
-- **`ERR-009` (humano no responde):** el nodo `human_approval` no tiene timeout configurado. Se implementará con un límite en `settings.py` y un `asyncio.wait_for` o un contador en el estado. La demo tiene un humano delante, así que no es bloqueante.
+- **`ERR-009` (humano no responde):** implementado en el nodo `human_approval`. El temporizador vive en la API (ver contrato abajo), porque el grafo pausado no tiene reloj interno.
 - **`ERR-004` (reintento de LLM):** CrewAI no reintenta por sí solo los fallos del LLM. El reintento con backoff se implementará en el nodo cuando se integre el crew real (Issue #12).
 - **`ERR-005` (output inválido):** el adaptador `adapters.py` ya valida con Pydantic. Si se quiere distinguir `ERR-005` de `ERR-002`, se hace en el nodo cuando se integre el crew.
+
+## Contrato de `ERR-009` con la API (timeout humano)
+
+El grafo pausado en `interrupt_before=["human_approval"]` no tiene reloj interno: está esperando. El temporizador vive en la API:
+
+1. La API guarda la hora en que el job se pausó.
+2. Si `now - paused_at > settings.HUMAN_TIMEOUT_S` (por defecto 24 h), la API reanuda el grafo con `{"expired": True}` y marca `job["status"] = "expired"`.
+3. El nodo `human_approval` lee `expired`, registra `ERR-009` en `errors`, un `TraceEntry` con `tool="ui.timeout"` en `traces`, y termina con `human_approved=False`.
+4. La API devuelve `{"ok": false, "reason": "estudio caducado"}` y no genera el PDF.
+
+Valores de `job["status"]` que el frontend debe conocer:
+
+| Estado | Cuándo | Qué muestra el frontend |
+|---|---|---|
+| `running` | El grafo está ejecutándose o pausado esperando decisión | Barra de progreso / botón de aprobar |
+| `done` | Aprobado y PDF generado | Enlace al PDF |
+| `rejected` | Rechazado por el humano | «Estudio rechazado» |
+| `expired` | Caducado sin respuesta humana (`ERR-009`) | «Estudio caducado» (no es un fallo técnico) |
+| `failed` | Error fatal (`ERR-006`, `ERR-008`) | «No se pudo completar el estudio» + detalle del error |
 
 ## Tests
 

@@ -35,4 +35,5 @@ class AgentState(TypedDict):
 
     # 8. Graph status and Human-in-the-loop
     human_approved: bool
+    expired: bool  # True when the API reanuda a paused study past HUMAN_TIMEOUT_S
     errors: list[ErrorEntry]
