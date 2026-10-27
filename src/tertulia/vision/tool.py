@@ -16,7 +16,7 @@ AnalyseImageTool wraps it for a CrewAI agent, which receives text.
 from typing import Any
 
 from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from tertulia.guardrails.injection import process
 from tertulia.vision.loader import OUTPUTS_DIR, ImageRejected, load_image
@@ -59,6 +59,10 @@ _CATEGORY_NAMES = {
 _CONFIDENCE_NAMES = {Confidence.HIGH: "alta", Confidence.MEDIUM: "media", Confidence.LOW: "baja"}
 
 
+class AnalysisFailed(ValueError):
+    """The model did not return a usable analysis. The message says why, for the analyst."""
+
+
 def _image_message(image) -> dict:
     """One message with two parts: the instructions and the image (Gemini format)."""
     return {
@@ -73,14 +77,22 @@ def _image_message(image) -> dict:
 def analyse_image(image_path: str, llm: Any, root=OUTPUTS_DIR) -> ImageAnalysis:
     """Check one photo, ask the model to fill in ImageAnswer, check what it says.
 
-    Raises ImageRejected if the file cannot be analysed (see loader.py).
+    Raises ImageRejected if the file cannot be analysed (see loader.py) and
+    AnalysisFailed if the model's answer does not fit the form.
     """
     image = load_image(image_path, root=root)
-    answer = llm.call(messages=[_image_message(image)], response_model=ImageAnswer)
-    # With a response_model CrewAI returns the validated object; some providers
-    # return its JSON as text. Either way it is checked against the form.
-    if not isinstance(answer, ImageAnswer):
-        answer = ImageAnswer.model_validate_json(str(answer))
+    try:
+        answer = llm.call(messages=[_image_message(image)], response_model=ImageAnswer)
+        # With a response_model CrewAI returns the validated object; some providers
+        # return its JSON as text. Either way it is checked against the form.
+        if not isinstance(answer, ImageAnswer):
+            answer = ImageAnswer.model_validate_json(str(answer))
+    except (ValidationError, ValueError) as error:
+        # CrewAI raises ValueError when the answer does not fit the form; Pydantic,
+        # ValidationError. Either way: a clear error, never a half-filled analysis.
+        raise AnalysisFailed(
+            f"{image_path!r}: the model did not return a valid analysis"
+        ) from error
 
     # Everything that comes from the image is external text: check it all.
     from_image = answer.visible_text + [item.observation for item in answer.observations]
@@ -138,8 +150,7 @@ class AnalyseImageTool(BaseTool):
             self.llm = llm_from_settings()
         try:
             analysis = analyse_image(image_path, self.llm)
-        except ImageRejected as error:
+        except (ImageRejected, AnalysisFailed) as error:
             return f"No se pudo analizar la imagen: {error}"
         # The text goes to an agent's prompt: wrapped as external data, like fetch.
         return process(to_text(analysis), source=image_path).wrapped_text
-    

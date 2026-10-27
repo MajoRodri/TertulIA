@@ -9,7 +9,7 @@ from PIL import Image
 
 from tertulia.vision import tool
 from tertulia.vision.loader import ImageRejected
-from tertulia.vision.tool import AnalyseImageTool, analyse_image, to_text
+from tertulia.vision.tool import AnalyseImageTool, AnalysisFailed, analyse_image, to_text
 from tertulia.vision.vision_schemas import ImageAnswer
 
 
@@ -128,4 +128,36 @@ def test_the_crewai_tool_explains_a_rejected_file(tmp_path, monkeypatch):
         tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=tmp_path)
     )
     output = AnalyseImageTool(llm=_FakeLLM(_answer())).run(image_path="nothing.png")
+    assert output.startswith("No se pudo analizar la imagen:")
+
+
+# --- When the model's answer does not fit the form -----------------------------
+
+
+class _BrokenLLM:
+    """A model whose answer CrewAI could not validate: it raises ValueError."""
+
+    def call(self, messages, response_model=None):
+        raise ValueError("Failed to validate structured output with model ImageAnswer")
+
+
+@pytest.mark.parametrize(
+    "llm",
+    [
+        _FakeLLM('{"kind": "photo"}'),  # JSON without people_visible
+        _FakeLLM("This is not JSON at all"),
+        _FakeLLM('{"kind": "video", "people_visible": false}'),  # not one of our kinds
+        _BrokenLLM(),
+    ],
+)
+def test_an_answer_that_does_not_fit_the_form_is_a_clear_error(photo, llm):
+    with pytest.raises(AnalysisFailed, match="did not return a valid analysis"):
+        analyse_image("run-001/bar.png", llm, root=photo)
+
+
+def test_the_crewai_tool_explains_an_invalid_answer(photo, monkeypatch):
+    monkeypatch.setattr(
+        tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo)
+    )
+    output = AnalyseImageTool(llm=_FakeLLM("not JSON")).run(image_path="run-001/bar.png")
     assert output.startswith("No se pudo analizar la imagen:")
