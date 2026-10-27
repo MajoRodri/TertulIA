@@ -35,8 +35,8 @@ CONFIG_DIR = Path(__file__).resolve().parent / "config"
 STEPS: dict[str, tuple[str, ...]] = {
     "research": ("research_task", "vision_task"),
     "analysis": ("analysis_task",),
-    "writing": ("writing_task",),
-    "review": ("review_task",),
+    "writing":  ("writing_task",),
+    "review":   ("review_task",),
 }
 
 APPROVED = "APROBADO"

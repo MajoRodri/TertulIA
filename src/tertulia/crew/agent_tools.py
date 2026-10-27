@@ -72,7 +72,7 @@ class CodeExecTool(BaseTool):
     outputs_root: str = "outputs"
 
     def _run(self, code: str) -> str:
-        return _as_text(run_code_tool(code, outputs_root=self.outputs_root))
+        return _as_text(run_code_tool(code))
 
 
 def analyst_tools(llm: BaseLLM | None = None) -> list[BaseTool]:

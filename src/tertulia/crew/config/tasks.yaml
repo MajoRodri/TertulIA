@@ -18,7 +18,8 @@
 
 research_task:
   description: >-
-    Investiga el entorno para abrir un {display_name} en {neighbourhood} ({city}).
+    Investiga el entorno para abrir un {display_name} en {neighbourhood} ({city}),
+    en un radio de {radius_m} m.
 
     Busca competidores de estas categorías: {competitor_categories}.
 
