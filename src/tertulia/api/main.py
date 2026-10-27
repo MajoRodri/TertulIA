@@ -268,6 +268,8 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["messages"]  = messages
     _jobs[job_id]["verdict"]   = _skeleton_verdict()
     _jobs[job_id]["status"]    = "paused"
+    if crew is None:
+        _jobs[job_id]["simulated"] = True
     _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
 
     graph_config = {"configurable": {"thread_id": job_id}}
@@ -426,6 +428,7 @@ async def get_verdict(job_id: str):
     verdict: SchemaVerdict = job.get("verdict") or _skeleton_verdict()
     result = verdict.model_dump()
     result["tokens_used"] = job.get("tokens_used", 0)
+    result["simulated"] = job.get("simulated", False)
     return result
 
 
@@ -503,6 +506,7 @@ async def approve(job_id: str, req: ApproveRequest):
             reasons=verdict.reasons,
         ),
         generated_on=date.today(),
+        simulated=job.get("simulated", False),
     )
 
     try:

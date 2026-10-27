@@ -35,3 +35,4 @@ class ReportData(BaseModel):
     verdict: Verdict
     generated_on: date = date.today()
     job_id: str = "—"
+    simulated: bool = False

@@ -36,6 +36,8 @@ _ROJO_BG   = HexColor("#FEE2E2")
 _SIGNAL_COLOR = {"green": _VERDE,     "yellow": _AMARILLO,  "red": _ROJO}
 _SIGNAL_BG    = {"green": _VERDE_BG,  "yellow": _AMARILLO_BG, "red": _ROJO_BG}
 _SIGNAL_LABEL = {"green": "VIABLE",   "yellow": "VIABLE CON RIESGO", "red": "NO VIABLE"}
+_NARANJA      = HexColor("#7c3500")
+_NARANJA_BG   = HexColor("#fde3cf")
 
 # ── Page geometry ──────────────────────────────────────────────────────────────
 _PAGE_W, _PAGE_H = A4
@@ -231,6 +233,26 @@ def _verdict_section(data: ReportData) -> list:
     ]
 
 
+def _simulated_notice() -> list:
+    notice_style = ParagraphStyle(
+        "simulated_notice",
+        fontName="Helvetica-Bold", fontSize=9,
+        textColor=_NARANJA, leading=12, alignment=TA_CENTER,
+    )
+    box = Table(
+        [[Paragraph("⚠ DATOS DE EJEMPLO — Este informe no refleja datos reales", notice_style)]],
+        colWidths=[_TW], hAlign="LEFT",
+    )
+    box.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), _NARANJA_BG),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("BOX",           (0, 0), (-1, -1), 0.5, _NARANJA),
+        ("ROUNDEDCORNERS", [4]),
+    ]))
+    return [box, Spacer(1, 5*mm)]
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 def build_pdf(data: ReportData) -> bytes:
     buf = io.BytesIO()
@@ -253,6 +275,7 @@ def build_pdf(data: ReportData) -> bytes:
 
     story = (
         _header(data)
+        + (_simulated_notice() if data.simulated else [])
         + _brief_section(data)
         + _debate_section(data)
         + _verdict_section(data)

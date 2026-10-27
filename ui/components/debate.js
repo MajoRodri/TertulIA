@@ -32,7 +32,7 @@ function createTypingIndicator(name = "", agent = "") {
   return el;
 }
 
-function appendMessage({ agent, name, role, message }) {
+function appendMessage({ agent, name, role, message, simulated }) {
   document.getElementById("typing-indicator")?.remove();
   const displayName = AGENT_DISPLAY_NAMES[agent] ?? name;
   const el = document.createElement("div");
@@ -43,6 +43,7 @@ function appendMessage({ agent, name, role, message }) {
       <div class="message-meta">
         <span class="agent-name">${displayName}</span>
         <span class="agent-role">${role}</span>
+        ${simulated ? `<span class="simulated-badge">ejemplo</span>` : ""}
       </div>
       <div class="message-text">${renderMd(message)}</div>
     </div>`;
@@ -67,7 +68,7 @@ export function runDebate(jobId) {
     openDebateStream(
       jobId,
       (data) => {
-        if (data.simulated) { showSimulatedWarning(); return; }
+        if (data.simulated) showSimulatedWarning();
         if (data.thinking) {
           document.getElementById("typing-indicator")?.remove();
           feed.appendChild(createTypingIndicator(data.name, data.agent));

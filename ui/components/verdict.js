@@ -14,6 +14,11 @@ export async function showVerdict(jobId) {
     throw err;
   }
 
+  if (data.simulated) {
+    const warn = document.getElementById("verdict-simulated-warning");
+    if (warn) warn.classList.remove("hidden");
+  }
+
   // Support both real schema (final_light / final_confidence) and mock fallback
   const light      = data.final_light ?? data.light ?? "amber";
   const confidence = data.final_confidence != null
