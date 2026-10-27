@@ -2,6 +2,8 @@ from typing import TypedDict
 
 from tertulia.schemas import BusinessBrief, Finding, Source, TraceEntry, Verdict
 
+from .errors import ErrorEntry
+
 
 class AgentState(TypedDict):
     """
@@ -33,4 +35,5 @@ class AgentState(TypedDict):
 
     # 8. Graph status and Human-in-the-loop
     human_approved: bool
-    errors: list[str]
+    expired: bool  # True when the API reanuda a paused study past HUMAN_TIMEOUT_S
+    errors: list[ErrorEntry]
