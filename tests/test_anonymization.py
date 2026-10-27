@@ -1,5 +1,4 @@
-import pytest
-from src.tertulia.guardrails.anonimizacion import anonymize_brief, Brief
+from src.tertulia.guardrails.anonimizacion import Brief, anonymize_brief
 
 
 def make_brief(context: str) -> Brief:

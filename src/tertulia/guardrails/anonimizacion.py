@@ -1,4 +1,5 @@
 import re
+
 from pydantic import BaseModel
 
 from tertulia.schemas.models import BusinessBrief

@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
-from pydantic import BaseModel
 
+from pydantic import BaseModel
 
 Signal = Literal["green", "yellow", "red"]
 
