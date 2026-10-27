@@ -12,10 +12,11 @@ Identifiers are in English (team rule). In the UI and the report the models
 are shown with their Madrid names: Km. 0, La Portera, Chulapo Analytics, ¿Mola?
 """
 
+from pathlib import PurePosixPath
 from enum import StrEnum
 from typing import Any
 
-from pydantic import AwareDatetime, BaseModel, Field, computed_field, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, computed_field, model_validator, field_validator
 
 
 class UserProfile(StrEnum):
@@ -49,6 +50,9 @@ class TrafficLight(StrEnum):
     AMBER = "amber"
     RED = "red"
 
+# Photos the user can upload for the vision agent: images only, for now.
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+MAX_IMAGES = 10
 
 class BusinessBrief(BaseModel):
     """The request: what business, where, and for whom. UI name: "Km. 0"."""
@@ -65,7 +69,28 @@ class BusinessBrief(BaseModel):
     )
     user_profile: UserProfile = UserProfile.ANALYST
     notes: str = Field(default="", description="Free text, anonymised before use")
+    image_paths: list[str] = Field(
+        default_factory=list,
+        max_length=MAX_IMAGES,
+        description="Photos uploaded by the user for the vision agent, relative to outputs/",
+        examples=[["run-001/uploads/competitor_front.jpg"]],
+    )
 
+    @field_validator("image_paths")
+    @classmethod
+    def image_paths_are_safe(cls, paths: list[str]) -> list[str]:
+        """Only jpg/png files inside outputs/: never a path that points elsewhere.
+
+        The vision agent will open these files, so a path like "../.env" or
+        "C:/Users/..." could make it read something that is not a photo.
+        """
+        for path in paths:
+            parts = PurePosixPath(path.replace("\\", "/"))
+            if parts.is_absolute() or ".." in parts.parts or ":" in path:
+                raise ValueError(f"image path must be relative to outputs/: {path!r}")
+            if parts.suffix.lower() not in IMAGE_EXTENSIONS:
+                raise ValueError(f"only jpg and png images are accepted: {path!r}")
+        return paths
 
 class Source(BaseModel):
     """Where data was obtained. UI name: "La Portera".
