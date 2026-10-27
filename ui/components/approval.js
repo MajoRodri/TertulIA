@@ -1,5 +1,7 @@
 import { approveReport } from "../api.js";
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function initApproval(jobId) {
   const btnApprove = document.getElementById("btn-approve");
   const btnReject  = document.getElementById("btn-reject");
@@ -28,7 +30,7 @@ export function initApproval(jobId) {
   btnReject.addEventListener("click", async () => {
     await approveReport(jobId, false).catch(() => {});
     document.getElementById("panel-approval").classList.add("hidden");
-    document.getElementById("panel-debate").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("panel-debate").scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth" });
   });
 }
 

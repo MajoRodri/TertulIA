@@ -80,9 +80,9 @@ body {
 
 /* ─── Typography ─────────────────────────────────────────────── */
 h1, h2, h3 {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   color: var(--ink);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
 }
@@ -259,7 +259,7 @@ h3 { font-size: var(--text-xl); }
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--s4);
+  gap: var(--s5);
 }
 
 .form-field {
@@ -279,7 +279,7 @@ h3 { font-size: var(--text-xl); }
 .form-field input,
 .form-field select,
 .form-field textarea {
-  padding: var(--s3) var(--s4);
+  padding: 14px 18px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-family: var(--font-body);
@@ -430,7 +430,7 @@ h3 { font-size: var(--text-xl); }
 .message-text {
   font-size: var(--text-base);
   color: var(--body-text);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .typing-indicator {
@@ -484,9 +484,9 @@ h3 { font-size: var(--text-xl); }
 .verdict-info { flex: 1; }
 
 .verdict-label {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: var(--text-xl);
-  font-weight: 300;
+  font-weight: 600;
   color: var(--ink);
   margin-bottom: var(--s2);
 }
@@ -544,10 +544,8 @@ h3 { font-size: var(--text-xl); }
 }
 
 .approval-desc {
-  font-family: var(--font-display);
   font-size: var(--text-lg);
-  font-weight: 300;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--body-text);
   max-width: 480px;
 }
@@ -954,7 +952,7 @@ h3 { font-size: var(--text-xl); }
 
 .hb-name { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 .hb-role { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
-.hb-desc { font-size: 11px; color: var(--body-text); line-height: 1.55; margin: 0; }
+.hb-desc { font-size: 11px; color: var(--body-text); line-height: 1.6; margin: 0; }
 
 /* Scroll indicator */
 .hero-scroll {
@@ -1058,7 +1056,7 @@ h3 { font-size: var(--text-xl); }
 .how-step-desc {
   font-size: var(--text-sm);
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 /* ─── Study section ──────────────────────────────────────────── */
@@ -1101,7 +1099,6 @@ h3 { font-size: var(--text-xl); }
 }
 
 .study-block-body h3 {
-  font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: 600;
   color: var(--ink);
@@ -1149,7 +1146,7 @@ h3 { font-size: var(--text-xl); }
 .study-pillar-desc {
   font-size: var(--text-sm);
   color: var(--muted);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 @media (max-width: 700px) {
@@ -1170,18 +1167,18 @@ h3 { font-size: var(--text-xl); }
 }
 
 .launcher-btn {
-  width: 80px;
-  height: 80px;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
   background: var(--azul);
   color: #fff;
   border: none;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  overflow: hidden;
+  padding: 0;
   box-shadow: 0 4px 20px rgba(43,78,255,0.4);
   transition: transform 0.4s ease, box-shadow 0.2s, opacity 0.4s ease;
 }
@@ -1199,10 +1196,11 @@ h3 { font-size: var(--text-xl); }
 }
 
 .launcher-btn-logo {
-  width: 54px;
-  height: 54px;
-  object-fit: contain;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
 }
 
 /* Modal overlay */
@@ -1254,9 +1252,8 @@ h3 { font-size: var(--text-xl); }
 }
 
 .launcher-panel-title {
-  font-family: var(--font-display);
   font-size: var(--text-xl);
-  font-weight: 300;
+  font-weight: 600;
   color: var(--ink);
   letter-spacing: -0.02em;
 }
@@ -1306,7 +1303,7 @@ h3 { font-size: var(--text-xl); }
   font-size: var(--text-sm);
   color: var(--muted);
   margin-top: var(--s2);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .chat-feed {
@@ -1314,7 +1311,7 @@ h3 { font-size: var(--text-xl); }
   flex-direction: column;
   gap: var(--s4);
   min-height: 120px;
-  max-height: 400px;
+  max-height: min(400px, 50vh);
   overflow-y: auto;
   padding: var(--s4);
   background: var(--canvas);
@@ -1335,7 +1332,7 @@ h3 { font-size: var(--text-xl); }
   padding: 10px 16px;
   max-width: 72%;
   font-size: var(--text-sm);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .chat-input-wrap {
@@ -1381,4 +1378,13 @@ h3 { font-size: var(--text-xl); }
   .how-steps      { grid-template-columns: 1fr 1fr; }
   .how-steps::before { display: none; }
   .hero-trust     { gap: var(--s3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal { opacity: 1; transform: none; transition: none; }
 }

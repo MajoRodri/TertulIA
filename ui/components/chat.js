@@ -1,5 +1,7 @@
 import { sendChatMessage } from "../api.js";
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export function initChat(jobId) {
   const feed     = document.getElementById("chat-feed");
   const input    = document.getElementById("chat-input");
@@ -43,7 +45,7 @@ function appendUserMessage(text) {
   el.className = "chat-message user";
   el.innerHTML = `<div class="chat-bubble">${text}</div>`;
   feed.appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }
 
 function appendAgentMessage({ agent, name, role, message }) {
@@ -60,5 +62,5 @@ function appendAgentMessage({ agent, name, role, message }) {
       <p class="message-text">${message}</p>
     </div>`;
   feed.appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }

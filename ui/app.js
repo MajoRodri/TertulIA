@@ -4,6 +4,8 @@ import { initApproval } from "./components/approval.js";
 import { initChat }     from "./components/chat.js";
 import { startAnalysis } from "./api.js";
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // ── Hero bubbles: scroll convergence + 1s cycling, pause on hover ──
 (function initHeroBubbles() {
   const hero    = document.getElementById("hero");
@@ -58,7 +60,7 @@ import { startAnalysis } from "./api.js";
     bubbles.forEach(b => { b.style.animation = "none"; });
     window.addEventListener("scroll", updateScroll, { passive: true });
     activate(0);
-    start();
+    if (!prefersReducedMotion) start();
   }
 
   const fallback = setTimeout(enable, 1800);
@@ -103,6 +105,10 @@ import { startAnalysis } from "./api.js";
 function showLoading() {
   const el = document.getElementById("loading-overlay");
   el.classList.remove("hidden", "fading");
+  if (prefersReducedMotion) {
+    const video = el.querySelector("video");
+    video?.pause();
+  }
 }
 
 function hideLoading() {
@@ -127,7 +133,7 @@ function setLine(n, done) {
 }
 
 function scrollTo(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth" });
 }
 
 // ── Show launcher once hero scrolls out of view ───────────────
@@ -145,22 +151,44 @@ function scrollTo(id) {
 
 // ── Launcher widget ───────────────────────────────────────────
 const launcherPanel = document.getElementById("launcher-panel");
+const launcherBtn   = document.getElementById("launcher-btn");
 
-function openLauncher()  {
+const FOCUSABLE = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
+
+function openLauncher() {
   launcherPanel.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  const first = launcherPanel.querySelector(FOCUSABLE);
+  first?.focus();
 }
 function closeLauncher() {
   launcherPanel.classList.add("hidden");
   document.body.style.overflow = "";
+  launcherBtn.focus();
 }
 
-document.getElementById("launcher-btn").addEventListener("click", () =>
+launcherBtn.addEventListener("click", () =>
   launcherPanel.classList.toggle("hidden")
 );
 document.getElementById("launcher-close").addEventListener("click", closeLauncher);
 launcherPanel.addEventListener("click", (e) => {
   if (e.target === launcherPanel) closeLauncher();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (launcherPanel.classList.contains("hidden")) return;
+  if (e.key === "Escape") { closeLauncher(); return; }
+  if (e.key === "Tab") {
+    const focusable = [...launcherPanel.querySelectorAll(FOCUSABLE)];
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  }
 });
 
 document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);

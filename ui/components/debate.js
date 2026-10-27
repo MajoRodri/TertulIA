@@ -1,5 +1,7 @@
 import { openDebateStream } from "../api.js";
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const feed = document.getElementById("debate-feed");
 
 const AGENT_ICONS = {
@@ -7,6 +9,7 @@ const AGENT_ICONS = {
   analyst:    "chulapo",
   writer:     "pregonero",
   reviewer:   "revisora",
+  vision:     "berto",
 };
 
 function avatarHtml(agent, name) {
@@ -46,7 +49,7 @@ function appendMessage({ agent, name, role, message }) {
       <p class="message-text">${message}</p>
     </div>`;
   feed.appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
   feed.appendChild(createTypingIndicator());
 }
 
