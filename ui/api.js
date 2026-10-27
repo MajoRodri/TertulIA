@@ -61,6 +61,19 @@ export async function uploadImages(jobId, files) {
   return res.json();
 }
 
+// GET /api/vision/{jobId}  →  SSE stream of Berto's image analysis (may be empty)
+export function openVisionStream(jobId, onMessage, onDone, onError) {
+  if (USE_MOCK) { onDone(); return () => {}; }
+  const es = new EventSource(`${API_BASE}/api/vision/${jobId}`);
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.done) { es.close(); onDone(); }
+    else onMessage(data);
+  };
+  es.onerror = () => { es.close(); onError?.(new Error("SSE error")); };
+  return () => es.close();
+}
+
 // POST /api/chat/{jobId}  →  SSE stream of agent responses
 export async function sendChatMessage(jobId, message, onMessage) {
   if (USE_MOCK) {

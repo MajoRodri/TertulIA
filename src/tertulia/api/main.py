@@ -365,6 +365,62 @@ async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
     yield f"data: {json.dumps({'done': True})}\n\n"
 
 
+@app.get("/api/vision/{job_id}")
+async def vision_analysis(job_id: str):
+    if job_id not in _jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return StreamingResponse(
+        _stream_vision(job_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
+    """Runs only the vision task with the latest image paths stored in the job."""
+    brief: BusinessBrief = _jobs[job_id]["brief"]
+    try:
+        from tertulia.crew.crew import llm_from_settings, run_step
+        from tertulia.crew.inputs import build_inputs
+        from tertulia.crew.sector import load_sector
+        from tertulia.crew.agent_tools import default_tools as _get_tools
+
+        abs_image_paths = [str(_ROOT / "outputs" / p) for p in brief.image_paths]
+        if not abs_image_paths:
+            yield f"data: {json.dumps({'done': True})}\n\n"
+            return
+
+        llm = llm_from_settings()
+        vision_tools = _get_tools("vision", llm)
+        if not vision_tools:
+            yield f"data: {json.dumps({'done': True})}\n\n"
+            return
+
+        profile = load_sector(brief.business_type)
+        inputs = build_inputs(brief, profile, images=abs_image_paths)
+
+        yield f"data: {json.dumps({'thinking': True, 'agent': 'vision', 'name': 'Berto'})}\n\n"
+
+        result = await asyncio.to_thread(
+            run_step, "vision", inputs, llm,
+            {"vision": vision_tools, "researcher": [], "analyst": [], "writer": [], "reviewer": []},
+        )
+
+        text = result.get("vision_task", "").strip()
+        if text:
+            payload = {
+                "agent": "vision", "name": "Berto",
+                "role": "Análisis de imágenes", "message": text,
+            }
+            _jobs[job_id].setdefault("messages", []).append(payload)
+            yield f"data: {json.dumps(payload)}\n\n"
+
+    except Exception:
+        log.exception("Vision stream failed for job=%s", job_id)
+
+    yield f"data: {json.dumps({'done': True})}\n\n"
+
+
 @app.get("/api/verdict/{job_id}")
 async def get_verdict(job_id: str):
     job = _jobs.get(job_id)

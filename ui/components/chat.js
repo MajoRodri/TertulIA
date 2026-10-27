@@ -1,4 +1,4 @@
-import { sendChatMessage } from "../api.js";
+import { sendChatMessage, openVisionStream } from "../api.js";
 import { renderMd } from "../utils/markdown.js";
 import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
@@ -53,6 +53,20 @@ export function initChat(jobId) {
       if (locked) btnSend.textContent = "Enviando…";
       else        btnSend.textContent = "Enviar";
     }
+  });
+}
+
+export function runChatVision(jobId) {
+  return new Promise((resolve) => {
+    openVisionStream(
+      jobId,
+      (msg) => {
+        if (msg.thinking) showTypingIndicator(msg.name, msg.agent);
+        else { removeTypingIndicator(); appendAgentMessage(msg); }
+      },
+      () => { removeTypingIndicator(); resolve(); },
+      () => { removeTypingIndicator(); resolve(); },
+    );
   });
 }
 

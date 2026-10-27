@@ -1,7 +1,7 @@
 import { runDebate }   from "./components/debate.js";
 import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
-import { initChat }     from "./components/chat.js";
+import { initChat, runChatVision } from "./components/chat.js";
 import { startAnalysis, uploadImages } from "./api.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -380,7 +380,10 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     await initChat(jobId);   // resolves when user clicks "Continuar al veredicto"
 
     const chatFiles = getChatImages();
-    if (chatFiles.length) await uploadImages(jobId, chatFiles);
+    if (chatFiles.length) {
+      await uploadImages(jobId, chatFiles);
+      await runChatVision(jobId);
+    }
 
     setStep(3, "done"); setLine(3, true);
     setStep(4, "active");
