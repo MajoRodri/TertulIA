@@ -8,9 +8,16 @@ export function initApproval(jobId) {
     btnApprove.disabled = true;
     btnApprove.textContent = "Generando informe…";
     try {
-      const blob = await approveReport(jobId);
-      triggerDownload(blob, `report_tertulia_${jobId}.pdf`);
-      btnApprove.textContent = "✓ Informe descargado";
+      const result = await approveReport(jobId);
+      if (result instanceof Blob) {
+        triggerDownload(result, `report_tertulia_${jobId}.pdf`);
+        btnApprove.textContent = "✓ Informe descargado";
+      } else {
+        btnApprove.disabled = false;
+        btnApprove.textContent = result.reason === "estudio caducado"
+          ? "Estudio caducado — inicia un análisis nuevo"
+          : `Error: ${result.reason ?? "no se pudo generar el informe"}`;
+      }
     } catch (err) {
       btnApprove.disabled = false;
       btnApprove.textContent = "Aprobar y descargar informe";

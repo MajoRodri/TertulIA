@@ -100,19 +100,6 @@ _SKELETON_DEBATE: list[dict] = [
     },
 ]
 
-_SKELETON_CHAT_RESPONSES = [
-    {
-        "agent": "analyst", "name": "Analista", "role": "Viabilidad financiera",
-        "message": "Gracias por el dato adicional. He recalculado las proyecciones teniendo en cuenta lo que comentas. Actualizaré el escenario base antes del veredicto final.",
-        "delay": 1.2,
-    },
-    {
-        "agent": "reviewer", "name": "Revisor", "role": "Control de calidad",
-        "message": "Incorporo el contexto en la valoración. Ajusto la confianza y los motivos del veredicto en consecuencia.",
-        "delay": 1.4,
-    },
-]
-
 
 def _skeleton_verdict() -> SchemaVerdict:
     return SchemaVerdict(
@@ -264,9 +251,10 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 messages.append(payload)
                 yield f"data: {json.dumps(payload)}\n\n"
 
-    _jobs[job_id]["messages"] = messages
-    _jobs[job_id]["verdict"]  = _skeleton_verdict()
-    _jobs[job_id]["status"]   = "paused"
+    _jobs[job_id]["messages"]  = messages
+    _jobs[job_id]["verdict"]   = _skeleton_verdict()
+    _jobs[job_id]["status"]    = "paused"
+    _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
 
     graph_config = {"configurable": {"thread_id": job_id}}
     graph_state = {
@@ -275,7 +263,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
         "review_round": 0, "reviewer_comments": [],
         "verdict": _jobs[job_id]["verdict"],
         "traces": [], "tokens_used": 0,
-        "human_approved": False, "errors": [],
+        "human_approved": False, "expired": False, "errors": [],
     }
     await asyncio.to_thread(_graph.invoke, graph_state, graph_config)
     yield f"data: {json.dumps({'paused': True})}\n\n"
@@ -298,9 +286,13 @@ async def chat(job_id: str, req: ChatRequest):
 
 async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
     _jobs[job_id].setdefault("chat_history", []).append({"role": "user", "text": message})
-    for msg in _SKELETON_CHAT_RESPONSES:
-        await asyncio.sleep(msg["delay"])
-        payload = {k: v for k, v in msg.items() if k != "delay"}
+    for delay, payload in [
+        (1.2, {"agent": "analyst",  "name": "Analista", "role": "Viabilidad financiera",
+               "message": "Gracias por el dato. He recalculado las proyecciones teniendo en cuenta lo que comentas."}),
+        (1.4, {"agent": "reviewer", "name": "Revisor",  "role": "Control de calidad",
+               "message": "Incorporo el contexto en la valoración y ajusto la confianza del veredicto."}),
+    ]:
+        await asyncio.sleep(delay)
         yield f"data: {json.dumps(payload)}\n\n"
     yield f"data: {json.dumps({'done': True})}\n\n"
 
@@ -319,20 +311,31 @@ class ApproveRequest(BaseModel):
 
 
 @app.post("/api/approve/{job_id}")
-async def approve(job_id: str, req: ApproveRequest | None = None):
+async def approve(job_id: str, req: ApproveRequest):
     job = _jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    approved = req.approved if req is not None else True
+    from config.settings import settings
     graph_config = {"configurable": {"thread_id": job_id}}
 
-    await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": approved})
+    paused_at = job.get("paused_at")
+    if paused_at and (datetime.now(timezone.utc) - paused_at).total_seconds() > settings.HUMAN_TIMEOUT_S:
+        await asyncio.to_thread(_graph.update_state, graph_config, {"expired": True})
+        final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+        _jobs[job_id].update({
+            "status": "expired",
+            "traces": final.get("traces", []),
+            "errors": final.get("errors", []),
+        })
+        return {"ok": False, "reason": "estudio caducado"}
+
+    await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
     final = await asyncio.to_thread(_graph.invoke, None, graph_config)
     _jobs[job_id]["traces"] = final.get("traces", [])
     _jobs[job_id]["errors"] = final.get("errors", [])
 
-    if not approved:
+    if not req.approved:
         _jobs[job_id]["status"] = "rejected"
         return {"ok": False, "status": "rejected"}
 
@@ -341,6 +344,7 @@ async def approve(job_id: str, req: ApproveRequest | None = None):
     if verdict is None:
         errors: list = _jobs[job_id].get("errors", [])
         reason = errors[-1].message if errors else "Presupuesto de tokens agotado sin generar veredicto"
+        _jobs[job_id]["status"] = "failed"
         return {"ok": False, "reason": reason}
 
     messages: list[dict] = job.get("messages") or [
@@ -375,7 +379,7 @@ async def approve(job_id: str, req: ApproveRequest | None = None):
         raise HTTPException(status_code=501, detail="weasyprint not installed — run: pip install weasyprint")
 
     pdf_bytes = build_pdf(report_data)
-    _jobs[job_id]["status"] = "approved"
+    _jobs[job_id]["status"] = "done"
 
     return Response(
         content=pdf_bytes,

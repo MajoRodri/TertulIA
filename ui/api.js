@@ -47,7 +47,8 @@ export async function approveReport(jobId, approved = true) {
     body: JSON.stringify({ approved }),
   });
   if (!res.ok) throw new Error(`Error ${res.status} approving report`);
-  return approved ? res.blob() : res.json();
+  const ct = res.headers.get("Content-Type") ?? "";
+  return ct.includes("application/pdf") ? res.blob() : res.json();
 }
 
 // POST /api/chat/{jobId}  →  SSE stream of agent responses
