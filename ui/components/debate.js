@@ -69,6 +69,7 @@ export function runDebate(jobId) {
       jobId,
       (data) => {
         if (data.simulated) showSimulatedWarning();
+        if (!data.thinking && !data.message) return;
         if (data.thinking) {
           document.getElementById("typing-indicator")?.remove();
           feed.appendChild(createTypingIndicator(data.name, data.agent));

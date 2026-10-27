@@ -268,8 +268,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["messages"]  = messages
     _jobs[job_id]["verdict"]   = _skeleton_verdict()
     _jobs[job_id]["status"]    = "paused"
-    if crew is None:
-        _jobs[job_id]["simulated"] = True
+    _jobs[job_id]["simulated"] = True  # always until #12 delivers a real verdict
     _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
 
     graph_config = {"configurable": {"thread_id": job_id}}
