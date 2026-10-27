@@ -1,17 +1,29 @@
-import pytest
-from src.tertulia.report import (
-    ReportData, ReportBrief, AgentMessage, Verdict,
-    render_html, build_email_draft,
+from tertulia.report import (
+    AgentMessage,
+    ReportBrief,
+    ReportData,
+    Verdict,
+    build_email_draft,
+    render_html,
 )
 
 SAMPLE_DATA = ReportData(
     job_id="test-001",
-    brief=ReportBrief(sector="café-cowork", neighborhood="Atocha", budget="80000", area="120"),
+    brief=ReportBrief(sector="café-cowork", neighborhood="Atocha", budget_eur=80000.0, area_m2=120.0),
     debate=[
-        AgentMessage(agent="researcher", name="Investigador", role="Análisis de mercado", message="Hay 14 negocios similares."),
-        AgentMessage(agent="analyst",    name="Analista",     role="Viabilidad financiera", message="Punto de equilibrio: 68 clientes/día."),
+        AgentMessage(
+            agent="researcher", name="Investigador",
+            role="Análisis de mercado", message="Hay 14 negocios similares.",
+        ),
+        AgentMessage(
+            agent="analyst", name="Analista",
+            role="Viabilidad financiera", message="Punto de equilibrio: 68 clientes/día.",
+        ),
     ],
-    verdict=Verdict(signal="yellow", label="Viabilidad media", confidence=72, reasons=["Riesgo estacional en agosto"]),
+    verdict=Verdict(
+        signal="yellow", label="Viabilidad media",
+        confidence=72, reasons=["Riesgo estacional en agosto"],
+    ),
 )
 
 

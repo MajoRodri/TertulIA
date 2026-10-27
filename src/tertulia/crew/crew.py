@@ -34,7 +34,6 @@ CONFIG_DIR = Path(__file__).resolve().parent / "config"
 # Paso del crew -> tareas que ejecuta, en orden
 STEPS: dict[str, tuple[str, ...]] = {
     "research": ("research_task", "vision_task"),
-    "vision":   ("vision_task",),
     "analysis": ("analysis_task",),
     "writing":  ("writing_task",),
     "review":   ("review_task",),

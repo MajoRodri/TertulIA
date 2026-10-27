@@ -15,9 +15,7 @@ import logging
 import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import AsyncGenerator
-
-log = logging.getLogger(__name__)
+from typing import Annotated, AsyncGenerator
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,19 +23,16 @@ from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from tertulia.graph.builder import app as _graph
+from tertulia.report.models import AgentMessage as ReportMessage
+from tertulia.report.models import ReportBrief, ReportData
+from tertulia.report.models import Verdict as ReportVerdict
+from tertulia.schemas.models import BusinessBrief, TrafficLight
+from tertulia.schemas.models import Verdict as SchemaVerdict
+
 # Project root: src/tertulia/api/main.py → 3 levels up
 _ROOT = Path(__file__).resolve().parents[3]
-
-from tertulia.graph.builder import app as _graph
-from tertulia.schemas.models import BusinessBrief
-from tertulia.schemas.models import Verdict as SchemaVerdict
-from tertulia.schemas.models import TrafficLight
-from tertulia.report.models import (
-    AgentMessage as ReportMessage,
-    ReportBrief,
-    ReportData,
-    Verdict as ReportVerdict,
-)
+log = logging.getLogger(__name__)
 
 app = FastAPI(title="TertulIA API", version="0.1.0")
 
@@ -74,32 +69,32 @@ _STEP_META: list[tuple[str, list[dict]]] = [
 _SKELETON_DEBATE: list[dict] = [
     {
         "agent": "researcher", "name": "Investigador", "role": "Análisis de mercado",
-        "message": "He analizado 14 negocios similares en un radio de 1 km alrededor de Atocha. La densidad de cafeterías con coworking es moderada: solo 3 ofrecen tanto café de especialidad como puestos de trabajo fijos. El precio medio de alquiler en la zona es de 22 €/m².",
+        "message": "He analizado 14 negocios similares en un radio de 1 km alrededor de Atocha. La densidad de cafeterías con coworking es moderada: solo 3 ofrecen tanto café de especialidad como puestos de trabajo fijos. El precio medio de alquiler en la zona es de 22 €/m².",  # noqa: E501
         "delay": 0.8,
     },
     {
         "agent": "analyst", "name": "Analista", "role": "Viabilidad financiera",
-        "message": "Con 120 m² y un alquiler estimado de 2.640 €/mes, el punto de equilibrio requiere ingresar al menos 9.800 €/mes. Asumiendo un ticket medio de 8 € y una tasa de ocupación del 60%, se necesitan unos 51 clientes diarios. Es alcanzable en temporada alta, pero ajustado en agosto.",
+        "message": "Con 120 m² y un alquiler estimado de 2.640 €/mes, el punto de equilibrio requiere ingresar al menos 9.800 €/mes. Asumiendo un ticket medio de 8 € y una tasa de ocupación del 60%, se necesitan unos 51 clientes diarios. Es alcanzable en temporada alta, pero ajustado en agosto.",  # noqa: E501
         "delay": 1.4,
     },
     {
         "agent": "vision", "name": "Especialista Visual", "role": "Análisis de imágenes",
-        "message": "He analizado 8 fotos de locales competidores en Atocha. El 75% tienen mesas pequeñas sin espacio para portátil, solo 1 muestra regletas de corriente visibles. Oportunidad de diferenciación clara en equipamiento de trabajo.",
+        "message": "He analizado 8 fotos de locales competidores en Atocha. El 75% tienen mesas pequeñas sin espacio para portátil, solo 1 muestra regletas de corriente visibles. Oportunidad de diferenciación clara en equipamiento de trabajo.",  # noqa: E501
         "delay": 1.0,
     },
     {
         "agent": "writer", "name": "Redactor", "role": "Síntesis del informe",
-        "message": "El análisis muestra una oportunidad real pero con margen estrecho. La diferenciación debería centrarse en la comunidad de usuarios y en eventos temáticos que generen ingresos fuera del horario de coworking.",
+        "message": "El análisis muestra una oportunidad real pero con margen estrecho. La diferenciación debería centrarse en la comunidad de usuarios y en eventos temáticos que generen ingresos fuera del horario de coworking.",  # noqa: E501
         "delay": 1.8,
     },
     {
         "agent": "reviewer", "name": "Revisor", "role": "Control de calidad",
-        "message": "La estimación de ocupación del 60% es optimista para el primer año; recomendaría usar 45% en el escenario base. Con ese ajuste el punto de equilibrio sube a 68 clientes diarios, viable con riesgo medio. El semáforo debería ser amarillo.",
+        "message": "La estimación de ocupación del 60% es optimista para el primer año; recomendaría usar 45% en el escenario base. Con ese ajuste el punto de equilibrio sube a 68 clientes diarios, viable con riesgo medio. El semáforo debería ser amarillo.",  # noqa: E501
         "delay": 2.0,
     },
     {
         "agent": "analyst", "name": "Analista", "role": "Viabilidad financiera",
-        "message": "Acepto la corrección del Revisor. Con el 45% de ocupación el margen baja a 3,2%, viable pero con control estricto de costes variables. Confirmo: viabilidad media-alta, confianza 72%.",
+        "message": "Acepto la corrección del Revisor. Con el 45% de ocupación el margen baja a 3,2%, viable pero con control estricto de costes variables. Confirmo: viabilidad media-alta, confianza 72%.",  # noqa: E501
         "delay": 1.6,
     },
 ]
@@ -380,10 +375,10 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
     """Runs only the vision task with the latest image paths stored in the job."""
     brief: BusinessBrief = _jobs[job_id]["brief"]
     try:
+        from tertulia.crew.agent_tools import default_tools as _get_tools
         from tertulia.crew.crew import llm_from_settings, run_step
         from tertulia.crew.inputs import build_inputs
         from tertulia.crew.sector import load_sector
-        from tertulia.crew.agent_tools import default_tools as _get_tools
 
         abs_image_paths = [str(_ROOT / "outputs" / p) for p in brief.image_paths]
         if not abs_image_paths:
@@ -402,7 +397,7 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
         yield f"data: {json.dumps({'thinking': True, 'agent': 'vision', 'name': 'Berto'})}\n\n"
 
         result = await asyncio.to_thread(
-            run_step, "vision", inputs, llm,
+            run_step, "research", inputs, llm,
             {"vision": vision_tools, "researcher": [], "analyst": [], "writer": [], "reviewer": []},
         )
 
@@ -531,7 +526,7 @@ _MAX_IMG_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 @app.post("/api/upload/{job_id}")
-async def upload_images(job_id: str, files: list[UploadFile] = File(...)):
+async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()]):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 

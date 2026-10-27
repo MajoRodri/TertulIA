@@ -23,8 +23,8 @@ RESUMEN DEL ENCARGO
 ─────────────────────────────────────────
 Sector:        {data.brief.sector}
 Zona:          {data.brief.neighborhood}
-Presupuesto:   {data.brief.budget or '—'} €
-Superficie:    {data.brief.area or '—'} m²
+Presupuesto:   {data.brief.budget_eur or '—'} €
+Superficie:    {data.brief.area_m2 or '—'} m²
 
 ─────────────────────────────────────────
 VEREDICTO
