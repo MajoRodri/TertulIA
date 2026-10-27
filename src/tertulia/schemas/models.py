@@ -77,7 +77,7 @@ class BusinessBrief(BaseModel):
         default=None, gt=0, description="Monthly rent if the user already has a venue"
     )
     area_m2: float | None = Field(default=None, gt=0, description="Business space in square metres")
-    radius_m: int = Field(default=800, ge=100, description="Search radius in metres")
+    radius_m: int = Field(default=800, ge=100, le=2000, description="Search radius in metres")
     user_profile: UserProfile = UserProfile.ANALYST
     notes: str = Field(default="", description="Free text, anonymised before use")
     image_paths: list[str] = Field(

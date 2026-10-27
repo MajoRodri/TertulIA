@@ -362,6 +362,17 @@ h3 { font-size: var(--text-xl); }
 }
 
 /* ─── Debate stream ──────────────────────────────────────────── */
+.simulated-warning {
+  background: #7c3500;
+  color: #fde68a;
+  border: 1px solid #b45309;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: .85rem;
+  font-weight: 600;
+  margin-bottom: var(--s3);
+}
+
 .debate-feed {
   display: flex;
   flex-direction: column;

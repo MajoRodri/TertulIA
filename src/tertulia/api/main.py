@@ -222,10 +222,12 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
 
     if crew is None:
         log.warning("job=%s using skeleton debate — crew unavailable", job_id)
+        yield f"data: {json.dumps({'simulated': True})}\n\n"
         for msg in _SKELETON_DEBATE:
             yield f"data: {json.dumps({'thinking': True, 'agent': msg['agent'], 'name': msg['name']})}\n\n"
             await asyncio.sleep(msg["delay"])
             payload = {k: v for k, v in msg.items() if k != "delay"}
+            payload["simulated"] = True
             messages.append(payload)
             yield f"data: {json.dumps(payload)}\n\n"
     else:
@@ -239,10 +241,10 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
             try:
                 result: dict[str, str] = await asyncio.to_thread(run_step_fn, step_name, inputs)
             except Exception:
-                # Per-step fallback so the UI never stalls
                 for meta in agents_meta:
                     fallback = _first_skeleton_for(meta["agent"])
                     if fallback:
+                        fallback = {**fallback, "simulated": True}
                         messages.append(fallback)
                         yield f"data: {json.dumps(fallback)}\n\n"
                 continue
@@ -507,10 +509,7 @@ async def approve(job_id: str, req: ApproveRequest):
         from tertulia.report import build_pdf
         pdf_bytes = build_pdf(report_data)
     except (ImportError, OSError) as exc:
-        raise HTTPException(
-            status_code=501,
-            detail=f"PDF generation unavailable: {exc}. On Windows, install the GTK3 runtime."
-        ) from exc
+        raise HTTPException(status_code=501, detail=f"PDF generation unavailable: {exc}") from exc
     _jobs[job_id]["status"] = "done"
 
     return Response(
@@ -547,6 +546,9 @@ async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()])
 
     brief = _jobs[job_id]["brief"]
     merged = list(brief.image_paths) + [p for p in saved if p not in brief.image_paths]
+    from tertulia.schemas.models import MAX_IMAGES
+    if len(merged) > MAX_IMAGES:
+        raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGES} fotos por análisis")
     _jobs[job_id]["brief"] = brief.model_copy(update={"image_paths": merged})
     return {"paths": saved}
 

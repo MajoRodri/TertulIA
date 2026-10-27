@@ -51,6 +51,15 @@ function appendMessage({ agent, name, role, message }) {
   feed.appendChild(createTypingIndicator());
 }
 
+function showSimulatedWarning() {
+  if (document.getElementById("simulated-warning")) return;
+  const el = document.createElement("div");
+  el.id = "simulated-warning";
+  el.className = "simulated-warning";
+  el.textContent = "⚠️ Servidor de análisis no disponible — mostrando datos de ejemplo, no reales.";
+  feed.insertBefore(el, feed.firstChild);
+}
+
 export function runDebate(jobId) {
   feed.innerHTML = "";
   feed.appendChild(createTypingIndicator());
@@ -58,6 +67,7 @@ export function runDebate(jobId) {
     openDebateStream(
       jobId,
       (data) => {
+        if (data.simulated) { showSimulatedWarning(); return; }
         if (data.thinking) {
           document.getElementById("typing-indicator")?.remove();
           feed.appendChild(createTypingIndicator(data.name, data.agent));
