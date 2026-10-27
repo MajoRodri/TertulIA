@@ -64,7 +64,12 @@ def build_inputs(
     draft_report: str | None = None,
     review_feedback: list[str] | None = None,
 ) -> dict[str, str]:
-    """Devuelve las variables de TASK_INPUT_KEYS, todas como texto y ninguna vacía."""
+    """Devuelve las variables de TASK_INPUT_KEYS, todas como texto y ninguna vacía.
+
+    ``images``: si no se pasa, se usan las fotos del encargo (``brief.image_paths``).
+    """
+    if images is None:
+        images = brief.image_paths
     return {
         "neighbourhood": brief.neighbourhood,
         "city": brief.city,
