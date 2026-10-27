@@ -12,15 +12,22 @@ tareas de ese paso:
 No usamos el decorador @CrewBase de CrewAI porque está pensado para ejecutar
 todas las tareas de golpe. Aquí construimos a mano un Crew pequeño por paso.
 
-Las herramientas (punto de equilibrio, código, MCP, visión) se asignarán a cada
-agente en la siguiente entrega (#20, 30 oct).
+Las herramientas de cada agente salen de agent_tools.py (DEFAULT_TOOLS). Los tests
+pasan herramientas falsas con el parámetro ``tools`` para no arrancar servidores.
 """
 
+from collections.abc import Mapping
 from pathlib import Path
 
 import yaml
 from crewai import LLM, Agent, Crew, Process, Task
 from crewai.llms.base_llm import BaseLLM
+from crewai.tools import BaseTool
+
+from tertulia.crew.agent_tools import default_tools
+
+# Herramientas por agente: {"researcher": [...], "analyst": [...]}
+ToolsByAgent = Mapping[str, list[BaseTool]]
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 
@@ -59,7 +66,7 @@ def build_llm(provider: str, model_name: str, api_key: str | None = None) -> LLM
     """Crea el modelo de lenguaje. No hace ninguna llamada: solo lo configura.
 
     Los valores vienen de config/settings.py (David), p. ej. ``"gemini"`` y
-    ``"gemini-3.8-flash"``. Cambiar de modelo no obliga a tocar este archivo.
+    ``"gemini-3.5-flash-lite"``. Cambiar de modelo no obliga a tocar este archivo.
     """
     return LLM(model=f"{provider}/{model_name}", api_key=api_key or None)
 
@@ -75,8 +82,12 @@ def llm_from_settings() -> LLM:
     )
 
 
-def build_step_crew(step: str, llm: BaseLLM) -> Crew:
-    """Crew con solo las tareas de ``step`` y los agentes que las hacen."""
+def build_step_crew(step: str, llm: BaseLLM, tools: ToolsByAgent | None = None) -> Crew:
+    """Crew con solo las tareas de ``step`` y los agentes que las hacen.
+
+    ``tools``: herramientas de cada agente. Si es None se usan las de agent_tools.py;
+    si se pasa (tests), un agente que no aparece en el diccionario no tiene ninguna.
+    """
     if step not in STEPS:
         raise ValueError(f"unknown step {step!r}. Valid: {', '.join(STEPS)}")
 
@@ -87,7 +98,12 @@ def build_step_crew(step: str, llm: BaseLLM) -> Crew:
         task_config = dict(tasks_config[task_name])
         agent_name = task_config.pop("agent")
         if agent_name not in agents:
-            agents[agent_name] = Agent(config=agents_config[agent_name], llm=llm)
+            agent_tools = (
+                default_tools(agent_name, llm) if tools is None else tools.get(agent_name, [])
+            )
+            agents[agent_name] = Agent(
+                config=agents_config[agent_name], llm=llm, tools=list(agent_tools)
+            )
         if not agents[agent_name].tools:
             task_config["description"] += "\n\n" + NO_TOOLS_NOTE
         tasks.append(Task(config=task_config, agent=agents[agent_name], name=task_name))
@@ -101,12 +117,14 @@ def build_step_crew(step: str, llm: BaseLLM) -> Crew:
     )
 
 
-def run_step(step: str, inputs: dict[str, str], llm: BaseLLM) -> dict[str, str]:
+def run_step(
+    step: str, inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | None = None
+) -> dict[str, str]:
     """Ejecuta un paso y devuelve el texto de cada tarea: {"research_task": "...", ...}.
 
     ``inputs`` debe venir de ``build_inputs()`` para que no falte ninguna variable.
     """
-    result = build_step_crew(step, llm).kickoff(inputs=inputs)
+    result = build_step_crew(step, llm, tools).kickoff(inputs=inputs)
     return {
         task_name: output.raw
         for task_name, output in zip(STEPS[step], result.tasks_output, strict=True)
