@@ -83,7 +83,7 @@ class _ServerSettings(BaseSettings):
 # The key is read here, by the server: the MCP client never passes it on.
 _SETTINGS = _ServerSettings()
 DEMO_MODE = _SETTINGS.DEMO_MODE
-FOURSQUARE_API_KEY = _SETTINGS.FOURSQUARE_API_KEY
+FOURSQUARE_API_KEY: SecretStr = _SETTINGS.FOURSQUARE_API_KEY
 
 # Every error message starts with one of these codes, so the graph can classify
 # errors reliably (agreed with David). Keep them in sync with the graph.
