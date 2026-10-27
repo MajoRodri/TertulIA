@@ -8,7 +8,7 @@ export async function showVerdict(jobId) {
   const data = await fetchVerdict(jobId);
 
   // Support both real schema (final_light / final_confidence) and mock fallback
-  const light      = data.final_light ?? data.signal ?? "amber";
+  const light      = data.final_light ?? data.light ?? "amber";
   const confidence = data.final_confidence != null
     ? Math.round(data.final_confidence * 100)
     : (data.confidence ?? 0);

@@ -193,11 +193,6 @@ document.addEventListener("keydown", (e) => {
 
 document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);
 
-// ── Profile selector ─────────────────────────────────────────
-document.getElementById("profile-select")?.addEventListener("change", (e) => {
-  document.getElementById("notice-entrepreneur").classList.toggle("hidden", e.target.value !== "entrepreneur");
-});
-
 // ── Brief form submit ─────────────────────────────────────────
 document.getElementById("form-brief").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -206,18 +201,14 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   btn.disabled = true;
   btn.textContent = "Analizando…";
 
-  const areaRaw    = document.getElementById("area")?.value;
-  const contextRaw = document.getElementById("context")?.value ?? "";
-  const notes      = [contextRaw, areaRaw ? `Superficie: ${areaRaw} m²` : ""]
-    .filter(Boolean).join(" | ");
-
   const brief = {
     business_type: document.getElementById("sector").value,
     neighbourhood: document.getElementById("neighborhood").value,
     budget_eur:    parseFloat(document.getElementById("budget")?.value) || null,
-    radius_m:      parseInt(document.getElementById("radius")?.value) || 800,
-    notes,
-    user_profile:  document.getElementById("profile-select").value,
+    area_m2:       parseFloat(document.getElementById("area")?.value)   || null,
+    radius_m:      parseInt(document.getElementById("radius")?.value)   || 800,
+    notes:         document.getElementById("context")?.value?.trim() ?? "",
+    user_profile:  document.getElementById("profile-select")?.value ?? "analyst",
   };
 
   try {

@@ -60,6 +60,7 @@
   --r-lg:   14px;
   --r-xl:   20px;
   --r-pill: 999px;
+  --radius: var(--r-md);
 
   /* Shadows — flat like Delphi */
   --shadow-btn: 0 0 0 4px var(--azul-glow);
@@ -143,40 +144,6 @@ h3 { font-size: var(--text-xl); }
   padding-left: var(--s3);
 }
 
-/* ─── Profile selector ──────────────────────────────────────── */
-.profile-wrap {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-}
-
-.profile-wrap label {
-  font-size: var(--text-sm);
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.profile-select {
-  appearance: none;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  padding: var(--s1) 28px var(--s1) var(--s3);
-  font-family: var(--font-body);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  color: var(--ink);
-  cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237580A0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-}
-
-.profile-select:focus {
-  outline: none;
-  border-color: var(--azul);
-  box-shadow: var(--shadow-btn);
-}
 
 /* ─── Main ───────────────────────────────────────────────────── */
 .main {
