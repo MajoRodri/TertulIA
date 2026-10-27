@@ -51,6 +51,16 @@ export async function approveReport(jobId, approved = true) {
   return ct.includes("application/pdf") ? res.blob() : res.json();
 }
 
+// POST /api/upload/{jobId}  →  { paths: string[] }
+export async function uploadImages(jobId, files) {
+  if (USE_MOCK || !files.length) return { paths: [] };
+  const form = new FormData();
+  for (const f of files) form.append("files", f);
+  const res = await fetch(`${API_BASE}/api/upload/${jobId}`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`Error ${res.status} uploading images`);
+  return res.json();
+}
+
 // POST /api/chat/{jobId}  →  SSE stream of agent responses
 export async function sendChatMessage(jobId, message, onMessage) {
   if (USE_MOCK) {

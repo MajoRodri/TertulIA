@@ -32,7 +32,7 @@
       <div class="hero-bubble hb-tl" style="--hb-c:var(--azul)">
         <div class="hb-avatar"><img src="/assets/portera.png" alt="" /></div>
         <div class="hb-popup">
-          <div class="hb-name">Investigador</div>
+          <div class="hb-name">La Portera</div>
           <div class="hb-role">Análisis de mercado</div>
           <p class="hb-desc">Escanea el entorno, detecta competidores y extrae datos de mercado en tu zona.</p>
         </div>
@@ -41,7 +41,7 @@
       <div class="hero-bubble hb-tr" style="--hb-c:var(--turquesa)">
         <div class="hb-avatar"><img src="/assets/chulapo.png" alt="" /></div>
         <div class="hb-popup">
-          <div class="hb-name">Analista</div>
+          <div class="hb-name">El Chulapo</div>
           <div class="hb-role">Viabilidad financiera</div>
           <p class="hb-desc">Calcula puntos de equilibrio, márgenes y proyecciones a partir de datos reales.</p>
         </div>
@@ -50,7 +50,7 @@
       <div class="hero-bubble hb-bl" style="--hb-c:#6C5CE7">
         <div class="hb-avatar"><img src="/assets/pregonero.png" alt="" /></div>
         <div class="hb-popup">
-          <div class="hb-name">Redactor</div>
+          <div class="hb-name">El Pregonero</div>
           <div class="hb-role">Síntesis del informe</div>
           <p class="hb-desc">Convierte el debate en un informe claro con oportunidades y riesgos clave.</p>
         </div>
@@ -59,7 +59,7 @@
       <div class="hero-bubble hb-br" style="--hb-c:var(--naranja)">
         <div class="hb-avatar"><img src="/assets/revisora.png" alt="" /></div>
         <div class="hb-popup">
-          <div class="hb-name">Revisor</div>
+          <div class="hb-name">La Revisora</div>
           <div class="hb-role">Control de calidad</div>
           <p class="hb-desc">Cuestiona supuestos, ajusta estimaciones y valida la coherencia del análisis.</p>
         </div>
@@ -68,7 +68,7 @@
       <div class="hero-bubble hb-mr" style="--hb-c:var(--turquesa)">
         <div class="hb-avatar"><img src="/assets/berto.png" alt="" /></div>
         <div class="hb-popup">
-          <div class="hb-name">Especialista Visual</div>
+          <div class="hb-name">Berto</div>
           <div class="hb-role">Análisis de imágenes</div>
           <p class="hb-desc">Interpreta fotos del entorno y la competencia para detectar oportunidades visuales.</p>
         </div>
@@ -133,13 +133,13 @@
         </div>
         <div class="how-step">
           <div class="how-step-num">2</div>
-          <div class="how-step-title">Los agentes debaten</div>
-          <p class="how-step-desc">Investigador, Analista, Redactor y Revisor trabajan en vivo y se corrigen entre sí.</p>
+          <div class="how-step-title">Los agentes trabajan en secuencia</div>
+          <p class="how-step-desc">Investigador, Especialista Visual, Analista, Redactor y Revisor. El Revisor puede devolver el informe hasta 3 veces si detecta datos sin fuente.</p>
         </div>
         <div class="how-step">
           <div class="how-step-num">3</div>
           <div class="how-step-title">Veredicto con semáforo</div>
-          <p class="how-step-desc">Verde, amarillo o rojo con nivel de confianza y motivos concretos.</p>
+          <p class="how-step-desc">Verde, ámbar o rojo con confianza calculada automáticamente y motivos trazables a su fuente.</p>
         </div>
         <div class="how-step">
           <div class="how-step-num">4</div>
@@ -164,17 +164,38 @@
         <div class="study-block-body">
           <h3>Abrir un negocio local es una apuesta a ciegas</h3>
           <p>El 50% de los negocios locales cierran en los primeros dos años. La principal causa no es la falta de esfuerzo, sino la falta de información: un estudio de viabilidad profesional cuesta miles de euros y semanas de espera, fuera del alcance de la mayoría de emprendedores.</p>
-          <p>Los datos existen — en OpenStreetMap, Foursquare, portales inmobiliarios, datos abiertos del Ayuntamiento — pero están fragmentados y requieren horas de trabajo manual para convertirse en una decisión útil.</p>
+          <p>Los datos existen en OpenStreetMap, registros del Ayuntamiento de Madrid y portales inmobiliarios, pero están dispersos y requieren horas de cruce manual para convertirse en una decisión útil. TertulIA automatiza ese proceso de principio a fin.</p>
         </div>
       </div>
 
       <!-- Solución -->
       <div class="study-block study-block--right">
-        <div class="study-block-label">02 · Nuestra solución</div>
+        <div class="study-block-label">02 · Los cinco agentes</div>
         <div class="study-block-body">
-          <h3>Cinco agentes IA que debaten hasta llegar a un veredicto</h3>
-          <p>TertulIA orquesta cinco agentes especializados que trabajan en secuencia y se corrigen entre sí: el Investigador recopila datos reales del entorno, el Especialista Visual analiza imágenes de la competencia, el Analista calcula el punto de equilibrio, el Redactor sintetiza el informe y el Revisor detecta contradicciones y datos sin respaldo.</p>
-          <p>El resultado es un veredicto con semáforo (verde / amarillo / rojo), nivel de confianza calculado y motivos concretos trazables a su fuente. Ninguna cifra se inventa: si un dato falta, se marca como «sin dato» y baja la confianza.</p>
+          <h3>Cinco roles especializados que trabajan en secuencia</h3>
+          <p>Cada agente tiene un objetivo concreto y no puede inventar datos: si una cifra no tiene fuente o cálculo reproducible, la marca como <em>«sin dato»</em> y la confianza del veredicto baja automáticamente.</p>
+          <ul class="agent-list">
+            <li>
+              <span class="agent-list-name">Investigador <span class="agent-list-alias">La Portera</span></span>
+              <span>Consulta OpenStreetMap vía Overpass API para obtener competidores reales en un radio de hasta 2 km, con nombre, dirección, horario y URL de cada local.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">Especialista Visual <span class="agent-list-alias">Berto</span></span>
+              <span>Analiza fotos del entorno y la competencia para detectar oportunidades que los datos estructurados no capturan.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">Analista <span class="agent-list-alias">El Chulapo</span></span>
+              <span>Calcula el punto de equilibrio y los márgenes usando únicamente cifras con fuente o cálculo reproducible.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">Redactor <span class="agent-list-alias">El Pregonero</span></span>
+              <span>Convierte los hallazgos en un informe estructurado con semáforo verde/ámbar/rojo y motivos concretos.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">Revisor <span class="agent-list-alias">La Revisora</span></span>
+              <span>Comprueba cada afirmación contra las fuentes y devuelve el informe al Redactor si hay contradicciones, hasta un máximo de 3 rondas.</span>
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -182,9 +203,9 @@
       <div class="study-block study-block--left">
         <div class="study-block-label">03 · La arquitectura técnica</div>
         <div class="study-block-body">
-          <h3>LangGraph + CrewAI + datos abiertos</h3>
-          <p>El grafo de LangGraph controla el flujo: orquesta los pasos, gestiona el bucle de revisión (máximo 3 rondas) y pausa antes de generar el informe para que el analista humano apruebe. Cada nodo llama al crew de CrewAI, donde viven los agentes con su rol, objetivo y contexto.</p>
-          <p>Los datos llegan a través de un servidor MCP propio que consulta OpenStreetMap, Foursquare y datos abiertos del Ayuntamiento de Madrid. Cada fuente queda registrada con URL, fecha y herramienta — la trazabilidad completa permite auditar cualquier cifra del informe.</p>
+          <h3>LangGraph + CrewAI + MCP + datos abiertos</h3>
+          <p>El grafo de LangGraph controla el flujo completo: orquesta los cinco nodos en secuencia, gestiona el bucle de revisión Redactor–Revisor (máx. 3 rondas) y pausa el grafo antes de generar el PDF para que el analista humano revise y apruebe. Si la aprobación no llega en 24 horas, el estudio expira automáticamente (ERR-009).</p>
+          <p>Los datos geográficos llegan a través de un servidor MCP propio que consulta OpenStreetMap mediante la Overpass API (© OpenStreetMap contributors, licencia ODbL). Cada fuente queda registrada con su URL, fecha exacta de consulta y herramienta usada. La confianza del veredicto se calcula con una fórmula fija: parte de 1,0 y descuenta 0,10 por cada dato faltante y 0,05 por cada fuente sospechosa de inyección de prompt.</p>
         </div>
       </div>
 
@@ -197,8 +218,8 @@
               <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </div>
-          <div class="study-pillar-title">Datos reales</div>
-          <p class="study-pillar-desc">Fuentes abiertas verificadas, sin cifras de memoria.</p>
+          <div class="study-pillar-title">OpenStreetMap en tiempo real</div>
+          <p class="study-pillar-desc">Competidores reales con nombre, dirección y horario. Sin cifras inventadas.</p>
         </div>
 
         <div class="study-pillar">
@@ -207,8 +228,8 @@
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <div class="study-pillar-title">Debate entre agentes</div>
-          <p class="study-pillar-desc">Se corrigen entre sí antes de emitir el veredicto.</p>
+          <div class="study-pillar-title">Bucle de revisión</div>
+          <p class="study-pillar-desc">El Revisor rechaza el informe si hay datos sin fuente. Hasta 3 rondas de corrección.</p>
         </div>
 
         <div class="study-pillar">
@@ -218,8 +239,8 @@
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
           </div>
-          <div class="study-pillar-title">Trazabilidad total</div>
-          <p class="study-pillar-desc">Cada dato apunta a su fuente o cálculo reproducible.</p>
+          <div class="study-pillar-title">Trazabilidad completa</div>
+          <p class="study-pillar-desc">Cada cifra del informe apunta a su fuente (URL + fecha) o al código que la calculó.</p>
         </div>
 
         <div class="study-pillar">
@@ -230,8 +251,8 @@
               <polyline points="16 11 18 13 22 9"/>
             </svg>
           </div>
-          <div class="study-pillar-title">Aprobación humana</div>
-          <p class="study-pillar-desc">La IA propone. El analista decide y firma.</p>
+          <div class="study-pillar-title">Confianza calculada</div>
+          <p class="study-pillar-desc">Fórmula reproducible: −0,10 por dato faltante, −0,05 por fuente sospechosa.</p>
         </div>
 
       </div>
@@ -241,6 +262,11 @@
 
   <!-- Main analysis flow -->
   <main class="main page-wrap">
+
+    <!-- Top bar: exit button (shown only during analysis) -->
+    <div class="analysis-topbar hidden" id="analysis-topbar">
+      <button class="analysis-exit" id="btn-exit">← Abandonar análisis</button>
+    </div>
 
     <!-- Progress stepper (hidden until analysis starts) -->
     <nav class="stepper hidden" id="stepper" aria-label="Progreso">
@@ -270,13 +296,26 @@
       </div>
     </nav>
 
+    <!-- Panel 1: Brief summary (read-only) -->
+    <section id="panel-encargo" class="panel hidden">
+      <div class="panel-header">
+        <span class="eyebrow">Paso 1 · Completado</span>
+        <h2>Encargo</h2>
+        <p class="panel-desc">Parámetros con los que se lanzó el análisis.</p>
+      </div>
+      <dl class="brief-summary" id="brief-summary"></dl>
+    </section>
+
     <!-- Panel 2: Live debate -->
     <section id="panel-debate" class="panel hidden">
       <div class="panel-header">
-        <span class="eyebrow">Paso 2 · En curso</span>
+        <span class="eyebrow" id="debate-eyebrow">Paso 2 · En curso</span>
         <h2>Debate entre agentes</h2>
       </div>
       <div class="debate-feed" id="debate-feed" role="log" aria-live="polite"></div>
+      <div class="debate-actions hidden" id="debate-actions">
+        <button class="btn btn-primary" id="btn-debate-continue">Continuar al contexto →</button>
+      </div>
     </section>
 
     <!-- Panel 3: Chat (user context) -->
@@ -287,6 +326,15 @@
         <p class="panel-desc">¿Tienes datos concretos que cambian el análisis? Escríbelos aquí. Los agentes los incorporan antes del veredicto final.</p>
       </div>
       <div class="chat-feed" id="chat-feed" role="log" aria-live="polite"></div>
+      <div class="chat-upload-wrap">
+        <label for="chat-images" class="chat-upload-label">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          Adjuntar fotos
+        </label>
+        <input type="file" id="chat-images" accept=".jpg,.jpeg,.png" multiple class="sr-only" aria-label="Subir fotos del local o competidores" />
+        <span class="form-hint" id="chat-images-hint">JPG o PNG · máx. 10 MB por archivo</span>
+        <div id="chat-images-preview" class="upload-preview"></div>
+      </div>
       <div class="chat-input-wrap">
         <textarea
           id="chat-input"
@@ -295,9 +343,12 @@
           placeholder="Ej. El alquiler que me han ofrecido es 2.200 €/mes, no 2.640…"
         ></textarea>
         <div class="chat-actions">
-          <button class="btn btn-secondary" id="btn-chat-send">Enviar</button>
-          <button class="btn btn-primary"   id="btn-chat-continue">Continuar al veredicto →</button>
+          <button class="btn btn-primary" id="btn-chat-send">Enviar</button>
         </div>
+      </div>
+      <div class="chat-continue-wrap">
+        <span class="chat-continue-hint">Cuando hayas añadido todo el contexto que quieras:</span>
+        <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto →</button>
       </div>
     </section>
 
@@ -316,13 +367,28 @@
         </div>
 
         <div class="verdict-info">
-          <div class="verdict-label"     id="verdict-label">—</div>
-          <div class="verdict-confidence" id="verdict-confidence">Confianza: —</div>
+          <div class="verdict-label"     id="verdict-label"></div>
+          <div class="verdict-confidence" id="verdict-confidence">Confianza: …</div>
           <div class="confidence-bar">
             <div class="confidence-fill" id="confidence-fill" style="width:0%"></div>
           </div>
           <div class="reasons-list" id="reasons-list"></div>
         </div>
+      </div>
+
+      <div class="verdict-extras">
+        <div class="verdict-tokens hidden" id="verdict-tokens"></div>
+        <div class="verdict-missing-wrap hidden" id="verdict-missing-wrap">
+          <h4>Datos no disponibles</h4>
+          <ul id="verdict-missing-list"></ul>
+        </div>
+        <div class="verdict-warnings-wrap hidden" id="verdict-warnings-wrap">
+          <h4>Avisos de fuentes</h4>
+          <ul id="verdict-warnings-list"></ul>
+        </div>
+      </div>
+      <div class="debate-actions" id="verdict-actions">
+        <button class="btn btn-primary" id="btn-verdict-continue">Continuar a la aprobación →</button>
       </div>
     </section>
 
@@ -334,9 +400,13 @@
       </div>
 
       <div class="approval-wrap">
-        <p class="approval-desc">
-          Revisa el análisis. Si estás de acuerdo, aprueba para generar el informe final en PDF.
-        </p>
+        <div class="berta-verdict">
+          <img src="/assets/berta.png" alt="Berta" class="berta-avatar" />
+          <div class="berta-bubble">
+            <span class="berta-name">Berta</span>
+            <p class="berta-message">He coordinado el análisis de los cinco agentes. Aquí tienes el veredicto. Si lo apruebas, genero el informe en PDF.</p>
+          </div>
+        </div>
         <div class="approval-actions">
           <button class="btn btn-secondary" id="btn-reject">Revisar de nuevo</button>
           <button class="btn btn-approve"   id="btn-approve">Aprobar y descargar informe</button>
@@ -380,8 +450,199 @@
             </div>
 
             <div class="form-field">
-              <label for="neighborhood">Barrio o zona</label>
-              <input type="text" id="neighborhood" name="neighborhood" placeholder="Ej. Atocha, Madrid" required />
+              <label for="neighborhood">Barrio</label>
+              <select id="neighborhood" name="neighborhood" required>
+                <option value="">Selecciona un barrio…</option>
+
+                <optgroup label="Centro">
+                  <option>Palacio</option>
+                  <option>Embajadores</option>
+                  <option>Cortes</option>
+                  <option>Justicia</option>
+                  <option>Universidad</option>
+                  <option>Sol</option>
+                </optgroup>
+
+                <optgroup label="Arganzuela">
+                  <option>Imperial</option>
+                  <option>Acacias</option>
+                  <option>Chopera</option>
+                  <option>Legazpi</option>
+                  <option>Delicias</option>
+                  <option>Palos de Moguer</option>
+                  <option>Atocha</option>
+                </optgroup>
+
+                <optgroup label="Retiro">
+                  <option>Pacífico</option>
+                  <option>Adelfas</option>
+                  <option>Estrella</option>
+                  <option>Ibiza</option>
+                  <option>Jerónimos</option>
+                  <option>Niño Jesús</option>
+                </optgroup>
+
+                <optgroup label="Salamanca">
+                  <option>Recoletos</option>
+                  <option>Goya</option>
+                  <option>Fuente del Berro</option>
+                  <option>Guindalera</option>
+                  <option>Lista</option>
+                  <option>Castellana</option>
+                </optgroup>
+
+                <optgroup label="Chamartín">
+                  <option>El Viso</option>
+                  <option>Prosperidad</option>
+                  <option>Ciudad Jardín</option>
+                  <option>Hispanoamérica</option>
+                  <option>Nueva España</option>
+                  <option>Castilla</option>
+                </optgroup>
+
+                <optgroup label="Tetuán">
+                  <option>Bellas Vistas</option>
+                  <option>Cuatro Caminos</option>
+                  <option>Castillejos</option>
+                  <option>Almenara</option>
+                  <option>Valdeacederas</option>
+                  <option>Berruguete</option>
+                </optgroup>
+
+                <optgroup label="Chamberí">
+                  <option>Gaztambide</option>
+                  <option>Arapiles</option>
+                  <option>Trafalgar</option>
+                  <option>Almagro</option>
+                  <option>Ríos Rosas</option>
+                  <option>Vallehermoso</option>
+                </optgroup>
+
+                <optgroup label="Fuencarral-El Pardo">
+                  <option>El Pardo</option>
+                  <option>Fuentelarreina</option>
+                  <option>Peñagrande</option>
+                  <option>El Pilar</option>
+                  <option>La Paz</option>
+                  <option>Valverde</option>
+                  <option>Mirasierra</option>
+                  <option>Las Tablas</option>
+                </optgroup>
+
+                <optgroup label="Moncloa-Aravaca">
+                  <option>Casa de Campo</option>
+                  <option>Argüelles</option>
+                  <option>Ciudad Universitaria</option>
+                  <option>Valdezarza</option>
+                  <option>Valdemarín</option>
+                  <option>El Plantío</option>
+                  <option>Aravaca</option>
+                </optgroup>
+
+                <optgroup label="Latina">
+                  <option>Los Cármenes</option>
+                  <option>Puerta del Ángel</option>
+                  <option>Lucero</option>
+                  <option>Aluche</option>
+                  <option>Campamento</option>
+                  <option>Cuatro Vientos</option>
+                  <option>Las Águilas</option>
+                </optgroup>
+
+                <optgroup label="Carabanchel">
+                  <option>Comillas</option>
+                  <option>Opañel</option>
+                  <option>San Isidro</option>
+                  <option>Vista Alegre</option>
+                  <option>Pradolongo</option>
+                  <option>Moscardó</option>
+                  <option>Zofío</option>
+                  <option>Buenavista</option>
+                </optgroup>
+
+                <optgroup label="Usera">
+                  <option>Pradolongo</option>
+                  <option>Moscardó</option>
+                  <option>Almendrales</option>
+                  <option>Orcasitas</option>
+                </optgroup>
+
+                <optgroup label="Puente de Vallecas">
+                  <option>Entrevías</option>
+                  <option>San Diego</option>
+                  <option>Palomeras Bajas</option>
+                  <option>Palomeras Sureste</option>
+                  <option>Portazgo</option>
+                  <option>Numancia</option>
+                </optgroup>
+
+                <optgroup label="Moratalaz">
+                  <option>Pavones</option>
+                  <option>Vinateros</option>
+                  <option>Artilleros</option>
+                  <option>Fontarrón</option>
+                  <option>Marroquina</option>
+                  <option>Media Legua</option>
+                </optgroup>
+
+                <optgroup label="Ciudad Lineal">
+                  <option>Ventas</option>
+                  <option>Pueblo Nuevo</option>
+                  <option>Quintana</option>
+                  <option>Concepción</option>
+                  <option>San Pascual</option>
+                  <option>San Juan Bautista</option>
+                  <option>Colina</option>
+                  <option>Atalaya</option>
+                  <option>Costillares</option>
+                </optgroup>
+
+                <optgroup label="Hortaleza">
+                  <option>Palomas</option>
+                  <option>Valdefuentes</option>
+                  <option>Virgen del Cortijo</option>
+                  <option>Apóstol Santiago</option>
+                  <option>Pinar del Rey</option>
+                  <option>Canillas</option>
+                </optgroup>
+
+                <optgroup label="Villaverde">
+                  <option>San Andrés</option>
+                  <option>San Cristóbal</option>
+                  <option>Butarque</option>
+                  <option>Los Rosales</option>
+                  <option>Los Ángeles</option>
+                </optgroup>
+
+                <optgroup label="Villa de Vallecas">
+                  <option>Casco Histórico de Vallecas</option>
+                  <option>Santa Eugenia</option>
+                </optgroup>
+
+                <optgroup label="Vicálvaro">
+                  <option>Casco Histórico de Vicálvaro</option>
+                  <option>Valdebernardo</option>
+                  <option>El Cañaveral</option>
+                </optgroup>
+
+                <optgroup label="San Blas-Canillejas">
+                  <option>Simancas</option>
+                  <option>Hellín</option>
+                  <option>Amposta</option>
+                  <option>Arcos</option>
+                  <option>Rejas</option>
+                  <option>Canillejas</option>
+                  <option>Salvador</option>
+                </optgroup>
+
+                <optgroup label="Barajas">
+                  <option>Alameda de Osuna</option>
+                  <option>Aeropuerto</option>
+                  <option>Casco Histórico de Barajas</option>
+                  <option>Timón</option>
+                  <option>Corralejos</option>
+                </optgroup>
+              </select>
             </div>
 
             <div class="form-field">
@@ -397,17 +658,28 @@
             <div class="form-field">
               <label for="radius">Radio de búsqueda</label>
               <select id="radius" name="radius">
-                <option value="300">300 m — 4 min andando</option>
-                <option value="500">500 m — 6 min andando</option>
-                <option value="800" selected>800 m — 10 min andando (recomendado)</option>
-                <option value="1200">1.200 m — 15 min andando</option>
-                <option value="2000">2.000 m — 25 min andando</option>
+                <option value="300">300 m ·4 min andando</option>
+                <option value="500">500 m ·6 min andando</option>
+                <option value="800" selected>800 m ·10 min andando (recomendado)</option>
+                <option value="1200">1.200 m ·15 min andando</option>
+                <option value="2000">2.000 m ·25 min andando</option>
               </select>
             </div>
 
             <div class="form-field full-width">
               <label for="context">Contexto adicional (opcional)</label>
               <textarea id="context" name="context" rows="3" placeholder="Describe cualquier detalle relevante sobre el proyecto…"></textarea>
+            </div>
+
+            <div class="form-field full-width">
+              <label class="form-label-text">Fotos del local o competidores (opcional)</label>
+              <label for="images" class="form-upload-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                Seleccionar archivos
+              </label>
+              <input type="file" id="images" name="images" accept=".jpg,.jpeg,.png" multiple class="sr-only" />
+              <span class="form-hint" id="images-hint">JPG o PNG · máx. 10 MB por archivo</span>
+              <div id="images-preview" class="upload-preview"></div>
             </div>
 
           </div>

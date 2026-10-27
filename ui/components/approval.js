@@ -16,21 +16,24 @@ export function initApproval(jobId) {
         btnApprove.textContent = "✓ Informe descargado";
       } else {
         btnApprove.disabled = false;
-        btnApprove.textContent = result.reason === "estudio caducado"
-          ? "Estudio caducado — inicia un análisis nuevo"
-          : `Error: ${result.reason ?? "no se pudo generar el informe"}`;
+        const reason = result.reason ?? result.status ?? "error desconocido";
+        btnApprove.textContent = reason === "estudio caducado"
+          ? "Estudio caducado. Inicia un análisis nuevo"
+          : `No se pudo generar el informe: ${reason}`;
+        btnApprove.title = JSON.stringify(result);
       }
     } catch (err) {
       btnApprove.disabled = false;
-      btnApprove.textContent = "Aprobar y descargar informe";
-      console.error(err);
+      btnApprove.textContent = "Error al conectar — inténtalo de nuevo";
+      btnApprove.title = err.message;
+      console.error("approve error:", err);
     }
   });
 
   btnReject.addEventListener("click", async () => {
     await approveReport(jobId, false).catch(() => {});
     document.getElementById("panel-approval").classList.add("hidden");
-    document.getElementById("panel-debate").scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth" });
+    document.getElementById("panel-debate").classList.remove("hidden");
   });
 }
 

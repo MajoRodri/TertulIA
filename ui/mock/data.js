@@ -47,7 +47,7 @@ export const MOCK_DEBATE = [
 export const MOCK_VERDICT = {
   light:            "amber",
   confidence:       0.72,
-  summary:          "Viabilidad media — riesgo controlado",
+  summary:          "Viabilidad media, riesgo controlado",
   reasons: [
     "Demanda confirmada: 3 competidores directos con valoración media de 4,2 ★",
     "Punto de equilibrio alcanzable con 68 clientes/día en escenario base (45% ocupación)",

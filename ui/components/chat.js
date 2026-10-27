@@ -1,4 +1,6 @@
 import { sendChatMessage } from "../api.js";
+import { renderMd } from "../utils/markdown.js";
+import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -9,7 +11,14 @@ export function initChat(jobId) {
   const btnContinue = document.getElementById("btn-chat-continue");
 
   return new Promise((resolve) => {
-    btnContinue.addEventListener("click", resolve, { once: true });
+    btnContinue.addEventListener("click", function handler() {
+      if (input.value.trim()) {
+        const ok = window.confirm("Tienes un mensaje sin enviar. ¿Continuar al veredicto de todas formas?");
+        if (!ok) return;
+      }
+      btnContinue.removeEventListener("click", handler);
+      resolve();
+    });
 
     btnSend.addEventListener("click", () => handleSend());
     input.addEventListener("keydown", (e) => {
@@ -23,8 +32,16 @@ export function initChat(jobId) {
       appendUserMessage(text);
       setInputLocked(true);
       try {
-        await sendChatMessage(jobId, text, (msg) => appendAgentMessage(msg));
+        await sendChatMessage(jobId, text, (msg) => {
+          if (msg.thinking) {
+            showTypingIndicator(msg.name, msg.agent);
+          } else {
+            removeTypingIndicator();
+            appendAgentMessage(msg);
+          }
+        });
       } finally {
+        removeTypingIndicator();
         setInputLocked(false);
         input.focus();
       }
@@ -39,6 +56,27 @@ export function initChat(jobId) {
   });
 }
 
+function showTypingIndicator(name = "", agent = "") {
+  const feed = document.getElementById("chat-feed");
+  removeTypingIndicator();
+  const el = document.createElement("div");
+  el.id = "chat-typing";
+  el.className = "debate-message";
+  el.innerHTML = `
+    ${avatarHtml(agent, name)}
+    <div class="message-bubble">
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>`;
+  feed.appendChild(el);
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
+}
+
+function removeTypingIndicator() {
+  document.getElementById("chat-typing")?.remove();
+}
+
 function appendUserMessage(text) {
   const feed = document.getElementById("chat-feed");
   const el = document.createElement("div");
@@ -50,16 +88,17 @@ function appendUserMessage(text) {
 
 function appendAgentMessage({ agent, name, role, message }) {
   const feed = document.getElementById("chat-feed");
+  const displayName = AGENT_DISPLAY_NAMES[agent] ?? name;
   const el = document.createElement("div");
   el.className = "debate-message";
   el.innerHTML = `
-    <div class="agent-avatar ${agent}">${name.slice(0, 2).toUpperCase()}</div>
+    ${avatarHtml(agent, name)}
     <div class="message-bubble">
       <div class="message-meta">
-        <span class="agent-name">${name}</span>
+        <span class="agent-name">${displayName}</span>
         <span class="agent-role">${role}</span>
       </div>
-      <p class="message-text">${message}</p>
+      <div class="message-text">${renderMd(message)}</div>
     </div>`;
   feed.appendChild(el);
   el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });

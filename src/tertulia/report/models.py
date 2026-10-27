@@ -23,8 +23,8 @@ class Verdict(BaseModel):
 class ReportBrief(BaseModel):
     sector: str
     neighborhood: str
-    budget: str | None = None
-    area: str | None = None
+    budget_eur: float | None = None
+    area_m2: float | None = None
     context: str | None = None
     profile: str = "analyst"
 

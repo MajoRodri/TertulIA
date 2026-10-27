@@ -2,7 +2,7 @@ import { runDebate }   from "./components/debate.js";
 import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
 import { initChat }     from "./components/chat.js";
-import { startAnalysis } from "./api.js";
+import { startAnalysis, uploadImages } from "./api.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -118,8 +118,18 @@ function hideLoading() {
 }
 
 // ── Navigation helpers ────────────────────────────────────────
+const STEP_PANEL = {
+  1: "panel-encargo",
+  2: "panel-debate",
+  3: "panel-chat",
+  4: "panel-verdict",
+  5: "panel-approval",
+};
+const ALL_PANEL_IDS = Object.values(STEP_PANEL);
+
 function showPanel(id) {
-  document.getElementById(id).classList.remove("hidden");
+  ALL_PANEL_IDS.forEach(p => document.getElementById(p)?.classList.add("hidden"));
+  document.getElementById(id)?.classList.remove("hidden");
 }
 
 function setStep(n, state) {
@@ -132,8 +142,16 @@ function setLine(n, done) {
   if (done) document.getElementById(`line-${n}`).classList.add("done");
 }
 
-function scrollTo(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth" });
+// Clicking a done/active step goes back to its panel
+function initStepNav() {
+  Object.entries(STEP_PANEL).forEach(([n, panelId]) => {
+    document.getElementById(`step-${n}`)?.addEventListener("click", () => {
+      const el = document.getElementById(`step-${n}`);
+      if (el.classList.contains("done") || el.classList.contains("active")) {
+        showPanel(panelId);
+      }
+    });
+  });
 }
 
 // ── Show launcher once hero scrolls out of view ───────────────
@@ -158,17 +176,19 @@ const FOCUSABLE = 'a[href],button:not([disabled]),input,select,textarea,[tabinde
 function openLauncher() {
   launcherPanel.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  document.documentElement.style.overflow = "hidden";
   const first = launcherPanel.querySelector(FOCUSABLE);
   first?.focus();
 }
 function closeLauncher() {
   launcherPanel.classList.add("hidden");
   document.body.style.overflow = "";
+  document.documentElement.style.overflow = "";
   launcherBtn.focus();
 }
 
 launcherBtn.addEventListener("click", () =>
-  launcherPanel.classList.toggle("hidden")
+  launcherPanel.classList.contains("hidden") ? openLauncher() : closeLauncher()
 );
 document.getElementById("launcher-close").addEventListener("click", closeLauncher);
 launcherPanel.addEventListener("click", (e) => {
@@ -193,6 +213,111 @@ document.addEventListener("keydown", (e) => {
 
 document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);
 
+// ── Abandon analysis ──────────────────────────────────────────
+document.getElementById("btn-exit").addEventListener("click", () => {
+  location.reload();
+});
+
+// ── File validation & image picker ───────────────────────────
+const MAX_FILE_MB    = 10;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const ALLOWED_HINT   = "JPG o PNG · máx. 10 MB por archivo";
+
+function validateImageFiles(files) {
+  for (const f of files) {
+    if (f.size > MAX_FILE_BYTES)
+      return `"${f.name}" supera los ${MAX_FILE_MB} MB permitidos.`;
+  }
+  return null;
+}
+
+// Returns a getter () => File[] with thumbnail preview + per-file remove.
+function attachImagePicker(inputId, hintId, previewId) {
+  const input   = document.getElementById(inputId);
+  const hint    = document.getElementById(hintId);
+  const preview = document.getElementById(previewId);
+  const managed = [];   // File[]
+
+  function updateHint() {
+    if (!hint) return;
+    hint.style.color = "";
+    hint.textContent = managed.length > 0
+      ? `${managed.length} ${managed.length === 1 ? "archivo seleccionado" : "archivos seleccionados"}`
+      : ALLOWED_HINT;
+  }
+
+  function render() {
+    if (!preview) return;
+    preview.innerHTML = "";
+    managed.forEach((file, i) => {
+      const url  = URL.createObjectURL(file);
+      const wrap = document.createElement("div");
+      wrap.className = "image-thumb-wrap";
+      wrap.innerHTML = `
+        <img class="image-thumb" src="${url}" alt="${file.name}" />
+        <button type="button" class="image-thumb-remove" aria-label="Eliminar ${file.name}">×</button>`;
+      wrap.querySelector(".image-thumb-remove").addEventListener("click", () => {
+        URL.revokeObjectURL(url);
+        managed.splice(i, 1);
+        render();
+        updateHint();
+      });
+      preview.appendChild(wrap);
+    });
+  }
+
+  input?.addEventListener("change", (e) => {
+    const incoming = Array.from(e.target.files ?? []);
+    const err = validateImageFiles(incoming);
+    if (err) {
+      if (hint) { hint.textContent = err; hint.style.color = "var(--rojo)"; }
+      e.target.value = "";
+      return;
+    }
+    for (const f of incoming) {
+      if (!managed.some(x => x.name === f.name && x.size === f.size)) managed.push(f);
+    }
+    e.target.value = "";  // reset so same file can be re-picked
+    render();
+    updateHint();
+  });
+
+  return () => managed;
+}
+
+const getFormImages = attachImagePicker("images",      "images-hint",      "images-preview");
+const getChatImages = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
+
+// ── Brief summary (panel 1 read-only view) ────────────────────
+const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
+
+function populateBriefSummary(brief, files) {
+  const dl = document.getElementById("brief-summary");
+  if (!dl) return;
+  const rows = [
+    ["Sector",       brief.business_type],
+    ["Barrio",       brief.neighbourhood],
+    brief.budget_eur ? ["Presupuesto", `${brief.budget_eur.toLocaleString("es-ES")} €`] : null,
+    brief.area_m2    ? ["Superficie",  `${brief.area_m2} m²`] : null,
+    ["Radio",        RADIUS_LABELS[brief.radius_m] ?? `${brief.radius_m} m`],
+    brief.notes      ? ["Contexto",    brief.notes] : null,
+  ].filter(Boolean);
+
+  dl.innerHTML = rows.map(([label, value]) => `
+    <div class="brief-row">
+      <dt class="brief-label">${label}</dt>
+      <dd class="brief-value">${value}</dd>
+    </div>`).join("");
+
+  if (files.length) {
+    const thumbs = files.map(f => {
+      const url = URL.createObjectURL(f);
+      return `<img class="image-thumb" src="${url}" alt="${f.name}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`;
+    }).join("");
+    dl.innerHTML += `<div class="brief-row"><dt class="brief-label">Fotos</dt><dd class="brief-value"><div class="upload-preview" style="margin:0">${thumbs}</div></dd></div>`;
+  }
+}
+
 // ── Brief form submit ─────────────────────────────────────────
 document.getElementById("form-brief").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -214,11 +339,20 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   try {
     const { job_id: jobId } = await startAnalysis(brief);
 
+    const formFiles = getFormImages();
+    if (formFiles.length) await uploadImages(jobId, formFiles);
+
     closeLauncher();
     document.querySelector(".main").classList.add("active");
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    document.getElementById("analysis-topbar").classList.remove("hidden");
     showLoading();
 
+    populateBriefSummary(brief, getFormImages());
+
     document.getElementById("stepper").classList.remove("hidden");
+    initStepNav();
     setStep(1, "done"); setLine(1, true);
     setStep(2, "active");
     showPanel("panel-debate");
@@ -230,11 +364,23 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
 
     await runDebate(jobId);
 
+    // Show continue button — user reads the debate then clicks to advance
+    document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
+    const debateActions = document.getElementById("debate-actions");
+    debateActions.classList.remove("hidden");
+    await new Promise((resolve) =>
+      document.getElementById("btn-debate-continue").addEventListener("click", resolve, { once: true })
+    );
+    debateActions.classList.add("hidden");
+
     setStep(2, "done"); setLine(2, true);
     setStep(3, "active");
     showPanel("panel-chat");
 
     await initChat(jobId);   // resolves when user clicks "Continuar al veredicto"
+
+    const chatFiles = getChatImages();
+    if (chatFiles.length) await uploadImages(jobId, chatFiles);
 
     setStep(3, "done"); setLine(3, true);
     setStep(4, "active");

@@ -1,21 +1,25 @@
 """TertulIA FastAPI application.
 
 Endpoints:
-  POST /api/analyze          → start a job, returns { job_id }
-  GET  /api/debate/{job_id}  → SSE stream of agent messages
-  POST /api/chat/{job_id}    → SSE stream of chat responses
-  GET  /api/verdict/{job_id} → Verdict JSON
-  POST /api/approve/{job_id} → PDF bytes
+  POST /api/analyze           → start a job, returns { job_id }
+  POST /api/upload/{job_id}   → upload images, returns { paths }
+  GET  /api/debate/{job_id}   → SSE stream of agent messages
+  POST /api/chat/{job_id}     → SSE stream of chat responses
+  GET  /api/verdict/{job_id}  → Verdict JSON (includes tokens_used)
+  POST /api/approve/{job_id}  → PDF bytes
 """
 
 import asyncio
 import json
+import logging
 import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
+log = logging.getLogger(__name__)
+
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -105,7 +109,7 @@ def _skeleton_verdict() -> SchemaVerdict:
     return SchemaVerdict(
         light=TrafficLight.AMBER,
         confidence=0.72,
-        summary="Viabilidad media — riesgo controlado",
+        summary="Viabilidad media, riesgo controlado",
         reasons=[
             "Demanda confirmada: 3 competidores directos con valoración media de 4,2 ★",
             "Punto de equilibrio alcanzable con 68 clientes/día en escenario base (45% ocupación)",
@@ -137,7 +141,10 @@ async def _prepare_crew(brief: BusinessBrief):
 
         profile = load_sector(brief.business_type)
         llm = llm_from_settings()
-        initial_inputs = build_inputs(brief, profile)
+        abs_image_paths = [
+            str(_ROOT / "outputs" / p) for p in brief.image_paths
+        ]
+        initial_inputs = build_inputs(brief, profile, images=abs_image_paths or None)
 
         try:
             from tertulia.mcp.client import researcher_tools
@@ -159,7 +166,8 @@ async def _prepare_crew(brief: BusinessBrief):
             )
 
         return _run, _rebuild, initial_inputs
-    except Exception:
+    except Exception as exc:
+        log.exception("_prepare_crew failed — falling back to skeleton: %s", exc)
         return None
 
 
@@ -209,7 +217,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     crew = await _prepare_crew(brief)
 
     if crew is None:
-        # Skeleton demo — no LLM calls
+        log.warning("job=%s using skeleton debate — crew unavailable", job_id)
         for msg in _SKELETON_DEBATE:
             yield f"data: {json.dumps({'thinking': True, 'agent': msg['agent'], 'name': msg['name']})}\n\n"
             await asyncio.sleep(msg["delay"])
@@ -284,16 +292,67 @@ async def chat(job_id: str, req: ChatRequest):
     )
 
 
+def _build_chat_system_prompt(job: dict) -> str:
+    brief: BusinessBrief = job["brief"]
+    debate_lines = "\n".join(
+        f"  [{m.get('name', m.get('agent', '?'))}]: {m.get('message', '')}"
+        for m in (job.get("messages") or [])
+    )
+    history_lines = "\n".join(
+        f"  {'Usuario' if h['role'] == 'user' else 'Asistente'}: {h['text']}"
+        for h in (job.get("chat_history") or [])[:-1]  # exclude the current message
+    )
+    return (
+        "Eres un equipo de consultores expertos en viabilidad de negocios. "
+        "Responde en español de forma clara, directa y profesional. "
+        "No repitas saludos ni preámbulos innecesarios.\n\n"
+        f"CONTEXTO DEL ANÁLISIS:\n"
+        f"  Tipo de negocio: {brief.business_type}\n"
+        f"  Barrio: {brief.neighbourhood}\n"
+        f"  Presupuesto: {brief.budget_eur} EUR\n"
+        f"  Superficie: {brief.area_m2} m²\n"
+        f"  Notas del usuario: {brief.notes or '(ninguna)'}\n\n"
+        f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
+        + (f"CONVERSACIÓN PREVIA:\n{history_lines}\n\n" if history_lines else "")
+        + "Responde a la siguiente pregunta o comentario del usuario."
+    )
+
+
 async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
-    _jobs[job_id].setdefault("chat_history", []).append({"role": "user", "text": message})
-    for delay, payload in [
-        (1.2, {"agent": "analyst",  "name": "Analista", "role": "Viabilidad financiera",
-               "message": "Gracias por el dato. He recalculado las proyecciones teniendo en cuenta lo que comentas."}),
-        (1.4, {"agent": "reviewer", "name": "Revisor",  "role": "Control de calidad",
-               "message": "Incorporo el contexto en la valoración y ajusto la confianza del veredicto."}),
-    ]:
-        await asyncio.sleep(delay)
-        yield f"data: {json.dumps(payload)}\n\n"
+    job = _jobs[job_id]
+    job.setdefault("chat_history", []).append({"role": "user", "text": message})
+
+    yield f"data: {json.dumps({'thinking': True, 'agent': 'analyst', 'name': 'Analista'})}\n\n"
+
+    response_text: str | None = None
+    try:
+        from tertulia.crew.crew import llm_from_settings
+
+        llm = llm_from_settings()
+        system_prompt = _build_chat_system_prompt(job)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": message},
+        ]
+        response_text = await asyncio.to_thread(llm.call, messages)
+        # crewai LLM.call may return a string or an object with .content
+        if not isinstance(response_text, str):
+            response_text = getattr(response_text, "content", str(response_text))
+    except Exception:
+        response_text = None
+
+    if not response_text:
+        response_text = (
+            "Gracias por el contexto adicional. He tenido en cuenta tu aportación "
+            "y la incorporaré en la valoración final."
+        )
+
+    payload = {
+        "agent": "analyst", "name": "Analista",
+        "role": "Viabilidad financiera", "message": response_text,
+    }
+    job.setdefault("chat_history", []).append({"role": "assistant", "text": response_text})
+    yield f"data: {json.dumps(payload)}\n\n"
     yield f"data: {json.dumps({'done': True})}\n\n"
 
 
@@ -303,7 +362,9 @@ async def get_verdict(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     verdict: SchemaVerdict = job.get("verdict") or _skeleton_verdict()
-    return verdict.model_dump()
+    result = verdict.model_dump()
+    result["tokens_used"] = job.get("tokens_used", 0)
+    return result
 
 
 class ApproveRequest(BaseModel):
@@ -327,13 +388,21 @@ async def approve(job_id: str, req: ApproveRequest):
             "status": "expired",
             "traces": final.get("traces", []),
             "errors": final.get("errors", []),
+            "sources": final.get("sources", []),
+            "findings": final.get("findings", []),
+            "tokens_used": final.get("tokens_used", 0),
         })
         return {"ok": False, "reason": "estudio caducado"}
 
     await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
     final = await asyncio.to_thread(_graph.invoke, None, graph_config)
-    _jobs[job_id]["traces"] = final.get("traces", [])
-    _jobs[job_id]["errors"] = final.get("errors", [])
+    _jobs[job_id].update({
+        "traces": final.get("traces", []),
+        "errors": final.get("errors", []),
+        "sources": final.get("sources", []),
+        "findings": final.get("findings", []),
+        "tokens_used": final.get("tokens_used", 0),
+    })
 
     if not req.approved:
         _jobs[job_id]["status"] = "rejected"
@@ -359,7 +428,8 @@ async def approve(job_id: str, req: ApproveRequest):
         brief=ReportBrief(
             sector=brief.business_type,
             neighborhood=brief.neighbourhood,
-            budget_eur=str(int(brief.budget_eur)) if brief.budget_eur else None,
+            budget_eur=brief.budget_eur,
+            area_m2=brief.area_m2,
             context=brief.notes or None,
             profile=brief.user_profile.value,
         ),
@@ -375,10 +445,12 @@ async def approve(job_id: str, req: ApproveRequest):
 
     try:
         from tertulia.report import build_pdf
-    except ImportError:
-        raise HTTPException(status_code=501, detail="weasyprint not installed — run: pip install weasyprint")
-
-    pdf_bytes = build_pdf(report_data)
+        pdf_bytes = build_pdf(report_data)
+    except (ImportError, OSError) as exc:
+        raise HTTPException(
+            status_code=501,
+            detail=f"PDF generation unavailable: {exc}. On Windows, install the GTK3 runtime."
+        ) from exc
     _jobs[job_id]["status"] = "done"
 
     return Response(
@@ -386,6 +458,37 @@ async def approve(job_id: str, req: ApproveRequest):
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="report_{job_id}.pdf"'},
     )
+
+
+_ALLOWED_IMG_SUFFIXES = {".jpg", ".jpeg", ".png"}
+_OUTPUTS_DIR = _ROOT / "outputs"
+_MAX_IMG_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+@app.post("/api/upload/{job_id}")
+async def upload_images(job_id: str, files: list[UploadFile] = File(...)):
+    if job_id not in _jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    upload_dir = _OUTPUTS_DIR / job_id / "uploads"
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    saved: list[str] = []
+    for f in files:
+        name = Path(f.filename or "").name
+        if not name or Path(name).suffix.lower() not in _ALLOWED_IMG_SUFFIXES:
+            raise HTTPException(status_code=400, detail=f"Solo se aceptan jpg y png: {f.filename!r}")
+        data = await f.read()
+        if len(data) > _MAX_IMG_BYTES:
+            raise HTTPException(status_code=413, detail=f"{name!r} supera los 10 MB permitidos")
+        dest = upload_dir / name
+        dest.write_bytes(data)
+        saved.append(f"{job_id}/uploads/{name}")
+
+    brief = _jobs[job_id]["brief"]
+    merged = list(brief.image_paths) + [p for p in saved if p not in brief.image_paths]
+    _jobs[job_id]["brief"] = brief.model_copy(update={"image_paths": merged})
+    return {"paths": saved}
 
 
 # ── Static files (must come after all API routes) ─────────────────────────────

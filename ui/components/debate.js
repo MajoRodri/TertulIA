@@ -1,33 +1,30 @@
 import { openDebateStream } from "../api.js";
+import { renderMd } from "../utils/markdown.js";
+import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const feed = document.getElementById("debate-feed");
 
-const AGENT_ICONS = {
-  researcher: "portera",
-  analyst:    "chulapo",
-  writer:     "pregonero",
-  reviewer:   "revisora",
-  vision:     "berto",
+const AGENT_THINKING = {
+  researcher: "La Portera está investigando…",
+  analyst:    "El Chulapo está calculando…",
+  writer:     "El Pregonero está redactando…",
+  reviewer:   "La Revisora está revisando…",
+  vision:     "Berto está analizando las imágenes…",
 };
 
-function avatarHtml(agent, name) {
-  const icon = AGENT_ICONS[agent];
-  if (icon) {
-    return `<div class="agent-avatar ${agent}"><img src="/assets/${icon}.png" alt="${name}" /></div>`;
-  }
-  return `<div class="agent-avatar ${agent}" style="${agent ? "" : "background:var(--border)"}">${agent ? name.slice(0, 2).toUpperCase() : ""}</div>`;
-}
-
 function createTypingIndicator(name = "", agent = "") {
+  const label = agent
+    ? (AGENT_THINKING[agent] ?? `${name} está analizando…`)
+    : "";
   const el = document.createElement("div");
   el.className = "debate-message";
   el.id = "typing-indicator";
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
-      ${name ? `<div class="agent-thinking-label">${name} está analizando…</div>` : ""}
+      ${label ? `<div class="agent-thinking-label">${label}</div>` : ""}
       <div class="typing-indicator">
         <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
       </div>
@@ -37,16 +34,17 @@ function createTypingIndicator(name = "", agent = "") {
 
 function appendMessage({ agent, name, role, message }) {
   document.getElementById("typing-indicator")?.remove();
+  const displayName = AGENT_DISPLAY_NAMES[agent] ?? name;
   const el = document.createElement("div");
   el.className = "debate-message";
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
       <div class="message-meta">
-        <span class="agent-name">${name}</span>
+        <span class="agent-name">${displayName}</span>
         <span class="agent-role">${role}</span>
       </div>
-      <p class="message-text">${message}</p>
+      <div class="message-text">${renderMd(message)}</div>
     </div>`;
   feed.appendChild(el);
   el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
