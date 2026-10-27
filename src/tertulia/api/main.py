@@ -152,10 +152,17 @@ async def _prepare_crew(brief: BusinessBrief):
         except Exception:
             mcp_researcher = []
 
+        from tertulia.crew.agent_tools import default_tools as _get_tools
+        _tools_map: dict = {
+            "researcher": mcp_researcher,
+            "analyst":    _get_tools("analyst", llm),
+            "vision":     _get_tools("vision", llm),
+            "writer":     [],
+            "reviewer":   [],
+        }
+
         def _run(step: str, inp: dict) -> dict:
-            # Pass researcher MCP tools explicitly; other agents get default_tools automatically
-            tools = {"researcher": mcp_researcher} if mcp_researcher else None
-            return run_step(step, inp, llm, tools)
+            return run_step(step, inp, llm, _tools_map)
 
         def _rebuild(acc: dict) -> dict:
             return build_inputs(
