@@ -24,7 +24,7 @@ export function initApproval(jobId) {
       }
     } catch (err) {
       btnApprove.disabled = false;
-      btnApprove.textContent = "Error al conectar — inténtalo de nuevo";
+      btnApprove.textContent = "Error al conectar. Inténtalo de nuevo.";
       btnApprove.title = err.message;
       console.error("approve error:", err);
     }

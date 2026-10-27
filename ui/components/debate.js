@@ -14,17 +14,15 @@ const AGENT_THINKING = {
   vision:     "Berto está analizando las imágenes…",
 };
 
-function createTypingIndicator(name = "", agent = "") {
-  const label = agent
-    ? (AGENT_THINKING[agent] ?? `${name} está analizando…`)
-    : "";
+function createTypingIndicator(name = "", agent = "", label = "") {
+  const displayLabel = label || (agent ? (AGENT_THINKING[agent] ?? `${name} está analizando…`) : "");
   const el = document.createElement("div");
   el.className = "debate-message";
   el.id = "typing-indicator";
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
-      ${label ? `<div class="agent-thinking-label">${label}</div>` : ""}
+      ${displayLabel ? `<div class="agent-thinking-label">${displayLabel}</div>` : ""}
       <div class="typing-indicator">
         <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
       </div>
@@ -57,13 +55,13 @@ function showSimulatedWarning() {
   const el = document.createElement("div");
   el.id = "simulated-warning";
   el.className = "simulated-warning";
-  el.textContent = "⚠️ Servidor de análisis no disponible — mostrando datos de ejemplo, no reales.";
+  el.textContent = "⚠️ Servidor de análisis no disponible. Mostrando datos de ejemplo, no reales.";
   feed.insertBefore(el, feed.firstChild);
 }
 
 export function runDebate(jobId) {
   feed.innerHTML = "";
-  feed.appendChild(createTypingIndicator());
+  feed.appendChild(createTypingIndicator("", "", "Uniendo a los agentes…"));
   return new Promise((resolve, reject) => {
     openDebateStream(
       jobId,

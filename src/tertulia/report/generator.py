@@ -255,7 +255,7 @@ def _simulated_notice() -> list:
         textColor=_NARANJA, leading=12, alignment=TA_CENTER,
     )
     box = Table(
-        [[Paragraph("¡Atención! DATOS DE EJEMPLO — Este informe no refleja datos reales", notice_style)]],
+        [[Paragraph("¡Atención! DATOS DE EJEMPLO. Este informe no refleja datos reales.", notice_style)]],
         colWidths=[_TW], hAlign="LEFT",
     )
     box.setStyle(TableStyle([

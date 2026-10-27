@@ -34,6 +34,6 @@ class ReportData(BaseModel):
     debate: list[AgentMessage]
     verdict: Verdict
     generated_on: date = date.today()
-    job_id: str = "—"
+    job_id: str = "N/A"
     simulated: bool = False
     tokens_used: int = 0

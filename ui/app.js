@@ -223,8 +223,14 @@ const MAX_FILE_MB    = 10;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const ALLOWED_HINT   = "JPG o PNG · máx. 10 MB por archivo";
 
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
+const ALLOWED_EXTS  = new Set([".jpg", ".jpeg", ".png"]);
+
 function validateImageFiles(files) {
   for (const f of files) {
+    const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_TYPES.has(f.type) && !ALLOWED_EXTS.has(ext))
+      return `"${f.name}" no está permitido. Solo se aceptan JPG y PNG.`;
     if (f.size > MAX_FILE_BYTES)
       return `"${f.name}" supera los ${MAX_FILE_MB} MB permitidos.`;
   }

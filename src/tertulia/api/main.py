@@ -175,6 +175,22 @@ async def _prepare_crew(brief: BusinessBrief):
         return None
 
 
+_RETRYABLE = ("429", "503", "RESOURCE_EXHAUSTED", "UNAVAILABLE")
+
+async def _run_with_retry(fn, *args, retries: int = 10, base_delay: float = 25.0):
+    for attempt in range(retries):
+        try:
+            return await asyncio.to_thread(fn, *args)
+        except Exception as exc:
+            msg = str(exc)
+            if attempt < retries - 1 and any(code in msg for code in _RETRYABLE):
+                delay = min(base_delay * (1.4 ** attempt), 120)
+                log.warning("Rate limited (attempt %d/%d) — retrying in %.0fs", attempt + 1, retries, delay)
+                await asyncio.sleep(delay)
+            else:
+                raise
+
+
 def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     """Stores step outputs so later steps can reference them via build_inputs."""
     if step == "research":
@@ -239,7 +255,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
             yield f"data: {json.dumps({'thinking': True, 'agent': first['agent'], 'name': first['name']})}\n\n"
 
             try:
-                result: dict[str, str] = await asyncio.to_thread(run_step_fn, step_name, inputs)
+                result: dict[str, str] = await _run_with_retry(run_step_fn, step_name, inputs)
             except Exception:
                 for meta in agents_meta:
                     fallback = _first_skeleton_for(meta["agent"])

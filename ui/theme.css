@@ -213,6 +213,7 @@ h3 { font-size: var(--text-xl); }
   display: flex;
   align-items: center;
   margin-bottom: var(--s6);
+  padding-right: 52px; /* leave room for .analysis-close (36px button + 16px gap) */
 }
 
 .step {
@@ -839,7 +840,7 @@ h3 { font-size: var(--text-xl); }
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: var(--s3) var(--s5) 0;
+  padding: 56px var(--s5) 0;
 }
 
 /* every visible panel fills the remaining height and scrolls inside itself */
@@ -885,8 +886,8 @@ h3 { font-size: var(--text-xl); }
 /* ─── Analysis close button (top-right of floating window) ───── */
 .analysis-close {
   position: absolute;
-  top: var(--s4);
-  right: var(--s4);
+  top: 12px;
+  right: 16px;
   z-index: 10;
   width: 32px;
   height: 32px;
