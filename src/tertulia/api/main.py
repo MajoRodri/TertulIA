@@ -341,6 +341,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
         "verdict": _jobs[job_id]["verdict"],
         "traces": [], "tokens_used": 0,
         "human_approved": False, "expired": False, "errors": [],
+        "research_result": "", "vision_result": "", "analysis_result": "",
     }
     await asyncio.to_thread(_graph.invoke, graph_state, graph_config)
     yield f"data: {json.dumps({'paused': True})}\n\n"

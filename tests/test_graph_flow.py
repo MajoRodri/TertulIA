@@ -14,6 +14,9 @@ INITIAL_STATE = {
     "tokens_used": 0,
     "human_approved": False,
     "errors": [],
+    "research_result": "",
+    "vision_result": "",
+    "analysis_result": "",
 }
 
 
