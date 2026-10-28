@@ -156,7 +156,7 @@ def test_combine_counts_each_place_once_and_marks_the_doubtful_ones():
 def live_coworking(monkeypatch):
     """Live mode, Atocha centre and one OSM coworking, without asking Overpass."""
     monkeypatch.setattr(server, "DEMO_MODE", False)
-    monkeypatch.setattr(server, "_find_centre", lambda name: CENTRE)
+    monkeypatch.setattr(server, "_find_centre", lambda *args: CENTRE)
     monkeypatch.setattr(server, "_search_venues", lambda *args: [dict(OSM_SPACES)])
 
 
@@ -350,3 +350,21 @@ def test_categories_also_go_through_the_injection_guard(monkeypatch, live_cowork
     monkeypatch.setattr(server, "_search_foursquare", lambda *args: [sneaky])
     answer = server.search_competitors("Atocha", "coworking", 800)
     assert answer["venues"][1]["suspicious"] is True
+
+def test_the_tool_tells_the_model_to_report_venues_to_review_separately():
+    # Real run (28 Oct): the Researcher reported only the 2 confirmed coworkings
+    # and silently dropped the 8 to review.
+    instructions = server.search_competitors.__doc__
+    assert "Always report" in instructions and "Never drop them" in instructions
+    assert "coverage_note" in instructions
+
+
+
+@pytest.mark.parametrize(
+    ("category", "status", "has_note"),
+    [("coworking", "not_used", True), ("coworking", "no_key", True), ("coworking", "failed", True),
+    ("coworking", "used", False), ("cafe", "not_used", False)],
+)
+def test_coverage_note_only_for_coworkings_without_foursquare(category, status, has_note):
+    answer = server._answer("Atocha", category, 800, {}, [], "2026-10-28", True, status)
+    assert (answer["coverage_note"] is not None) == has_note

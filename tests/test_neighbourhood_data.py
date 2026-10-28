@@ -42,7 +42,6 @@ def isolated_server(monkeypatch, tmp_path):
     monkeypatch.setattr(server, "FOURSQUARE_API_KEY", server.SecretStr(""))
     monkeypatch.setattr(server, "RETRY_PAUSE_S", 0)
     monkeypatch.setattr(server, "DEMO_DATA_DIR", tmp_path)
-    server._find_centre.cache_clear()
     saved = {
         "neighbourhood": "Atocha",
         "centre": CENTRE,
@@ -63,13 +62,13 @@ def isolated_server(monkeypatch, tmp_path):
 def _fake_overpass(centre_elements, venue_elements):
     """Replace _run_query: centre queries get one answer, venue queries the other."""
 
-    def fake(query):
+    def fake(query, deadline=None):
         return centre_elements if "admin_level" in query else venue_elements
 
     return fake
 
 
-def _overpass_down(query):
+def _overpass_down(query, deadline=None):
     raise httpx.ConnectError("Overpass is down")
 
 
@@ -133,7 +132,7 @@ def test_flag_injection_flags_but_keeps_the_venue():
 
 @pytest.mark.parametrize("name", ['Atocha"];out;', "../../.env", "Atocha1"])
 def test_bad_names_are_rejected_before_asking_overpass(monkeypatch, name):
-    def must_not_be_called(query):
+    def must_not_be_called(query, deadline=None):
         raise AssertionError("Overpass should not be asked")
 
     monkeypatch.setattr(server, "_run_query", must_not_be_called)
@@ -219,7 +218,7 @@ def test_unknown_neighbourhood_does_not_use_the_fallback(monkeypatch):
 
 
 def test_demo_mode_never_asks_overpass_and_filters_by_radius(monkeypatch):
-    def must_not_be_called(query):
+    def must_not_be_called(query, deadline=None):
         raise AssertionError("Overpass should not be asked in demo mode")
 
     monkeypatch.setattr(server, "DEMO_MODE", True)
@@ -260,3 +259,34 @@ def test_not_found_and_source_unavailable_codes(monkeypatch):
     monkeypatch.setattr(server, "_run_query", _overpass_down)
     with pytest.raises(RuntimeError, match=r"^\[source_unavailable\]"):
         server.search_competitors("Delicias", "cafe", 800)
+
+# --- Speed: saved centre and time budget (28 Oct) ----------------------------------
+
+def test_saved_centre_is_used_without_asking_overpass(monkeypatch):
+    def must_not_be_called(query, deadline=None):
+        raise AssertionError("Overpass should not be asked")
+
+    monkeypatch.setattr(server, "_run_query", must_not_be_called)
+    assert server._find_centre("Atocha") == (CENTRE["lat"], CENTRE["lon"])
+
+
+def test_no_retry_when_the_time_budget_is_used_up(monkeypatch):
+    calls = []
+
+    def always_down(*args, **kwargs):
+        calls.append(1)
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(server.httpx, "post", always_down)
+    monkeypatch.setattr(server, "RETRY_PAUSE_S", 5)  # the fixture sets 0
+    # Only 12 s left: one request fits, a pause plus a second one does not.
+    deadline = server.time.monotonic() + 12
+    with pytest.raises(httpx.ConnectError):
+        server._run_query("query", deadline)
+    assert len(calls) == 1
+
+
+def test_no_request_at_all_when_no_time_is_left(monkeypatch):
+    monkeypatch.setattr(server.httpx, "post", lambda *args, **kwargs: 1 / 0)
+    with pytest.raises(httpx.TimeoutException):
+        server._run_query("query", server.time.monotonic())
