@@ -25,7 +25,7 @@ from pydantic import BaseModel
 
 from tertulia.graph.builder import app as _graph
 from tertulia.report.models import AgentMessage as ReportMessage
-from tertulia.report.models import ReportBrief, ReportData
+from tertulia.report.models import ReportBrief, ReportData, ReportSource
 from tertulia.report.models import Verdict as ReportVerdict
 from tertulia.schemas.models import BusinessBrief, TrafficLight
 from tertulia.schemas.models import Verdict as SchemaVerdict
@@ -175,21 +175,6 @@ async def _prepare_crew(brief: BusinessBrief):
         return None
 
 
-_RETRYABLE = ("429", "503", "RESOURCE_EXHAUSTED", "UNAVAILABLE")
-
-async def _run_with_retry(fn, *args, retries: int = 10, base_delay: float = 25.0):
-    for attempt in range(retries):
-        try:
-            return await asyncio.to_thread(fn, *args)
-        except Exception as exc:
-            msg = str(exc)
-            if attempt < retries - 1 and any(code in msg for code in _RETRYABLE):
-                delay = min(base_delay * (1.4 ** attempt), 120)
-                log.warning("Rate limited (attempt %d/%d) — retrying in %.0fs", attempt + 1, retries, delay)
-                await asyncio.sleep(delay)
-            else:
-                raise
-
 
 def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     """Stores step outputs so later steps can reference them via build_inputs."""
@@ -236,6 +221,8 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
 
     crew = await _prepare_crew(brief)
 
+    debate_simulated = crew is None
+
     if crew is None:
         log.warning("job=%s using skeleton debate — crew unavailable", job_id)
         yield f"data: {json.dumps({'simulated': True})}\n\n"
@@ -255,7 +242,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
             yield f"data: {json.dumps({'thinking': True, 'agent': first['agent'], 'name': first['name']})}\n\n"
 
             try:
-                result: dict[str, str] = await _run_with_retry(run_step_fn, step_name, inputs)
+                result: dict[str, str] = await asyncio.to_thread(run_step_fn, step_name, inputs)
             except Exception:
                 for meta in agents_meta:
                     fallback = _first_skeleton_for(meta["agent"])
@@ -281,10 +268,11 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 messages.append(payload)
                 yield f"data: {json.dumps(payload)}\n\n"
 
-    _jobs[job_id]["messages"]  = messages
-    _jobs[job_id]["verdict"]   = _skeleton_verdict()
-    _jobs[job_id]["status"]    = "paused"
-    _jobs[job_id]["simulated"] = True  # always until #12 delivers a real verdict
+    _jobs[job_id]["messages"]          = messages
+    _jobs[job_id]["verdict"]           = _skeleton_verdict()
+    _jobs[job_id]["status"]            = "paused"
+    _jobs[job_id]["debate_simulated"]  = debate_simulated
+    _jobs[job_id]["simulated"]         = True  # verdict always skeleton until #12
     _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
 
     graph_config = {"configurable": {"thread_id": job_id}}
@@ -500,6 +488,24 @@ async def approve(job_id: str, req: ApproveRequest):
         {k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE
     ]
 
+    raw_sources = job.get("sources") or []
+    pdf_sources: list[ReportSource] = []
+    for s in raw_sources:
+        try:
+            url = s.url if hasattr(s, "url") else s.get("url")
+            if not url:
+                continue
+            if getattr(s, "suspicious", s.get("suspicious", False)):
+                continue
+            pdf_sources.append(ReportSource(
+                title=getattr(s, "title", s.get("title", url)),
+                url=url,
+                source_type=str(getattr(s, "source_type", s.get("source_type", ""))),
+                retrieved_at=str(getattr(s, "retrieved_at", s.get("retrieved_at", ""))),
+            ))
+        except Exception:
+            continue
+
     signal_map = {TrafficLight.GREEN: "green", TrafficLight.AMBER: "yellow", TrafficLight.RED: "red"}
     report_signal = signal_map.get(verdict.final_light, "yellow")
 
@@ -514,6 +520,7 @@ async def approve(job_id: str, req: ApproveRequest):
             profile=brief.user_profile.value,
         ),
         debate=[ReportMessage(**m) for m in messages],
+        sources=pdf_sources,
         verdict=ReportVerdict(
             signal=report_signal,
             label=verdict.summary,
@@ -521,7 +528,7 @@ async def approve(job_id: str, req: ApproveRequest):
             reasons=verdict.reasons,
         ),
         generated_on=date.today(),
-        simulated=job.get("simulated", False),
+        simulated=job.get("debate_simulated", False),
         tokens_used=job.get("tokens_used", 0),
     )
 
