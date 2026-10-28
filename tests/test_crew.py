@@ -6,6 +6,7 @@ Que el modelo real responda bien se prueba aparte, a mano, con una clave.
 """
 
 import os
+import time
 
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
@@ -16,6 +17,7 @@ from crewai.llms.base_llm import BaseLLM  # noqa: E402
 from tertulia.crew.crew import (  # noqa: E402
     LLM_RETRY_ATTEMPTS,
     LLM_TIMEOUT_S,
+    NO_IMAGES_ANSWER,
     NO_TOOLS_NOTE,
     STEPS,
     build_llm,
@@ -144,14 +146,64 @@ def test_build_llm_does_not_call_the_api():
 # --- Ejecución con el modelo falso ----------------------------------------------
 
 
-def test_research_step_runs_research_and_vision(inputs):
+def test_research_without_photos_skips_the_vision_call(inputs):
+    # Sin fotos, la visión no llama al modelo: una llamada menos (y menos 429)
     llm = FakeLLM(model="fake", received=[])
     result = run_step("research", inputs, llm, NO_TOOLS)
-    assert result == {
-        "research_task": "respuesta de prueba",
-        "vision_task": "respuesta de prueba",
-    }
+    assert result == {"research_task": "respuesta de prueba", "vision_task": NO_IMAGES_ANSWER}
+    assert len(llm.received) == 1  # solo el Investigador
     assert "Atocha" in llm.received[0]  # las variables llegaron al agente
+
+
+def test_research_with_photos_runs_both_tasks_in_parallel(brief):
+    class SlowLLM(FakeLLM):
+        def call(self, messages, *args, **kwargs):
+            time.sleep(1.5)
+            return super().call(messages, *args, **kwargs)
+
+    data = build_inputs(brief, load_sector("cafe_cowork"), images=["run-1/a.jpg", "run-1/b.jpg"])
+    llm = SlowLLM(model="fake", received=[])
+    start = time.monotonic()
+    result = run_step("research", data, llm, NO_TOOLS)
+    elapsed = time.monotonic() - start
+    assert result == {"research_task": "respuesta de prueba", "vision_task": "respuesta de prueba"}
+    assert len(llm.received) == 2
+    assert elapsed < 2.8  # en serie serían más de 3 s (1,5 s por llamada)
+
+
+def test_vision_gets_one_step_per_photo():
+    # Con max_iter=5 solo se analizaban 5 de 10 fotos (comprobado con CrewAI 1.15.28)
+    from crewai.tools import BaseTool
+
+    analysed: list[str] = []
+
+    class Photo(BaseTool):
+        name: str = "analyse_image"
+        description: str = "Herramienta falsa para tests."
+
+        def _run(self, image_path: str) -> str:
+            analysed.append(image_path)
+            return "foto analizada"
+
+    class OnePhotoPerStep(FakeLLM):
+        # El Investigador corre a la vez en otro hilo: solo se cuentan las llamadas
+        # del agente de visión, para que el resultado no dependa del orden de los hilos.
+        def call(self, messages, *args, **kwargs):
+            if "Analista visual" not in str(messages):
+                return "Thought: listo\nFinal Answer: hecho"
+            self.received.append(str(messages))
+            n = len(self.received)
+            if n <= 10:
+                return f'Thought: siguiente\nAction: analyse_image\nAction Input: {{"image_path": "f{n}.jpg"}}'
+            return "Thought: listo\nFinal Answer: hecho"
+
+    photos = [f"run-1/f{i}.jpg" for i in range(1, 11)]
+    data = build_inputs(
+        BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha"), load_sector("cafe_cowork"), images=photos
+    )
+    tools = {**NO_TOOLS, "vision": [Photo()]}
+    run_step("research", data, OnePhotoPerStep(model="fake", received=[]), tools)
+    assert len(set(analysed)) == 10
 
 
 def test_writer_receives_previous_results(brief):
