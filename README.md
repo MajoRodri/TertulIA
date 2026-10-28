@@ -8,15 +8,17 @@
 >
 > *For Majo: everything from my part that should go into the global `README.md`, in Spanish and English. Take what you need and adapt it to the README format. I will keep it updated as I finish each step.*
 
-**Última actualización / Last update:** 27 oct 2026
+**Última actualización / Last update:** 28 oct 2026
 
 | Módulo / Module | Ruta / Path | Estado / Status |
 | --- | --- | --- |
 | Filtro anti prompt injection / Prompt injection guard | `src/tertulia/guardrails/injection.py` | ✅ Fusionado / Merged |
 | Contratos de datos (propuesta como PO) / Data contracts (proposed as PO) | `src/tertulia/schemas/` | ✅ Fusionado / Merged |
 | Servidor MCP / MCP server `neighbourhood_data` | `src/tertulia/mcp/servers/neighbourhood_data/` | ✅ Fusionado / Merged (PR #49) |
+| Foursquare como segunda fuente / Foursquare as second source | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #64) |
+| `BusinessBrief.image_paths` | `src/tertulia/schemas/models.py` | ✅ Fusionado / Merged (PR #60) |
 | Cliente MCP y servidor fetch / MCP client and fetch server | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py` | ✅ Fusionado / Merged (PR #58) |
-| Agente de visión / Vision agent | `src/tertulia/vision/` | 🔄 En curso / In progress (#32) |
+| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67) |
 
 ---
 
@@ -104,6 +106,16 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 
 **Fuente de datos:** © OpenStreetMap contributors, licencia ODbL (permite guardar los datos para la demo sin internet, citando la fuente).
 
+**Segunda fuente para coworkings: Foursquare (solo en directo).** OpenStreetMap se queda corto en coworkings: en una prueba el 27 oct, a 800 m de Atocha, OSM tenía 2 y Foursquare 9, pero varios de Foursquare eran sedes de empresas, porque allí las categorías las ponen sus usuarios.
+
+- Para coworkings, en directo, el servidor combina OSM y Foursquare **sin repetir locales** (nombre que coincide y a ≤ 75 m).
+- Lo que aparece **solo en Foursquare** lleva `needs_review: true` y un `review_reason`: el sistema no descarta nada, **decide el analista** (*human-in-the-loop*).
+- Cada local indica sus fuentes (`sources`). La respuesta incluye `needs_review_count` y `foursquare_status` (`used`, `failed` o `not_used`).
+- **Términos de Foursquare:** no permiten guardar sus datos (solo el identificador) y exigen «Powered by Foursquare». Por eso solo se usa en directo, no se guarda nada y en modo demo, con datos guardados o si falla, se usa solo OSM.
+- La clave (`FOURSQUARE_API_KEY`) la lee el propio servidor del `.env`, como `SecretStr` (nunca sale en logs). Sin clave, todo funciona solo con OSM.
+- ⚠️ `total` incluye los locales por revisar: hasta que el analista revise, no deben contarse como competidores confirmados.
+- **Tests:** 14 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
+
 ## 4. Cliente MCP (`src/tertulia/mcp/client.py`)
 
 **Qué es.** El único sitio donde se dice qué servidores MCP existen, cómo se arrancan y qué herramientas puede usar cada agente. Convierte las herramientas MCP en herramientas de CrewAI listas para usar:
@@ -131,7 +143,7 @@ Agent(..., tools=researcher_tools())
 
 **Tests:** 21 en `tests/test_mcp_client.py`, sin arrancar ningún servidor; 7 del conversor en `tests/test_html_text.py`, y 1 de integración en `tests/test_mcp_integration.py`, que arranca el servidor real y comprueba el error tal como le llega al grafo (sin internet).
 
-## 5. Agente de visión (`src/tertulia/vision/`) · en curso (#32)
+## 5. Agente de visión (`src/tertulia/vision/`) (#32)
 
 **Qué hará.** Analizar las fotos de locales de la competencia y los gráficos del análisis, y devolver una lista de observaciones en texto, cada una con la imagen de la que sale.
 
@@ -142,6 +154,21 @@ Agent(..., tools=researcher_tools())
 - **Uso de las fotos:** en el producto, solo interno: el analista abre cada foto para comprobar lo que dice el informe. En la demo de clase sí se muestran, con su fuente citada.
 - **Herramienta propia `analyse_image`** en vez de la opción multimodal de CrewAI: así controlamos qué archivos se aceptan y el formato de la respuesta, y **el texto que aparezca dentro de una foto pasa por el filtro anti prompt injection**, igual que el de las webs.
 - **Modelo:** `gemini-3.5-flash-lite` (acepta imágenes). En el nivel gratuito de Google los datos se usan para mejorar sus productos, así que con fotos de clientes reales habría que usar el nivel de pago.
+
+**Hecho (27-28 oct, PR #66 y #67):**
+
+| Pieza | Archivo | Qué hace |
+| --- | --- | --- |
+| Prueba manual | `scripts/try_vision.py` | Manda una foto al modelo real (una llamada) y muestra lo que ve |
+| Formato de respuesta | `vision_schemas.py` | `ImageAnswer`: el formulario que rellena el modelo (tipo, hasta 8 observaciones con categoría y confianza alta/media/baja, texto visible, si aparecen personas, motivo si no se puede analizar). `ImageAnalysis`: añade lo que pone nuestro código (la ruta y la revisión de seguridad), que el modelo no puede elegir |
+| Carga segura | `loader.py` | Resuelve la ruta real (enlaces incluidos) y exige que esté dentro de `outputs/`; máximo 10 MB; comprueba que el contenido es JPEG o PNG de verdad; la reduce a 1.600 px y la guarda sin metadatos (se borra la posición GPS) |
+| Herramienta | `tool.py` | `analyse_image()` une todo: carga, modelo con formulario fijo y **filtro anti prompt injection sobre el texto visible y las observaciones**. `to_text()` lo da en español para el crew. `AnalyseImageTool` es la herramienta de CrewAI para el agente `vision` (texto envuelto en `<external_data>`) |
+
+Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competidor) y no inventó precios que no se veían. **Nunca describe a las personas**: solo indica que aparecen. Si la respuesta del modelo no encaja con el formulario, **o el modelo no contesta** (timeout, conexión, cuota), se lanza `AnalysisFailed`: esa foto falla, las demás siguen y la herramienta lo explica en texto, sin usar nunca un análisis a medias.
+
+**Probado con 9 fotos reales** (bar, cafetería y coworkings), incluida una mala hecha a través de una cristalera: el modelo bajó la confianza a «media» sin rechazar la foto. El prompt explica qué significa cada categoría (por ejemplo, «espacio de trabajo» es para los clientes; la barra de un café no cuenta), cuándo bajar la confianza y que la calidad de la foto no es una observación. `vision/` no importa nada de `crew/`: la herramienta recibe siempre el modelo, así que las dependencias van en una sola dirección.
+
+**Tests:** 39 (9 del formato, 11 de la carga y 19 de la herramienta), con un modelo falso y sin gastar llamadas.
 
 ## 6. Seguridad y gobernanza (aportaciones)
 
@@ -235,6 +262,16 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 
 **Data source:** © OpenStreetMap contributors, ODbL licence (it allows storing the data for the offline demo, as long as the source is credited).
 
+**Second source for coworkings: Foursquare (live only).** OpenStreetMap falls short on coworkings: in a test on 27 Oct, within 800 m of Atocha, OSM had 2 and Foursquare 9, but several of the Foursquare ones were company offices, because its categories are set by its users.
+
+- For coworkings, live, the server combines OSM and Foursquare **without repeating venues** (matching name, at most 75 m apart).
+- Venues found **only in Foursquare** get `needs_review: true` and a `review_reason`: the system discards nothing, **the analyst decides** (*human-in-the-loop*).
+- Each venue lists its sources (`sources`). The answer includes `needs_review_count` and `foursquare_status` (`used`, `failed` or `not_used`).
+- **Foursquare's terms:** its data cannot be stored (only the id) and "Powered by Foursquare" is required. So it is used live only, nothing is stored, and in demo mode, with saved data or if it fails, OpenStreetMap alone is used.
+- The key (`FOURSQUARE_API_KEY`) is read by the server itself from `.env`, as a `SecretStr` (never shown in logs). Without a key, everything works with OSM alone.
+- ⚠️ `total` includes venues pending review: until the analyst reviews them, they must not count as confirmed competitors.
+- **Tests:** 14 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
+
 ## 4. MCP client (`src/tertulia/mcp/client.py`)
 
 **What it is.** The only place that says which MCP servers exist, how to start them and which tools each agent may use. It turns MCP tools into ready-to-use CrewAI tools:
@@ -262,7 +299,7 @@ Agent(..., tools=researcher_tools())
 
 **Tests:** 21 in `tests/test_mcp_client.py`, without starting any server; 7 for the converter in `tests/test_html_text.py`; and 1 integration test in `tests/test_mcp_integration.py`, which starts the real server and checks the error exactly as the graph receives it (no internet needed).
 
-## 5. Vision agent (`src/tertulia/vision/`) · in progress (#32)
+## 5. Vision agent (`src/tertulia/vision/`) (#32)
 
 **What it will do.** Analyse photos of competitors' venues and the analysis charts, and return a list of text observations, each with the image it comes from.
 
@@ -273,6 +310,21 @@ Agent(..., tools=researcher_tools())
 - **Use of the photos:** in the product, internal only: the analyst opens each photo to check what the report says. In the class demo they are shown, with their source credited.
 - **Our own `analyse_image` tool** instead of CrewAI's multimodal option: we control which files are accepted and the answer format, and **any text that appears inside a photo goes through the prompt injection guard**, like web text.
 - **Model:** `gemini-3.5-flash-lite` (accepts images). On Google's free tier the data is used to improve their products, so with real client photos the paid tier would be needed.
+
+**Done (27-28 Oct, PR #66 and #67):**
+
+| Piece | File | What it does |
+| --- | --- | --- |
+| Manual test | `scripts/try_vision.py` | Sends one photo to the real model (one call) and prints what it sees |
+| Answer format | `vision_schemas.py` | `ImageAnswer`: the form the model fills in (kind, up to 8 observations with category and high/medium/low confidence, visible text, whether people appear, reason if it cannot be analysed). `ImageAnalysis`: adds what our code sets (the path and the safety check), which the model cannot choose |
+| Safe loading | `loader.py` | Resolves the real path (links included) and requires it to be inside `outputs/`; 10 MB max; checks the content really is JPEG or PNG; reduces it to 1,600 px and saves it without metadata (the GPS position is removed) |
+| Tool | `tool.py` | `analyse_image()` joins it all: loading, the model with a fixed form and **the prompt injection guard on the visible text and the observations**. `to_text()` gives it in Spanish for the crew. `AnalyseImageTool` is the CrewAI tool for the `vision` agent (text wrapped in `<external_data>`) |
+
+Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and did not invent prices that could not be seen. **It never describes people**: it only says they appear. If the model's answer does not fit the form, **or the model does not answer** (timeout, connection, quota), `AnalysisFailed` is raised: that photo fails, the others carry on, and the tool explains it as text, never using a half-filled analysis.
+
+**Tested with 9 real photos** (bar, café and coworkings), including a poor one taken through a window: the model lowered its confidence to "medium" without rejecting the photo. The prompt explains what each category means (e.g. "workspace" is for customers; a coffee bar counter does not count), when to lower the confidence, and that the photo's quality is not an observation. `vision/` imports nothing from `crew/`: the tool always receives the model, so dependencies go one way only.
+
+**Tests:** 39 (9 for the format, 11 for loading and 19 for the tool), with a fake model and no API calls.
 
 ## 6. Security and governance (contributions)
 
