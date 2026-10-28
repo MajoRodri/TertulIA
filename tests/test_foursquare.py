@@ -358,6 +358,8 @@ def test_the_tool_tells_the_model_to_report_venues_to_review_separately():
     assert "Always report" in instructions and "Never drop them" in instructions
     assert "coverage_note" in instructions
 
+
+
 @pytest.mark.parametrize(
     ("category", "status", "has_note"),
     [("coworking", "not_used", True), ("coworking", "no_key", True), ("coworking", "failed", True),
