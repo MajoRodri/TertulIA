@@ -1,4 +1,5 @@
 import io
+import logging
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
@@ -19,6 +20,8 @@ from reportlab.platypus import (
 )
 
 from .models import ReportData
+
+log = logging.getLogger(__name__)
 
 # ── Brand colours ─────────────────────────────────────────────────────────────
 _AZUL      = HexColor("#2B4EFF")
@@ -344,15 +347,25 @@ def _build_pdf_reportlab(data: ReportData) -> bytes:
 
 
 def _build_pdf_playwright(data: ReportData) -> bytes:
+    import os
+    import tempfile
+
     from playwright.sync_api import sync_playwright
     html = render_html(data)
-    base_url = (_REPO_ROOT / "assets").as_uri() + "/"
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch()
-        page = browser.new_page()
-        page.set_content(html, base_url=base_url, wait_until="networkidle")
-        pdf = page.pdf(format="A4", print_background=True)
-        browser.close()
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".html", encoding="utf-8", delete=False
+    )
+    try:
+        tmp.write(html)
+        tmp.close()
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            page = browser.new_page()
+            page.goto(Path(tmp.name).as_uri(), wait_until="networkidle")
+            pdf = page.pdf(format="A4", print_background=True)
+            browser.close()
+    finally:
+        os.unlink(tmp.name)
     return pdf
 
 
@@ -360,10 +373,10 @@ def _build_pdf_playwright(data: ReportData) -> bytes:
 def build_pdf(data: ReportData) -> bytes:
     try:
         return _build_pdf_weasyprint(data)
-    except Exception:
-        pass
+    except Exception as exc:
+        log.warning("WeasyPrint failed, trying Playwright: %s", exc)
     try:
         return _build_pdf_playwright(data)
-    except Exception:
-        pass
+    except Exception as exc:
+        log.warning("Playwright failed, falling back to ReportLab: %s", exc)
     return _build_pdf_reportlab(data)
