@@ -15,6 +15,7 @@ import io
 import json
 import logging
 import uuid
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Annotated, AsyncGenerator
@@ -37,7 +38,26 @@ from tertulia.trazas import save_traces
 _ROOT = Path(__file__).resolve().parents[3]
 log = logging.getLogger(__name__)
 
-app = FastAPI(title="TertulIA API", version="0.1.0")
+# MCP tools loaded once at startup and reused across debates (~9 s saved per debate).
+# Each tool call still opens its own connection via _patient_client; only the schema
+# discovery (resolver.resolve) is cached here.
+_mcp_researcher_tools: list = []
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    global _mcp_researcher_tools
+    try:
+        from tertulia.mcp.client import researcher_tools
+        _mcp_researcher_tools = await asyncio.to_thread(researcher_tools)
+        log.info("MCP tools ready at startup (%d tools)", len(_mcp_researcher_tools))
+    except Exception:
+        log.warning("MCP tools unavailable at startup — debates will run without them")
+        _mcp_researcher_tools = []
+    yield
+
+
+app = FastAPI(title="TertulIA API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -167,11 +187,7 @@ async def _prepare_crew(brief: BusinessBrief):
         ]
         initial_inputs = build_inputs(brief, profile, images=abs_image_paths or None)
 
-        try:
-            from tertulia.mcp.client import researcher_tools
-            mcp_researcher = await asyncio.to_thread(researcher_tools)
-        except Exception:
-            mcp_researcher = []
+        mcp_researcher = _mcp_researcher_tools
 
         from tertulia.crew.agent_tools import default_tools as _get_tools
         _tools_map: dict = {
