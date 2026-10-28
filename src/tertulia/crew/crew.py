@@ -62,13 +62,41 @@ def load_config() -> tuple[dict, dict]:
     return read("agents.yaml"), read("tasks.yaml")
 
 
+# Gemini (capa gratuita): límite de peticiones por minuto. Comprobado en CrewAI 1.15.28
+# y google-genai 1.65: CrewAI usa el SDK de Google (no litellm) y, sin estas opciones,
+# un error 429 NO se reintenta y una llamada sin respuesta espera sin límite (23 oct).
+LLM_TIMEOUT_S = 90  # por intento
+LLM_RETRY_ATTEMPTS = 5  # contando el primero
+LLM_RETRY_FIRST_WAIT_S = 5  # esperas 5, 10, 20, 40 s: cubren una ventana de 1 minuto
+LLM_RETRY_MAX_WAIT_S = 60
+
+
+def _gemini_client_params() -> dict:
+    """Tiempo límite y reintentos con espera creciente para 408, 429 y errores 5xx."""
+    from google.genai import types
+
+    return {
+        "http_options": types.HttpOptions(
+            timeout=LLM_TIMEOUT_S * 1000,  # el SDK de Google usa milisegundos
+            retry_options=types.HttpRetryOptions(
+                attempts=LLM_RETRY_ATTEMPTS,
+                initial_delay=LLM_RETRY_FIRST_WAIT_S,
+                max_delay=LLM_RETRY_MAX_WAIT_S,
+            ),
+        )
+    }
+
+
 def build_llm(provider: str, model_name: str, api_key: str | None = None) -> LLM:
     """Crea el modelo de lenguaje. No hace ninguna llamada: solo lo configura.
 
     Los valores vienen de config/settings.py (David), p. ej. ``"gemini"`` y
     ``"gemini-3.5-flash-lite"``. Cambiar de modelo no obliga a tocar este archivo.
+    Con Gemini se añaden tiempo límite y reintentos (ver LLM_RETRY_*).
+    Nota: ``LLM(max_retries=...)`` no tiene efecto con Gemini en CrewAI 1.15.28.
     """
-    return LLM(model=f"{provider}/{model_name}", api_key=api_key or None)
+    extra = {"client_params": _gemini_client_params()} if provider == "gemini" else {}
+    return LLM(model=f"{provider}/{model_name}", api_key=api_key or None, **extra)
 
 
 def llm_from_settings() -> LLM:
@@ -85,8 +113,11 @@ def llm_from_settings() -> LLM:
 def build_step_crew(step: str, llm: BaseLLM, tools: ToolsByAgent | None = None) -> Crew:
     """Crew con solo las tareas de ``step`` y los agentes que las hacen.
 
-    ``tools``: herramientas de cada agente. Si es None se usan las de agent_tools.py;
-    si se pasa (tests), un agente que no aparece en el diccionario no tiene ninguna.
+    ``tools``: herramientas que SUSTITUYEN a las de agent_tools.py para algunos agentes.
+    Un agente que no aparece en el diccionario recibe sus herramientas por defecto;
+    para dejar a un agente sin herramientas hay que pasar una lista vacía.
+    Ejemplo (API): ``{"researcher": tools_ya_arrancadas}`` -> el analista sigue
+    recibiendo break_even y run_python.
     """
     if step not in STEPS:
         raise ValueError(f"unknown step {step!r}. Valid: {', '.join(STEPS)}")
@@ -98,9 +129,10 @@ def build_step_crew(step: str, llm: BaseLLM, tools: ToolsByAgent | None = None) 
         task_config = dict(tasks_config[task_name])
         agent_name = task_config.pop("agent")
         if agent_name not in agents:
-            agent_tools = (
-                default_tools(agent_name, llm) if tools is None else tools.get(agent_name, [])
-            )
+            if tools is not None and agent_name in tools:
+                agent_tools = tools[agent_name]
+            else:
+                agent_tools = default_tools(agent_name, llm)
             agents[agent_name] = Agent(
                 config=agents_config[agent_name], llm=llm, tools=list(agent_tools)
             )
