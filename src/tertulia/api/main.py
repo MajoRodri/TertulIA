@@ -209,7 +209,8 @@ async def _prepare_crew(brief: BusinessBrief):
                 except Exception:
                     pass
 
-            # run_step failures propagate naturally — no retry
+            # scoped_handlers() is process-global: safe with one analysis at a time.
+            # Concurrent analyses would share the scope and cross-contaminate listeners.
             with crewai_event_bus.scoped_handlers():
                 crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
                 result = run_step(step, inp, llm, _tools_map)
@@ -445,16 +446,10 @@ async def _stream_chat(
         system_prompt = _build_chat_system_prompt(job)
 
         if image_data:
-            is_gemini = "gemini" in (getattr(llm, "model", "") or "").lower()
-            user_content: str | list = [{"type": "text", "text": message}]
+            user_content: str | list = [{"text": message}]
             for mime, data in image_data:
                 b64 = base64.b64encode(data).decode()
-                if is_gemini:
-                    user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
-                else:
-                    user_content.append(
-                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
-                    )
+                user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
         else:
             user_content = message
 
@@ -467,6 +462,7 @@ async def _stream_chat(
         if not isinstance(response_text, str):
             response_text = getattr(response_text, "content", str(response_text))
     except Exception:
+        log.exception("Chat LLM call failed (job=%s, images=%d)", job_id, len(image_data or []))
         response_text = None
 
     if not response_text:
