@@ -930,21 +930,23 @@ h3 { font-size: var(--text-xl); }
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: var(--card);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--s4);
-  transition: opacity 0.5s ease;
+  gap: var(--s3);
+  transition: opacity 0.4s ease;
 }
 .loading-overlay.hidden  { display: none; }
 .loading-overlay.fading  { opacity: 0; pointer-events: none; }
 
 .loading-video {
-  max-width: min(540px, 88vw);
-  max-height: 70vh;
+  max-width: min(480px, 85vw);
+  max-height: 60vh;
   display: block;
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
 .loading-label {
@@ -1052,7 +1054,7 @@ h3 { font-size: var(--text-xl); }
   z-index: 1;
   text-align: center;
   max-width: 640px;
-  padding: var(--s7) var(--s5);
+  padding: var(--s7) var(--s5) calc(var(--s5) + 72px);
   animation: heroFadeUp 0.7s ease both;
 }
 

@@ -288,11 +288,14 @@ function attachImagePicker(inputId, hintId, previewId) {
     updateHint();
   });
 
-  return () => managed;
+  return {
+    files: () => [...managed],
+    clear() { managed.length = 0; render(); updateHint(); },
+  };
 }
 
-const getFormImages = attachImagePicker("images",      "images-hint",      "images-preview");
-const getChatImages = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
+const formPicker = attachImagePicker("images",      "images-hint",      "images-preview");
+const chatPicker = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
 
 // ── Brief summary (panel 1 read-only view) ────────────────────
 const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
@@ -345,7 +348,7 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   try {
     const { job_id: jobId } = await startAnalysis(brief);
 
-    const formFiles = getFormImages();
+    const formFiles = formPicker.files();
     if (formFiles.length) await uploadImages(jobId, formFiles);
 
     closeLauncher();
@@ -357,7 +360,7 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     document.getElementById("btn-exit").classList.remove("hidden");
     showLoading();
 
-    populateBriefSummary(brief, getFormImages());
+    populateBriefSummary(brief, formPicker.files());
 
     document.getElementById("stepper").classList.remove("hidden");
     initStepNav();
@@ -365,12 +368,7 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     setStep(2, "active");
     showPanel("panel-debate");
 
-    // Hide overlay as soon as the first event lands in the debate feed
-    const feed = document.getElementById("debate-feed");
-    const observer = new MutationObserver(() => { hideLoading(); observer.disconnect(); });
-    observer.observe(feed, { childList: true });
-
-    await runDebate(jobId);
+    await runDebate(jobId, { onFirstAgent: hideLoading });
 
     // Show continue button — user reads the debate then clicks to advance
     document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
@@ -385,9 +383,9 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     setStep(3, "active");
     showPanel("panel-chat");
 
-    await initChat(jobId);   // resolves when user clicks "Continuar al veredicto"
+    await initChat(jobId, chatPicker);   // resolves when user clicks "Continuar al veredicto"
 
-    const chatFiles = getChatImages();
+    const chatFiles = chatPicker.files();
     if (chatFiles.length) {
       await uploadImages(jobId, chatFiles);
       await runChatVision(jobId);

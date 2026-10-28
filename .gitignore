@@ -12,11 +12,24 @@ env/
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Bases de datos locales (SqliteSaver, etc.)
+*.sqlite
+*.db
 
 # Datos automáticos (no versionar)
 data/cache/
 outputs/**
 !outputs/.gitkeep
+*.log
+
+# Archivo temporal del generador de PDF (Playwright)
+ui/_report_tmp.html
 
 # IDEs
 .vscode/

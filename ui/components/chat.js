@@ -4,16 +4,19 @@ import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function initChat(jobId) {
-  const feed     = document.getElementById("chat-feed");
-  const input    = document.getElementById("chat-input");
-  const btnSend  = document.getElementById("btn-chat-send");
+export function initChat(jobId, imagePicker = null) {
+  const input       = document.getElementById("chat-input");
+  const btnSend     = document.getElementById("btn-chat-send");
   const btnContinue = document.getElementById("btn-chat-continue");
+  const fileInput   = document.getElementById("chat-images");
+
+  const getFiles  = () => imagePicker ? imagePicker.files() : [];
+  const clearFiles = () => imagePicker?.clear();
 
   return new Promise((resolve) => {
     btnContinue.addEventListener("click", function handler() {
-      if (input.value.trim()) {
-        const ok = window.confirm("Tienes un mensaje sin enviar. ¿Continuar al veredicto de todas formas?");
+      if (input.value.trim() || getFiles().length) {
+        const ok = window.confirm("Tienes contenido sin enviar. ¿Continuar al veredicto de todas formas?");
         if (!ok) return;
       }
       btnContinue.removeEventListener("click", handler);
@@ -26,13 +29,15 @@ export function initChat(jobId) {
     });
 
     async function handleSend() {
-      const text = input.value.trim();
-      if (!text) return;
+      const text  = input.value.trim();
+      const files = getFiles();
+      if (!text && !files.length) return;
       input.value = "";
-      appendUserMessage(text);
+      clearFiles();
+      appendUserMessage(text, files);
       setInputLocked(true);
       try {
-        await sendChatMessage(jobId, text, (msg) => {
+        await sendChatMessage(jobId, text, files, (msg) => {
           if (msg.thinking) {
             showTypingIndicator(msg.name, msg.agent);
           } else {
@@ -50,6 +55,7 @@ export function initChat(jobId) {
     function setInputLocked(locked) {
       input.disabled   = locked;
       btnSend.disabled = locked;
+      if (fileInput) fileInput.disabled = locked;
       if (locked) btnSend.textContent = "Enviando…";
       else        btnSend.textContent = "Enviar";
     }
@@ -91,11 +97,16 @@ function removeTypingIndicator() {
   document.getElementById("chat-typing")?.remove();
 }
 
-function appendUserMessage(text) {
+function appendUserMessage(text, files = []) {
   const feed = document.getElementById("chat-feed");
   const el = document.createElement("div");
   el.className = "chat-message user";
-  el.innerHTML = `<div class="chat-bubble">${text}</div>`;
+  let thumbsHtml = "";
+  for (const file of files) {
+    const url = URL.createObjectURL(file);
+    thumbsHtml += `<img src="${url}" class="upload-thumb" onload="URL.revokeObjectURL(this.src)" />`;
+  }
+  el.innerHTML = `<div class="chat-bubble">${thumbsHtml}${text ? `<span>${text}</span>` : ""}</div>`;
   feed.appendChild(el);
   el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }

@@ -10,6 +10,7 @@ Endpoints:
 """
 
 import asyncio
+import base64
 import json
 import logging
 import uuid
@@ -17,7 +18,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Annotated, AsyncGenerator
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -121,6 +122,29 @@ def _first_skeleton_for(agent: str) -> dict | None:
             return {k: v for k, v in msg.items() if k != "delay"}
     return None
 
+
+# ── Demo job (pre-seeded for USE_MOCK=true frontend mode) ────────────────────
+_jobs["demo-001"] = {
+    "brief": BusinessBrief(
+        business_type="cafe_cowork",
+        neighbourhood="Atocha",
+        budget_eur=80_000,
+        area_m2=120,
+        radius_m=800,
+    ),
+    "verdict": _skeleton_verdict(),
+    "messages": [{k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE],
+    "status": "paused",
+    "paused_at": None,  # skip timeout check for demo
+    "debate_simulated": True,
+    "simulated": True,
+    "is_demo": True,
+    "tokens_used": 0,
+    "sources": [],
+    "findings": [],
+    "traces": [],
+    "errors": [],
+}
 
 # ── Crew helpers ──────────────────────────────────────────────────────────────
 
@@ -288,16 +312,20 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     yield f"data: {json.dumps({'paused': True})}\n\n"
 
 
-class ChatRequest(BaseModel):
-    message: str
-
-
 @app.post("/api/chat/{job_id}")
-async def chat(job_id: str, req: ChatRequest):
+async def chat(
+    job_id: str,
+    message: str = Form(...),
+    images: list[UploadFile] = File(default=[]),
+):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
+    image_data: list[tuple[str, bytes]] = [
+        (img.content_type or "image/jpeg", await img.read())
+        for img in images
+    ]
     return StreamingResponse(
-        _stream_chat(job_id, req.message),
+        _stream_chat(job_id, message, image_data),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -329,7 +357,11 @@ def _build_chat_system_prompt(job: dict) -> str:
     )
 
 
-async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
+async def _stream_chat(
+    job_id: str,
+    message: str,
+    image_data: list[tuple[str, bytes]] | None = None,
+) -> AsyncGenerator[str, None]:
     job = _jobs[job_id]
     job.setdefault("chat_history", []).append({"role": "user", "text": message})
 
@@ -341,9 +373,20 @@ async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
 
         llm = llm_from_settings()
         system_prompt = _build_chat_system_prompt(job)
+
+        if image_data:
+            user_content: str | list = [{"type": "text", "text": message}]
+            for mime, data in image_data:
+                b64 = base64.b64encode(data).decode()
+                user_content.append(
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                )
+        else:
+            user_content = message
+
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": message},
+            {"role": "user",   "content": user_content},
         ]
         response_text = await asyncio.to_thread(llm.call, messages)
         # crewai LLM.call may return a string or an object with .content
@@ -462,15 +505,16 @@ async def approve(job_id: str, req: ApproveRequest):
         })
         return {"ok": False, "reason": "estudio caducado"}
 
-    await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
-    final = await asyncio.to_thread(_graph.invoke, None, graph_config)
-    _jobs[job_id].update({
-        "traces": final.get("traces", []),
-        "errors": final.get("errors", []),
-        "sources": final.get("sources", []),
-        "findings": final.get("findings", []),
-        "tokens_used": final.get("tokens_used", 0),
-    })
+    if not job.get("is_demo"):
+        await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
+        final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+        _jobs[job_id].update({
+            "traces": final.get("traces", []),
+            "errors": final.get("errors", []),
+            "sources": final.get("sources", []),
+            "findings": final.get("findings", []),
+            "tokens_used": final.get("tokens_used", 0),
+        })
 
     if not req.approved:
         _jobs[job_id]["status"] = "rejected"
@@ -534,15 +578,16 @@ async def approve(job_id: str, req: ApproveRequest):
 
     try:
         from tertulia.report import build_pdf
-        pdf_bytes = build_pdf(report_data)
+        pdf_bytes = await asyncio.to_thread(build_pdf, report_data)
     except (ImportError, OSError) as exc:
         raise HTTPException(status_code=501, detail=f"PDF generation unavailable: {exc}") from exc
     _jobs[job_id]["status"] = "done"
 
+    filename = "informe_demo.pdf" if job.get("is_demo") else "InformeTertulIA.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="report_{job_id}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

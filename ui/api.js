@@ -40,7 +40,6 @@ export async function fetchVerdict(jobId) {
 
 // POST /api/approve/{jobId}  →  PDF blob (approved=true) or { ok, status } (approved=false)
 export async function approveReport(jobId, approved = true) {
-  if (USE_MOCK) return approved ? mockPDFBlob() : { ok: false, status: "rejected" };
   const res = await fetch(`${API_BASE}/api/approve/${jobId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -75,14 +74,16 @@ export function openVisionStream(jobId, onMessage, onDone, onError) {
 }
 
 // POST /api/chat/{jobId}  →  SSE stream of agent responses
-export async function sendChatMessage(jobId, message, onMessage) {
+export async function sendChatMessage(jobId, message, files, onMessage) {
   if (USE_MOCK) {
     return simulateMockChatResponse(onMessage);
   }
+  const form = new FormData();
+  form.append("message", message);
+  for (const f of (files || [])) form.append("images", f);
   const res = await fetch(`${API_BASE}/api/chat/${jobId}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: form,
   });
   if (!res.ok) throw new Error(`Error ${res.status} sending chat message`);
   const reader  = res.body.getReader();

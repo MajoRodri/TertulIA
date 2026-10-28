@@ -12,7 +12,8 @@ export function initApproval(jobId) {
     try {
       const result = await approveReport(jobId);
       if (result instanceof Blob) {
-        triggerDownload(result, `report_tertulia_${jobId}.pdf`);
+        const filename = jobId === "demo-001" ? "informe_demo.pdf" : "InformeTertulIA.pdf";
+        triggerDownload(result, filename);
         btnApprove.textContent = "✓ Informe descargado";
       } else {
         btnApprove.disabled = false;

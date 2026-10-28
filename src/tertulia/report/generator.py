@@ -42,8 +42,8 @@ _NARANJA_BG   = HexColor("#fde3cf")
 # ── Page geometry ──────────────────────────────────────────────────────────────
 _PAGE_W, _PAGE_H = A4
 _ML = _MR = 2.5 * cm
-_MT = 2.2 * cm
-_MB = 2.0 * cm
+_MT = 2.8 * cm
+_MB = 2.5 * cm
 _TW = _PAGE_W - _ML - _MR   # 16.0 cm text width
 
 # ── Styles ─────────────────────────────────────────────────────────────────────
@@ -86,12 +86,12 @@ def _draw_header_footer(canvas, doc):
     # Top rule
     canvas.setStrokeColor(_BORDER)
     canvas.setLineWidth(0.5)
-    canvas.line(_ML, _PAGE_H - _MT + 4*mm, _PAGE_W - _MR, _PAGE_H - _MT + 4*mm)
+    canvas.line(_ML, _PAGE_H - _MT + 6*mm, _PAGE_W - _MR, _PAGE_H - _MT + 6*mm)
     # Footer
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(_MUTED)
     canvas.drawCentredString(
-        _PAGE_W / 2, _MB - 6*mm,
+        _PAGE_W / 2, _MB - 8*mm,
         f"TertulIA · Informe generado el {doc.report_date} · Ref. {doc.job_id}",
     )
     canvas.restoreState()
@@ -236,6 +236,7 @@ def _verdict_section(data: ReportData) -> list:
     return [
         Paragraph("Veredicto", _STYLES["section"]),
         Spacer(1, 3*mm),
+        # KeepTogether only for the signal badge + summary — short, safe to keep together
         KeepTogether([
             signal_row,
             Spacer(1, 3*mm),
@@ -243,8 +244,9 @@ def _verdict_section(data: ReportData) -> list:
             Spacer(1, 2*mm),
             Paragraph(f"Confianza: {v.confidence}%", _STYLES["conf"]),
             Spacer(1, 5*mm),
-            *reasons,
         ]),
+        # Reasons flow freely so a long list never triggers LayoutError
+        *reasons,
     ]
 
 

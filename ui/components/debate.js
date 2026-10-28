@@ -59,15 +59,20 @@ function showSimulatedWarning() {
   feed.insertBefore(el, feed.firstChild);
 }
 
-export function runDebate(jobId) {
+export function runDebate(jobId, { onFirstAgent } = {}) {
   feed.innerHTML = "";
   feed.appendChild(createTypingIndicator("", "", "Uniendo a los agentes…"));
+  let firstAgentFired = false;
   return new Promise((resolve, reject) => {
     openDebateStream(
       jobId,
       (data) => {
         if (data.simulated) showSimulatedWarning();
         if (!data.thinking && !data.message) return;
+        if (!firstAgentFired) {
+          firstAgentFired = true;
+          onFirstAgent?.();
+        }
         if (data.thinking) {
           document.getElementById("typing-indicator")?.remove();
           feed.appendChild(createTypingIndicator(data.name, data.agent));
