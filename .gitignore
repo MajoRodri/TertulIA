@@ -28,4 +28,4 @@ outputs/**
 Thumbs.db
 
 # Scripts
-compare_coworkings.py
+scripts/compare_coworkings.py
