@@ -534,7 +534,10 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
-        save_traces(final.get("traces", []), job_id)
+        try:
+            await asyncio.to_thread(save_traces, final.get("traces", []), job_id)
+        except Exception:
+            log.warning("trace persistence failed for job=%s", job_id, exc_info=True)
         return {"ok": False, "reason": "estudio caducado"}
 
     if not job.get("is_demo"):
@@ -547,7 +550,10 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
-        save_traces(final.get("traces", []), job_id)
+        try:
+            await asyncio.to_thread(save_traces, final.get("traces", []), job_id)
+        except Exception:
+            log.warning("trace persistence failed for job=%s", job_id, exc_info=True)
 
     if not req.approved:
         _jobs[job_id]["status"] = "rejected"

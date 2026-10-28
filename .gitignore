@@ -26,6 +26,8 @@ htmlcov/
 data/cache/
 outputs/**
 !outputs/.gitkeep
+trazas/**
+!trazas/.gitkeep
 *.log
 
 # Archivo temporal del generador de PDF (Playwright)
