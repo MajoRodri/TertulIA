@@ -47,7 +47,6 @@ body {
 
 .page {
   width: 210mm;
-  min-height: 297mm;
   padding: 10mm 12mm 10mm;
   background:
     radial-gradient(ellipse 120% 60% at 80% -10%, rgba(43,78,255,.06) 0%, transparent 60%),
@@ -59,7 +58,7 @@ body {
 /* subtle grid overlay */
 .page::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   background-image:
     linear-gradient(rgba(43,78,255,.03) 1px, transparent 1px),
@@ -422,8 +421,53 @@ body {
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
-.report-footer {
+.sources-section { margin-top: 10mm; }
+.sources-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--azul);
+  margin-bottom: 6px;
+}
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.source-item {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--body);
+  line-height: 1.5;
+}
+.source-num {
+  flex-shrink: 0;
+  color: var(--muted);
+  min-width: 18px;
+}
+.source-title { font-weight: 600; }
+.source-url {
+  color: var(--azul);
+  word-break: break-all;
+}
+.source-date { color: var(--muted); white-space: nowrap; }
+
+.legal-notice {
   margin-top: 10mm;
+  padding: 10px 14px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.legal-notice p + p { margin-top: 4px; }
+
+.report-footer {
+  margin-top: 6mm;
   padding-top: 8px;
   border-top: 1px solid var(--border);
   display: flex;
@@ -439,7 +483,7 @@ body {
   <!-- Header -->
   <div class="report-header">
     <div class="header-brand">
-      <img class="header-logo" src="assets/tertulia.png" alt="TertulIA" />
+      <img class="header-logo" src="{{ assets_url }}tertulia.png" alt="TertulIA" />
       <div class="header-titles">
         <div class="report-eyebrow">Inteligencia colectiva para negocios locales</div>
         <div class="report-title">Informe de Viabilidad</div>
@@ -516,7 +560,7 @@ body {
       {% for msg in data.debate %}
       <div class="debate-msg">
         <div class="agent-avatar {{ msg.agent }}">
-          <img src="assets/{{ agent_images[msg.agent] }}" alt="{{ msg.name }}" />
+          <img src="{{ assets_url }}{{ agent_images[msg.agent] }}" alt="{{ msg.name }}" />
         </div>
         <div class="bubble">
           <div class="bubble-header">
@@ -560,6 +604,33 @@ body {
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Sources -->
+  {% if data.sources %}
+  <div class="sources-section">
+    <div class="sources-title">Fuentes consultadas</div>
+    <div class="sources-list">
+      {% for s in data.sources %}
+      <div class="source-item">
+        <span class="source-num">[{{ loop.index }}]</span>
+        <span>
+          <span class="source-title">{{ s.title }}</span>
+          {% if s.url %} · <span class="source-url">{{ s.url }}</span>{% endif %}
+          {% if s.retrieved_at %} · <span class="source-date">{{ s.retrieved_at[:10] }}</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Legal notice -->
+  <div class="legal-notice">
+    <p><strong>Aviso legal.</strong> Este informe ha sido generado de forma automática por un sistema de agentes de inteligencia artificial (TertulIA) con fines exclusivamente informativos. Su contenido no constituye asesoramiento profesional, financiero, legal ni comercial, y no reemplaza en ningún caso el criterio de un consultor o analista cualificado. Los datos, estimaciones y proyecciones incluidos se basan en fuentes públicas y modelos estadísticos; pueden contener inexactitudes y deben verificarse de forma independiente antes de tomar cualquier decisión de negocio.</p>
+    {% if data.debate | selectattr('agent', 'equalto', 'vision') | list %}
+    <p><strong>Proyecto académico.</strong> Las imágenes aportadas por el usuario y cualquier análisis visual derivado se utilizan exclusivamente en el marco de un proyecto de investigación académica. No se almacenan ni comparten con terceros. Cualquier semejanza con establecimientos reales es meramente orientativa.</p>
+    {% endif %}
   </div>
 
   <!-- Footer -->

@@ -291,10 +291,12 @@ def render_html(data: ReportData) -> str:
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=True,
     )
+    assets_url = (_REPO_ROOT / "assets").as_uri() + "/"
     return _env.get_template("report.html").render(
         data=data,
         agent_images=_AGENT_IMAGES,
         signal_labels=_SIGNAL_LABELS,
+        assets_url=assets_url,
     )
 
 
@@ -332,9 +334,31 @@ def _build_pdf_reportlab(data: ReportData) -> bytes:
     return buf.getvalue()
 
 
+def _build_pdf_playwright(data: ReportData) -> bytes:
+    from playwright.sync_api import sync_playwright
+    html = render_html(data)
+    tmp = _REPO_ROOT / "ui" / "_report_tmp.html"
+    try:
+        tmp.write_text(html, encoding="utf-8")
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            page = browser.new_page()
+            page.goto(tmp.as_uri(), wait_until="networkidle")
+            pdf = page.pdf(format="A4", print_background=True)
+            browser.close()
+    finally:
+        tmp.unlink(missing_ok=True)
+    return pdf
+
+
 # ── Public API ─────────────────────────────────────────────────────────────────
 def build_pdf(data: ReportData) -> bytes:
     try:
         return _build_pdf_weasyprint(data)
     except (ImportError, OSError):
-        return _build_pdf_reportlab(data)
+        pass
+    try:
+        return _build_pdf_playwright(data)
+    except (ImportError, OSError):
+        pass
+    return _build_pdf_reportlab(data)
