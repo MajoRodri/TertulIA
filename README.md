@@ -109,11 +109,12 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 
 - Para coworkings, en directo, el servidor combina OSM y Foursquare **sin repetir locales** (nombre que coincide y a ≤ 75 m).
 - Lo que aparece **solo en Foursquare** lleva `needs_review: true` y un `review_reason`: el sistema no descarta nada, **decide el analista** (*human-in-the-loop*).
-- Cada local indica sus fuentes (`sources`). La respuesta incluye `needs_review_count` y `foursquare_status` (`used`, `failed` o `not_used`).
+- Cada local indica sus fuentes (`sources`). La respuesta incluye `confirmed_count` y `needs_review_count` (`total` = confirmados + por revisar), `foursquare_status` (`used`, `failed`, `no_key` o `not_used`) y `foursquare_limit_reached` (Foursquare devolvió su máximo de 50: puede haber más).
+- Si Foursquare falla o responde algo roto (no JSON, sin resultados, campos raros o coordenadas incompletas), la búsqueda sigue solo con OSM (`foursquare_status: "failed"`). Cada campo se valida y las categorías de Foursquare también pasan por el filtro anti prompt injection.
 - **Términos de Foursquare:** no permiten guardar sus datos (solo el identificador) y exigen «Powered by Foursquare». Por eso solo se usa en directo, no se guarda nada y en modo demo, con datos guardados o si falla, se usa solo OSM.
 - La clave (`FOURSQUARE_API_KEY`) la lee el propio servidor del `.env`, como `SecretStr` (nunca sale en logs). Sin clave, todo funciona solo con OSM.
 - ⚠️ `total` incluye los locales por revisar: hasta que el analista revise, no deben contarse como competidores confirmados.
-- **Tests:** 14 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
+- **Tests:** 28 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
 
 ## 4. Cliente MCP (`src/tertulia/mcp/client.py`)
 
@@ -167,7 +168,7 @@ Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competi
 
 **Probado con 9 fotos reales** (bar, cafetería y coworkings), incluida una mala hecha a través de una cristalera: el modelo bajó la confianza a «media» sin rechazar la foto. El prompt explica qué significa cada categoría (por ejemplo, «espacio de trabajo» es para los clientes; la barra de un café no cuenta), cuándo bajar la confianza y que la calidad de la foto no es una observación. `vision/` no importa nada de `crew/`: la herramienta recibe siempre el modelo, así que las dependencias van en una sola dirección.
 
-**Tests:** 39 (9 del formato, 11 de la carga y 19 de la herramienta), con un modelo falso y sin gastar llamadas.
+**Tests:** 40 (9 del formato, 11 de la carga y 20 de la herramienta), con un modelo falso y sin gastar llamadas.
 
 ## 6. Seguridad y gobernanza (aportaciones)
 
@@ -265,11 +266,12 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 
 - For coworkings, live, the server combines OSM and Foursquare **without repeating venues** (matching name, at most 75 m apart).
 - Venues found **only in Foursquare** get `needs_review: true` and a `review_reason`: the system discards nothing, **the analyst decides** (*human-in-the-loop*).
-- Each venue lists its sources (`sources`). The answer includes `needs_review_count` and `foursquare_status` (`used`, `failed` or `not_used`).
+- Each venue lists its sources (`sources`). The answer includes `confirmed_count` and `needs_review_count` (`total` = confirmed + to review), `foursquare_status` (`used`, `failed`, `no_key` or `not_used`) and `foursquare_limit_reached` (Foursquare returned its maximum of 50: there may be more).
+- If Foursquare fails or answers with something broken (not JSON, no results, odd fields or incomplete coordinates), the search carries on with OSM alone (`foursquare_status: "failed"`). Every field is validated and Foursquare's categories also go through the prompt injection guard.
 - **Foursquare's terms:** its data cannot be stored (only the id) and "Powered by Foursquare" is required. So it is used live only, nothing is stored, and in demo mode, with saved data or if it fails, OpenStreetMap alone is used.
 - The key (`FOURSQUARE_API_KEY`) is read by the server itself from `.env`, as a `SecretStr` (never shown in logs). Without a key, everything works with OSM alone.
 - ⚠️ `total` includes venues pending review: until the analyst reviews them, they must not count as confirmed competitors.
-- **Tests:** 14 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
+- **Tests:** 28 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
 
 ## 4. MCP client (`src/tertulia/mcp/client.py`)
 
@@ -323,7 +325,7 @@ Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and
 
 **Tested with 9 real photos** (bar, café and coworkings), including a poor one taken through a window: the model lowered its confidence to "medium" without rejecting the photo. The prompt explains what each category means (e.g. "workspace" is for customers; a coffee bar counter does not count), when to lower the confidence, and that the photo's quality is not an observation. `vision/` imports nothing from `crew/`: the tool always receives the model, so dependencies go one way only.
 
-**Tests:** 39 (9 for the format, 11 for loading and 19 for the tool), with a fake model and no API calls.
+**Tests:** 40 (9 for the format, 11 for loading and 20 for the tool), with a fake model and no API calls.
 
 ## 6. Security and governance (contributions)
 
