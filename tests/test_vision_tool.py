@@ -4,6 +4,7 @@ The model is a fake: no API calls, no quota. It returns what a real model
 would, so the tests check only our own code.
 """
 
+import httpx
 import pytest
 from PIL import Image
 
@@ -115,18 +116,14 @@ def test_an_unclear_image_says_why(photo):
 
 def test_the_crewai_tool_returns_wrapped_text(photo, monkeypatch):
     monkeypatch.setattr(tool, "OUTPUTS_DIR", photo)
-    monkeypatch.setattr(
-        tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo)
-    )
+    monkeypatch.setattr(tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo))
     output = AnalyseImageTool(llm=_FakeLLM(_answer())).run(image_path="run-001/bar.png")
     assert output.startswith("<external_data id=")
     assert "Spoiler Bar" in output
 
 
 def test_the_crewai_tool_explains_a_rejected_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=tmp_path)
-    )
+    monkeypatch.setattr(tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=tmp_path))
     output = AnalyseImageTool(llm=_FakeLLM(_answer())).run(image_path="nothing.png")
     assert output.startswith("No se pudo analizar la imagen:")
 
@@ -156,8 +153,32 @@ def test_an_answer_that_does_not_fit_the_form_is_a_clear_error(photo, llm):
 
 
 def test_the_crewai_tool_explains_an_invalid_answer(photo, monkeypatch):
-    monkeypatch.setattr(
-        tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo)
-    )
+    monkeypatch.setattr(tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo))
     output = AnalyseImageTool(llm=_FakeLLM("not JSON")).run(image_path="run-001/bar.png")
     assert output.startswith("No se pudo analizar la imagen:")
+
+
+# --- When the model does not answer (first real test: a ReadTimeout) -------------
+
+
+class _TimeoutLLM:
+    def call(self, messages, response_model=None):
+        raise httpx.ReadTimeout("The read operation timed out")
+
+
+def test_a_model_that_does_not_answer_is_a_clear_error(photo):
+    with pytest.raises(AnalysisFailed, match=r"did not answer \(ReadTimeout\)"):
+        analyse_image("run-001/bar.png", _TimeoutLLM(), root=photo)
+
+
+def test_the_crewai_tool_explains_a_model_that_does_not_answer(photo, monkeypatch):
+    monkeypatch.setattr(tool, "analyse_image", lambda path, llm: analyse_image(path, llm, root=photo))
+    output = AnalyseImageTool(llm=_TimeoutLLM()).run(image_path="run-001/bar.png")
+    assert output.startswith("No se pudo analizar la imagen:")
+
+
+def test_the_prompt_explains_what_workspace_means(photo):
+    llm = _FakeLLM(_answer())
+    analyse_image("run-001/bar.png", llm, root=photo)
+    text = llm.calls[0]["messages"][0]["content"][0]["text"]
+    assert "la barra o la cafetera NO cuentan" in text
