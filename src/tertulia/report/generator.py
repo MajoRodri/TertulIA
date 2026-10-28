@@ -347,16 +347,25 @@ def _build_pdf_reportlab(data: ReportData) -> bytes:
 
 
 def _build_pdf_playwright(data: ReportData) -> bytes:
+    import os
+    import tempfile
+
     from playwright.sync_api import sync_playwright
     html = render_html(data)
-    base_href = (_REPO_ROOT / "assets").as_uri() + "/"
-    html = html.replace("<head>", f'<head>\n<base href="{base_href}">', 1)
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch()
-        page = browser.new_page()
-        page.set_content(html, wait_until="networkidle")
-        pdf = page.pdf(format="A4", print_background=True)
-        browser.close()
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".html", encoding="utf-8", delete=False
+    )
+    try:
+        tmp.write(html)
+        tmp.close()
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            page = browser.new_page()
+            page.goto(Path(tmp.name).as_uri(), wait_until="networkidle")
+            pdf = page.pdf(format="A4", print_background=True)
+            browser.close()
+    finally:
+        os.unlink(tmp.name)
     return pdf
 
 
