@@ -38,6 +38,8 @@ def isolated_server(monkeypatch, tmp_path):
     depends on the developer's .env, on another test's cache or on the internet.
     """
     monkeypatch.setattr(server, "DEMO_MODE", False)
+    # Never the real Foursquare key from a .env: no test may call Foursquare.
+    monkeypatch.setattr(server, "FOURSQUARE_API_KEY", server.SecretStr(""))
     monkeypatch.setattr(server, "RETRY_PAUSE_S", 0)
     monkeypatch.setattr(server, "DEMO_DATA_DIR", tmp_path)
     server._find_centre.cache_clear()
