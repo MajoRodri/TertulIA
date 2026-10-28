@@ -186,37 +186,35 @@ async def _prepare_crew(brief: BusinessBrief):
         def _run(step: str, inp: dict) -> dict:
             if step != "research":
                 return run_step(step, inp, llm, _tools_map)
-            # For the research step, listen for Foursquare usage via MCP events
+            # For the research step, listen for Foursquare usage via MCP events.
+            # Import errors mean tracking is unavailable — run without it.
             try:
                 import json as _json
 
                 from crewai.events import crewai_event_bus
                 from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
-
-                detected = [False]
-
-                def _check(source, event):
-                    if event.tool_name != "search_competitors":
-                        return
-                    try:
-                        r = _json.loads(event.result) if isinstance(event.result, str) else event.result
-                        if isinstance(r, dict) and r.get("foursquare_status") == "used":
-                            detected[0] = True
-                    except Exception:
-                        pass
-
-                scope = crewai_event_bus.scoped_handlers()
-                scope.__enter__()
-                crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
-                try:
-                    result = run_step(step, inp, llm, _tools_map)
-                finally:
-                    scope.__exit__(None, None, None)
-                if detected[0]:
-                    _tracking["foursquare_used"] = True
-                return result
             except Exception:
                 return run_step(step, inp, llm, _tools_map)
+
+            detected = [False]
+
+            def _check(source, event):
+                if event.tool_name != "search_competitors":
+                    return
+                try:
+                    r = _json.loads(event.result) if isinstance(event.result, str) else event.result
+                    if isinstance(r, dict) and r.get("foursquare_status") == "used":
+                        detected[0] = True
+                except Exception:
+                    pass
+
+            # run_step failures propagate naturally — no retry
+            with crewai_event_bus.scoped_handlers():
+                crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
+                result = run_step(step, inp, llm, _tools_map)
+            if detected[0]:
+                _tracking["foursquare_used"] = True
+            return result
 
         def _rebuild(acc: dict) -> dict:
             return build_inputs(
