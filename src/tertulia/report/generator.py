@@ -290,10 +290,10 @@ _SIGNAL_LABELS = {
 def render_html(data: ReportData) -> str:
     import markdown as _md
     from jinja2 import Environment, FileSystemLoader
-    from markupsafe import Markup
+    from markupsafe import Markup, escape
 
     def _md_filter(text: str) -> Markup:
-        return Markup(_md.markdown(text or "", extensions=["nl2br"]))
+        return Markup(_md.markdown(str(escape(text or "")), extensions=["nl2br"]))
 
     _env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
@@ -346,17 +346,13 @@ def _build_pdf_reportlab(data: ReportData) -> bytes:
 def _build_pdf_playwright(data: ReportData) -> bytes:
     from playwright.sync_api import sync_playwright
     html = render_html(data)
-    tmp = _REPO_ROOT / "ui" / "_report_tmp.html"
-    try:
-        tmp.write_text(html, encoding="utf-8")
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch()
-            page = browser.new_page()
-            page.goto(tmp.as_uri(), wait_until="networkidle")
-            pdf = page.pdf(format="A4", print_background=True)
-            browser.close()
-    finally:
-        tmp.unlink(missing_ok=True)
+    base_url = (_REPO_ROOT / "assets").as_uri() + "/"
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, base_url=base_url, wait_until="networkidle")
+        pdf = page.pdf(format="A4", print_background=True)
+        browser.close()
     return pdf
 
 
@@ -364,10 +360,10 @@ def _build_pdf_playwright(data: ReportData) -> bytes:
 def build_pdf(data: ReportData) -> bytes:
     try:
         return _build_pdf_weasyprint(data)
-    except (ImportError, OSError):
+    except Exception:
         pass
     try:
         return _build_pdf_playwright(data)
-    except (ImportError, OSError):
+    except Exception:
         pass
     return _build_pdf_reportlab(data)

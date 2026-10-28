@@ -11,6 +11,7 @@ Endpoints:
 
 import asyncio
 import base64
+import io
 import json
 import logging
 import uuid
@@ -312,6 +313,29 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     yield f"data: {json.dumps({'paused': True})}\n\n"
 
 
+def _sanitize_chat_image(mime: str, data: bytes) -> tuple[str, bytes]:
+    from PIL import Image, ImageOps  # type: ignore[import-untyped]
+    _ALLOWED = {"JPEG": "image/jpeg", "PNG": "image/png"}
+    try:
+        buf = io.BytesIO(data)
+        with Image.open(buf) as img:
+            fmt = img.format
+            img.verify()
+        if fmt not in _ALLOWED:
+            raise ValueError(f"unsupported format: {fmt}")
+        buf.seek(0)
+        with Image.open(buf) as img:
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail((1600, 1600), Image.LANCZOS)
+            if fmt == "JPEG" and img.mode != "RGB":
+                img = img.convert("RGB")
+            out = io.BytesIO()
+            img.save(out, format=fmt)
+        return _ALLOWED[fmt], out.getvalue()
+    except Exception as exc:
+        raise ValueError("invalid image") from exc
+
+
 @app.post("/api/chat/{job_id}")
 async def chat(
     job_id: str,
@@ -320,10 +344,16 @@ async def chat(
 ):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
-    image_data: list[tuple[str, bytes]] = [
-        (img.content_type or "image/jpeg", await img.read())
-        for img in (images or [])
-    ]
+    image_data: list[tuple[str, bytes]] = []
+    for img in (images or []):
+        raw = await img.read()
+        try:
+            mime, clean = await asyncio.to_thread(
+                _sanitize_chat_image, img.content_type or "image/jpeg", raw
+            )
+            image_data.append((mime, clean))
+        except ValueError:
+            continue
     return StreamingResponse(
         _stream_chat(job_id, message, image_data),
         media_type="text/event-stream",
@@ -535,20 +565,16 @@ async def approve(job_id: str, req: ApproveRequest):
     raw_sources = job.get("sources") or []
     pdf_sources: list[ReportSource] = []
     for s in raw_sources:
-        try:
-            url = s.url if hasattr(s, "url") else s.get("url")
-            if not url:
-                continue
-            if getattr(s, "suspicious", s.get("suspicious", False)):
-                continue
-            pdf_sources.append(ReportSource(
-                title=getattr(s, "title", s.get("title", url)),
-                url=url,
-                source_type=str(getattr(s, "source_type", s.get("source_type", ""))),
-                retrieved_at=str(getattr(s, "retrieved_at", s.get("retrieved_at", ""))),
-            ))
-        except Exception:
+        d = s.model_dump() if hasattr(s, "model_dump") else dict(s)
+        url = d.get("url")
+        if not url or d.get("suspicious"):
             continue
+        pdf_sources.append(ReportSource(
+            title=d.get("title", url),
+            url=url,
+            source_type=str(d.get("source_type", "")),
+            retrieved_at=str(d.get("retrieved_at", "")),
+        ))
 
     signal_map = {TrafficLight.GREEN: "green", TrafficLight.AMBER: "yellow", TrafficLight.RED: "red"}
     report_signal = signal_map.get(verdict.final_light, "yellow")
@@ -572,14 +598,14 @@ async def approve(job_id: str, req: ApproveRequest):
             reasons=verdict.reasons,
         ),
         generated_on=date.today(),
-        simulated=job.get("debate_simulated", False),
+        simulated=job.get("simulated", False),
         tokens_used=job.get("tokens_used", 0),
     )
 
     try:
         from tertulia.report import build_pdf
         pdf_bytes = await asyncio.to_thread(build_pdf, report_data)
-    except (ImportError, OSError) as exc:
+    except Exception as exc:
         raise HTTPException(status_code=501, detail=f"PDF generation unavailable: {exc}") from exc
     _jobs[job_id]["status"] = "done"
 
@@ -638,6 +664,7 @@ async def get_job_state(job_id: str):
         "messages": job.get("messages", []),
         "chat_history": job.get("chat_history", []),
         "simulated": job.get("simulated", False),
+        "debate_simulated": job.get("debate_simulated", False),
         "brief": {
             "business_type": brief.business_type,
             "neighbourhood": brief.neighbourhood,

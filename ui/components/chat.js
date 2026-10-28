@@ -114,12 +114,22 @@ function appendUserMessage(text, files = []) {
   const feed = document.getElementById("chat-feed");
   const el = document.createElement("div");
   el.className = "chat-message user";
-  let thumbsHtml = "";
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
   for (const file of files) {
     const url = URL.createObjectURL(file);
-    thumbsHtml += `<img src="${url}" class="upload-thumb" onload="URL.revokeObjectURL(this.src)" />`;
+    const img = Object.assign(document.createElement("img"), {
+      src: url, className: "upload-thumb",
+    });
+    img.onload = () => URL.revokeObjectURL(url);
+    bubble.appendChild(img);
   }
-  el.innerHTML = `<div class="chat-bubble">${thumbsHtml}${text ? `<span>${text}</span>` : ""}</div>`;
+  if (text) {
+    const span = document.createElement("span");
+    span.textContent = text;
+    bubble.appendChild(span);
+  }
+  el.appendChild(bubble);
   feed.appendChild(el);
   el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }
