@@ -14,6 +14,8 @@ import pytest  # noqa: E402
 from crewai.llms.base_llm import BaseLLM  # noqa: E402
 
 from tertulia.crew.crew import (  # noqa: E402
+    LLM_RETRY_ATTEMPTS,
+    LLM_TIMEOUT_S,
     NO_TOOLS_NOTE,
     STEPS,
     build_llm,
@@ -31,8 +33,10 @@ from tertulia.crew.inputs import (  # noqa: E402
 from tertulia.crew.sector import load_sector  # noqa: E402
 from tertulia.schemas import BusinessBrief  # noqa: E402
 
-# Los tests nunca usan las herramientas reales: arrancarían servidores MCP
-NO_TOOLS: dict = {}
+# Los tests nunca usan las herramientas reales: arrancarían servidores MCP.
+# Un agente que no está en el diccionario recibiría sus herramientas por defecto,
+# así que se deja a TODOS sin herramientas de forma explícita.
+NO_TOOLS: dict = {agent: [] for agent in ("researcher", "vision", "analyst", "writer", "reviewer")}
 
 
 class FakeLLM(BaseLLM):
@@ -118,6 +122,18 @@ def test_no_tools_note_reaches_the_model(inputs):
     llm = FakeLLM(model="fake", received=[])
     run_step("research", inputs, llm, NO_TOOLS)
     assert "NO tienes ninguna herramienta" in llm.received[0]
+
+
+def test_gemini_retries_and_timeout_reach_the_client():
+    # Sin esto, un 429 de la capa gratuita falla al primer intento (comprobado)
+    llm = build_llm("gemini", "gemini-3.5-flash-lite", api_key="clave-falsa")
+    options = llm._get_sync_client()._api_client._http_options
+    assert options.timeout == LLM_TIMEOUT_S * 1000
+    assert options.retry_options.attempts == LLM_RETRY_ATTEMPTS
+
+
+def test_other_providers_get_no_gemini_options():
+    assert not getattr(build_llm("openai", "gpt-x", api_key="clave-falsa"), "client_params", None)
 
 
 def test_build_llm_does_not_call_the_api():

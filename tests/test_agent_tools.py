@@ -90,9 +90,15 @@ def test_break_even_tool_marks_missing_data_instead_of_inventing():
     assert "unit_price" in result["missing_data"]
 
 
-def test_code_tool_runs_python(tmp_path):
-    result = json.loads(CodeExecTool(outputs_root=str(tmp_path)).run(code="print(6 * 7)"))
+def test_code_tool_runs_python(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # la herramienta guarda en ./outputs: que no sea el repo
+    result = json.loads(CodeExecTool().run(code="print(6 * 7)"))
     assert result["ok"] and result["stdout"].strip() == "42"
+
+
+def test_code_tool_only_accepts_code():
+    # El agente no debe poder elegir carpeta, tiempo límite ni ficheros (PR #61)
+    assert set(CodeExecTool().args_schema.model_fields) == {"code"}
 
 
 # --- Herramientas que vienen de Helen --------------------------------------------
@@ -144,10 +150,23 @@ def test_vision_without_helens_module_has_no_tools(monkeypatch):
 
 
 def test_note_only_for_agents_without_tools():
-    crew = build_step_crew("research", FakeLLM(model="fake"), {"researcher": [FakeSearch()]})
+    tools = {"researcher": [FakeSearch()], "vision": []}
+    crew = build_step_crew("research", FakeLLM(model="fake"), tools)
     research, vision = crew.tasks
     assert NO_TOOLS_NOTE not in research.description
     assert NO_TOOLS_NOTE in vision.description
+
+
+def test_agents_missing_from_the_dict_keep_their_default_tools():
+    # Caso de la revisión del PR #62: la API pasa solo {"researcher": [...]} y el
+    # analista debe seguir recibiendo break_even y run_python.
+    crew = build_step_crew("analysis", FakeLLM(model="fake"), {"researcher": []})
+    assert {tool.name for tool in crew.agents[0].tools} == {"break_even", "run_python"}
+
+
+def test_empty_list_leaves_an_agent_without_tools():
+    crew = build_step_crew("analysis", FakeLLM(model="fake"), {"analyst": []})
+    assert crew.agents[0].tools == []
 
 
 def test_tools_reach_the_agent():

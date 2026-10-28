@@ -61,7 +61,11 @@ class _CodeArgs(BaseModel):
 
 
 class CodeExecTool(BaseTool):
-    """Ejecución de código: envuelve run_code_tool() (proceso aparte, sin claves)."""
+    """Ejecución de código: envuelve run_code_tool() (proceso aparte, sin claves).
+
+    Solo se le pasa ``code`` (acordado con Yohanna, PR #61): el agente no puede elegir
+    carpeta de salida, tiempo límite ni ficheros de entrada.
+    """
 
     name: str = "run_python"
     description: str = (
@@ -69,7 +73,6 @@ class CodeExecTool(BaseTool):
         "Devuelve la salida, los errores y las rutas de los archivos generados."
     )
     args_schema: type[BaseModel] = _CodeArgs
-    outputs_root: str = "outputs"
 
     def _run(self, code: str) -> str:
         return _as_text(run_code_tool(code))
