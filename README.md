@@ -6,7 +6,6 @@
 
 > Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Lo iré actualizando a medida que termine cada paso.
 >
-> *For Majo: everything from my part that should go into the global `README.md`, in Spanish and English. Take what you need and adapt it to the README format. I will keep it updated as I finish each step.*
 
 **Última actualización / Last update:** 28 oct 2026
 
