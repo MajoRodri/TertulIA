@@ -1817,6 +1817,49 @@ h3 { font-size: var(--text-xl); }
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
+/* ─── Berta hint bubble ──────────────────────────────────── */
+.berta-bubble-hint {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  width: 168px;
+  box-shadow: 0 4px 20px rgba(15, 23, 48, 0.10);
+  font-size: var(--text-sm);
+  color: var(--ink);
+  line-height: 1.45;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.berta-bubble-hint.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.berta-bubble-hint.hidden {
+  display: none;
+}
+
+/* small arrow pointing down-right toward the button */
+.berta-bubble-hint-arrow {
+  position: absolute;
+  bottom: -7px;
+  right: 52px;
+  width: 13px;
+  height: 13px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
+}
+
 @media (max-width: 900px) {
   .hero-bubble { display: none; }
 }
@@ -1838,5 +1881,140 @@ h3 { font-size: var(--text-xl); }
     transition-duration: 0.01ms !important;
   }
   .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ─── Custom select ──────────────────────────────────────────── */
+.csel {
+  position: relative;
+  width: 100%;
+}
+
+.csel-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--canvas);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.csel-trigger:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: var(--shadow-btn);
+  background: var(--card);
+}
+
+.csel-open .csel-trigger {
+  border-color: var(--azul);
+  box-shadow: var(--shadow-btn);
+  background: var(--card);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+}
+
+.csel-trigger-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csel-trigger-text.csel-placeholder {
+  color: var(--placeholder);
+}
+
+.csel-arrow {
+  flex-shrink: 0;
+  margin-left: var(--s2);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.csel-open .csel-arrow {
+  transform: rotate(180deg);
+}
+
+.csel-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--card);
+  border: 1px solid var(--azul);
+  border-top: none;
+  border-bottom-left-radius: var(--r-md);
+  border-bottom-right-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgba(43, 78, 255, 0.10);
+  max-height: 280px;
+  overflow-y: auto;
+  display: none;
+  padding: 4px 0;
+}
+
+.csel-open .csel-dropdown {
+  display: block;
+}
+
+.csel-group-label {
+  padding: 8px 16px 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
+}
+
+.csel-option {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 0.1s;
+}
+
+.csel-option--placeholder { color: var(--placeholder); }
+
+.csel-option:hover,
+.csel-option:focus {
+  background: var(--canvas);
+  outline: none;
+}
+
+.csel-option--selected {
+  background: var(--azul-glow);
+  color: var(--azul);
+  font-weight: 500;
+}
+
+.csel-option--selected:hover,
+.csel-option--selected:focus {
+  background: var(--azul-glow);
+}
+
+.csel-option:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 

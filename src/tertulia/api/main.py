@@ -568,7 +568,12 @@ async def approve(job_id: str, req: ApproveRequest):
     paused_at = job.get("paused_at")
     if paused_at and (datetime.now(timezone.utc) - paused_at).total_seconds() > settings.HUMAN_TIMEOUT_S:
         await asyncio.to_thread(_graph.update_state, graph_config, {"expired": True})
-        final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+        try:
+            final = await asyncio.wait_for(
+                asyncio.to_thread(_graph.invoke, None, graph_config), timeout=300.0
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Graph invoke timed out")
         _jobs[job_id].update({
             "status": "expired",
             "traces": final.get("traces", []),
@@ -581,7 +586,12 @@ async def approve(job_id: str, req: ApproveRequest):
 
     if not job.get("is_demo"):
         await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
-        final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+        try:
+            final = await asyncio.wait_for(
+                asyncio.to_thread(_graph.invoke, None, graph_config), timeout=300.0
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Graph invoke timed out")
         _jobs[job_id].update({
             "traces": final.get("traces", []),
             "errors": final.get("errors", []),

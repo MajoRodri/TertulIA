@@ -3,8 +3,11 @@ import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
 import { initChat, runChatVision, renderChatHistory } from "./components/chat.js";
 import { startAnalysis, uploadImages, getJobState } from "./api.js";
+import { initCustomSelects } from "./components/custom-select.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+initCustomSelects();
 
 // ── Hero bubbles: scroll convergence + 1s cycling, pause on hover ──
 (function initHeroBubbles() {
@@ -157,11 +160,39 @@ function initStepNav() {
 // ── Show launcher once hero scrolls out of view ───────────────
 (function initLauncherReveal() {
   const btn  = document.getElementById("launcher-btn");
+  const hint = document.getElementById("berta-hint");
   const hero = document.getElementById("hero");
   if (!btn || !hero) return;
 
+  let hintTimer = null;
+
+  function showHint() {
+    if (!hint) return;
+    hint.classList.remove("hidden");
+    requestAnimationFrame(() => hint.classList.add("visible"));
+    hintTimer = setTimeout(dismissHint, 6000);
+  }
+
+  function dismissHint() {
+    if (!hint) return;
+    hint.classList.remove("visible");
+    hint.addEventListener("transitionend", () => hint.classList.add("hidden"), { once: true });
+  }
+
+  hint?.addEventListener("click", dismissHint);
+  btn.addEventListener("click", dismissHint);
+
   const observer = new IntersectionObserver(
-    ([entry]) => { btn.classList.toggle("hidden", entry.isIntersecting); },
+    ([entry]) => {
+      const hidden = entry.isIntersecting;
+      btn.classList.toggle("hidden", hidden);
+      clearTimeout(hintTimer);
+      if (!hidden) {
+        hintTimer = setTimeout(showHint, 300);
+      } else {
+        dismissHint();
+      }
+    },
     { threshold: 0.1 }
   );
   observer.observe(hero);
@@ -179,6 +210,8 @@ function openLauncher() {
   document.documentElement.style.overflow = "hidden";
   const first = launcherPanel.querySelector(FOCUSABLE);
   first?.focus();
+  const hint = document.getElementById("berta-hint");
+  if (hint) { hint.classList.remove("visible"); hint.classList.add("hidden"); }
 }
 function closeLauncher() {
   launcherPanel.classList.add("hidden");
@@ -450,7 +483,7 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     area_m2:       parseFloat(document.getElementById("area")?.value)   || null,
     radius_m:      parseInt(document.getElementById("radius")?.value)   || 800,
     notes:         document.getElementById("context")?.value?.trim() ?? "",
-    user_profile:  document.getElementById("profile-select")?.value ?? "analyst",
+    user_profile:  "analyst",
   };
 
   try {

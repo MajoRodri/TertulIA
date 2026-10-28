@@ -44,8 +44,15 @@ export async function showVerdict(jobId) {
 
   const reasons = data.reasons ?? [];
   const reasonsEl = document.getElementById("reasons-list");
-  if (reasonsEl)
-    reasonsEl.innerHTML = reasons.map((r) => `<div class="reason-item">${r}</div>`).join("");
+  if (reasonsEl) {
+    reasonsEl.textContent = "";
+    for (const r of reasons) {
+      const d = document.createElement("div");
+      d.className = "reason-item";
+      d.textContent = r;
+      reasonsEl.appendChild(d);
+    }
+  }
 
   const tokensEl = document.getElementById("verdict-tokens");
   if (tokensEl && data.tokens_used) {
@@ -56,14 +63,24 @@ export async function showVerdict(jobId) {
   const missingWrap = document.getElementById("verdict-missing-wrap");
   const missingList = document.getElementById("verdict-missing-list");
   if (missingWrap && missingList && data.missing_data?.length) {
-    missingList.innerHTML = data.missing_data.map((m) => `<li>${m}</li>`).join("");
+    missingList.textContent = "";
+    for (const m of data.missing_data) {
+      const li = document.createElement("li");
+      li.textContent = m;
+      missingList.appendChild(li);
+    }
     missingWrap.classList.remove("hidden");
   }
 
   const warningsWrap = document.getElementById("verdict-warnings-wrap");
   const warningsList = document.getElementById("verdict-warnings-list");
   if (warningsWrap && warningsList && data.warnings?.length) {
-    warningsList.innerHTML = data.warnings.map((w) => `<li>${w}</li>`).join("");
+    warningsList.textContent = "";
+    for (const w of data.warnings) {
+      const li = document.createElement("li");
+      li.textContent = w;
+      warningsList.appendChild(li);
+    }
     warningsWrap.classList.remove("hidden");
   }
 

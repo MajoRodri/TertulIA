@@ -4,6 +4,10 @@ import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+function esc(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export function renderChatHistory(chatHistory) {
   for (const entry of chatHistory) {
     if (entry.role === "user") {
@@ -123,7 +127,8 @@ function appendUserMessage(text, files = []) {
     const img = Object.assign(document.createElement("img"), {
       src: url, className: "upload-thumb",
     });
-    img.onload = () => URL.revokeObjectURL(url);
+    img.onload  = () => URL.revokeObjectURL(url);
+    img.onerror = () => URL.revokeObjectURL(url);
     bubble.appendChild(img);
   }
   if (text) {
@@ -145,8 +150,8 @@ function appendAgentMessage({ agent, name, role, message }) {
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
       <div class="message-meta">
-        <span class="agent-name">${displayName}</span>
-        <span class="agent-role">${role}</span>
+        <span class="agent-name">${esc(displayName)}</span>
+        <span class="agent-role">${esc(role)}</span>
       </div>
       <div class="message-text">${renderMd(message)}</div>
     </div>`;

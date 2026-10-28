@@ -4,6 +4,10 @@ import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+function esc(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 const feed = document.getElementById("debate-feed");
 
 const AGENT_THINKING = {
@@ -22,7 +26,7 @@ function createTypingIndicator(name = "", agent = "", label = "") {
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
-      ${displayLabel ? `<div class="agent-thinking-label">${displayLabel}</div>` : ""}
+      ${displayLabel ? `<div class="agent-thinking-label">${esc(displayLabel)}</div>` : ""}
       <div class="typing-indicator">
         <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
       </div>
@@ -39,8 +43,8 @@ function appendMessage({ agent, name, role, message, simulated }) {
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
       <div class="message-meta">
-        <span class="agent-name">${displayName}</span>
-        <span class="agent-role">${role}</span>
+        <span class="agent-name">${esc(displayName)}</span>
+        <span class="agent-role">${esc(role)}</span>
         ${simulated ? `<span class="simulated-badge">ejemplo</span>` : ""}
       </div>
       <div class="message-text">${renderMd(message)}</div>
