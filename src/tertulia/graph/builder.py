@@ -9,7 +9,7 @@ from tertulia.schemas import TraceEntry
 
 from .edges import should_continue
 from .errors import HUMAN_TIMEOUT, ErrorEntry, ErrorSeverity
-from .nodes import analyst_node, research_node, reviewer_node, writer_node
+from .nodes import analyst_node, research_node, reviewer_node, vision_charts_node, writer_node
 from .state import AgentState
 
 
@@ -95,6 +95,7 @@ workflow = StateGraph(AgentState)
 # 2. Anadimos los nodos (las estaciones)
 workflow.add_node("research", research_node)
 workflow.add_node("analyst", analyst_node)
+workflow.add_node("vision_charts", vision_charts_node)
 workflow.add_node("writer", writer_node)
 workflow.add_node("reviewer", reviewer_node)
 workflow.add_node("human_approval", human_approval_node)
@@ -102,7 +103,8 @@ workflow.add_node("human_approval", human_approval_node)
 # 3. Conectamos las vias (edges)
 workflow.add_edge(START, "research")
 workflow.add_edge("research", "analyst")
-workflow.add_edge("analyst", "writer")
+workflow.add_edge("analyst", "vision_charts")
+workflow.add_edge("vision_charts", "writer")
 workflow.add_edge("writer", "reviewer")
 
 # 4. Anadimos la aguja condicional (despues del revisor)

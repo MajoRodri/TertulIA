@@ -16,8 +16,13 @@ lands, the LLM calls will go inside the same ``try/except`` blocks and the
 research node will also use ``capture_tool_events()`` from ``tool_events.py``.
 """
 
+from datetime import datetime, timezone
+
+from tertulia.schemas import Finding, TraceEntry
+
 from .errors import (
     GRAPH_INTERNAL,
+    MISSING_DATA,
     TOKEN_BUDGET_EXHAUSTED,
     ErrorEntry,
     ErrorSeverity,
@@ -128,3 +133,111 @@ def reviewer_node(state: AgentState) -> dict:
         patch["reviewer_comments"] = [f"Revisor no disponible: {exc}"]
         patch["review_round"] = state.get("review_round", 0) + 1
         return patch
+
+
+def vision_charts_node(state: AgentState) -> dict:
+    """Analiza los gráficos del Analista con la herramienta de visión (#12).
+
+    - Si el Analista no ha generado gráficos, no hace nada.
+    - Para cada gráfico, llama a analyse_image() y comprueba que el modelo lo
+      clasificó como "chart" (el kind lo decide el modelo, no el llamador).
+    - Crea un Finding por gráfico analizado y una TraceEntry por la llamada.
+    - Si un gráfico falla, registra un error degradable y sigue con el siguiente.
+    """
+    charts: list[str] = []
+    for finding in state.get("findings", []):
+        for path in finding.artifact_paths:
+            if path not in charts:
+                charts.append(path)
+
+    if not charts:
+        return {}
+
+    if _tokens_exhausted(state):
+        return _record_error(state, _budget_error("vision_charts"))
+
+    try:
+        from tertulia.crew.crew import llm_from_settings
+        from tertulia.vision.loader import ImageRejected
+        from tertulia.vision.tool import AnalysisFailed, analyse_image, to_text
+
+        llm = llm_from_settings()
+    except Exception as exc:
+        return _record_error(state, _internal_error("vision_charts", exc))
+
+    existing_findings = state.get("findings", [])
+    existing_traces = state.get("traces", [])
+    new_findings: list[Finding] = []
+    new_traces: list[TraceEntry] = []
+    new_errors: list[ErrorEntry] = []
+    next_finding = len(existing_findings) + 1
+    next_trace = len(existing_traces) + 1
+
+    for path in charts:
+        try:
+            analysis = analyse_image(path, llm)
+        except (ImageRejected, AnalysisFailed) as exc:
+            new_errors.append(
+                ErrorEntry(
+                    code=MISSING_DATA,
+                    node="vision_charts",
+                    severity=ErrorSeverity.DEGRADABLE,
+                    message=f"No se pudo analizar el gráfico {path}.",
+                    technical_detail=str(exc),
+                    retryable=False,
+                )
+            )
+            continue
+
+        if analysis.kind != "chart":
+            new_errors.append(
+                ErrorEntry(
+                    code=MISSING_DATA,
+                    node="vision_charts",
+                    severity=ErrorSeverity.DEGRADABLE,
+                    message=f"El modelo no clasificó {path} como gráfico.",
+                    technical_detail=f"kind={analysis.kind}",
+                    retryable=False,
+                )
+            )
+            continue
+
+        if analysis.observations:
+            claim = analysis.observations[0].observation
+        else:
+            claim = analysis.unclear or f"Análisis del gráfico {path}"
+
+        text = to_text(analysis)
+        trace_id = f"trc-{next_trace:03d}"
+        finding_id = f"fnd-{next_finding:03d}"
+        new_traces.append(
+            TraceEntry(
+                id=trace_id,
+                timestamp=datetime.now(timezone.utc),
+                actor="vision",
+                tool="vision.analyse_image",
+                inputs={"image_path": path, "kind": analysis.kind.value},
+                output=text,
+                finding_ids=[finding_id],
+            )
+        )
+        new_findings.append(
+            Finding(
+                id=finding_id,
+                claim=claim,
+                agent="vision",
+                code_ref=trace_id,
+                artifact_paths=[path],
+            )
+        )
+        next_trace += 1
+        next_finding += 1
+
+    patch: dict = {}
+    if new_findings:
+        patch["findings"] = existing_findings + new_findings
+    if new_traces:
+        patch["traces"] = existing_traces + new_traces
+    if new_errors:
+        patch["errors"] = state.get("errors", []) + new_errors
+    return patch
