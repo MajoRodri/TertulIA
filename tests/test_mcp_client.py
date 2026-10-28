@@ -67,6 +67,7 @@ def test_server_gets_only_pythonpath_and_no_api_keys():
 def test_only_allowed_tools_reach_the_agents():
     allowed = client.neighbourhood_data_server().tool_filter
     assert allowed({"name": "search_competitors"}) is True
+    assert allowed({"name": "search_audience_indicators"}) is True
     assert allowed({"name": "delete_everything"}) is False
 
 
