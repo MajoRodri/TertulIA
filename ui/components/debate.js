@@ -59,6 +59,15 @@ function showSimulatedWarning() {
   feed.insertBefore(el, feed.firstChild);
 }
 
+export function renderStoredDebate(messages, simulated) {
+  feed.innerHTML = "";
+  if (simulated) showSimulatedWarning();
+  for (const msg of messages) {
+    appendMessage({ ...msg, simulated: simulated || msg.simulated });
+  }
+  document.getElementById("typing-indicator")?.remove();
+}
+
 export function runDebate(jobId, { onFirstAgent } = {}) {
   feed.innerHTML = "";
   feed.appendChild(createTypingIndicator("", "", "Uniendo a los agentes…"));

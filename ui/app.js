@@ -1,8 +1,8 @@
-import { runDebate }   from "./components/debate.js";
+import { runDebate, renderStoredDebate } from "./components/debate.js";
 import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
-import { initChat, runChatVision } from "./components/chat.js";
-import { startAnalysis, uploadImages } from "./api.js";
+import { initChat, runChatVision, renderChatHistory } from "./components/chat.js";
+import { startAnalysis, uploadImages, getJobState } from "./api.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -213,8 +213,116 @@ document.addEventListener("keydown", (e) => {
 
 document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);
 
+// ── Session persistence ───────────────────────────────────────
+function saveSession(jobId, step) {
+  sessionStorage.setItem("tertulia_session", JSON.stringify({ jobId, step }));
+}
+
+function clearSession() {
+  sessionStorage.removeItem("tertulia_session");
+}
+
+// ── Activate the main analysis UI frame ───────────────────────
+function activateMainUI() {
+  document.querySelector(".main").classList.add("active");
+  document.getElementById("main-backdrop").classList.add("active");
+  document.getElementById("launcher-btn").classList.add("hidden");
+  document.body.style.overflow = "hidden";
+  document.documentElement.style.overflow = "hidden";
+  document.getElementById("btn-exit").classList.remove("hidden");
+  document.getElementById("stepper").classList.remove("hidden");
+  initStepNav();
+}
+
+// ── Core analysis flow (new + restore share this) ─────────────
+async function runFlowFrom(jobId, startStep, state = null) {
+  // Mark all preceding steps done
+  for (let i = 1; i < startStep; i++) {
+    setStep(i, "done");
+    setLine(i, true);
+  }
+  setStep(startStep, "active");
+
+  if (startStep <= 2) {
+    showPanel("panel-debate");
+    if (state?.messages?.length) {
+      renderStoredDebate(state.messages, state.simulated);
+    } else {
+      await runDebate(jobId, { onFirstAgent: hideLoading });
+    }
+    saveSession(jobId, 2);
+    document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
+    const debateActions = document.getElementById("debate-actions");
+    debateActions.classList.remove("hidden");
+    await new Promise((resolve) =>
+      document.getElementById("btn-debate-continue").addEventListener("click", resolve, { once: true })
+    );
+    debateActions.classList.add("hidden");
+    setStep(2, "done"); setLine(2, true);
+    setStep(3, "active");
+    saveSession(jobId, 3);
+  }
+
+  if (startStep <= 3) {
+    showPanel("panel-chat");
+    if (state?.chat_history?.length) renderChatHistory(state.chat_history);
+    await initChat(jobId, chatPicker);
+    const chatFiles = chatPicker.files();
+    if (chatFiles.length) {
+      await uploadImages(jobId, chatFiles);
+      await runChatVision(jobId);
+    }
+    setStep(3, "done"); setLine(3, true);
+    setStep(4, "active");
+    saveSession(jobId, 4);
+  }
+
+  if (startStep <= 4) {
+    showPanel("panel-verdict");
+    await showVerdict(jobId);
+    setStep(4, "done"); setLine(4, true);
+    setStep(5, "active");
+    saveSession(jobId, 5);
+  }
+
+  showPanel("panel-approval");
+  initApproval(jobId);
+}
+
+// ── Restore session on page load ──────────────────────────────
+async function tryRestoreSession() {
+  const raw = sessionStorage.getItem("tertulia_session");
+  if (!raw) return false;
+
+  let { jobId, step } = JSON.parse(raw);
+  if (!jobId || !step) { clearSession(); return false; }
+
+  let state;
+  try {
+    state = await getJobState(jobId);
+  } catch {
+    clearSession();
+    return false;
+  }
+
+  // Don't restore if debate is still running (can't reconnect to SSE)
+  if (state.status === "running") {
+    clearSession();
+    return false;
+  }
+
+  activateMainUI();
+  populateBriefSummary(state.brief, []);
+
+  await runFlowFrom(jobId, step, state);
+  return true;
+}
+
+tryRestoreSession().catch(console.error);
+
 // ── Abandon analysis ──────────────────────────────────────────
 document.getElementById("btn-exit").addEventListener("click", () => {
+  clearSession();
   location.reload();
 });
 
@@ -352,56 +460,12 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     if (formFiles.length) await uploadImages(jobId, formFiles);
 
     closeLauncher();
-    document.querySelector(".main").classList.add("active");
-    document.getElementById("main-backdrop").classList.add("active");
-    document.getElementById("launcher-btn").classList.add("hidden");
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.getElementById("btn-exit").classList.remove("hidden");
+    activateMainUI();
     showLoading();
 
     populateBriefSummary(brief, formPicker.files());
 
-    document.getElementById("stepper").classList.remove("hidden");
-    initStepNav();
-    setStep(1, "done"); setLine(1, true);
-    setStep(2, "active");
-    showPanel("panel-debate");
-
-    await runDebate(jobId, { onFirstAgent: hideLoading });
-
-    // Show continue button — user reads the debate then clicks to advance
-    document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
-    const debateActions = document.getElementById("debate-actions");
-    debateActions.classList.remove("hidden");
-    await new Promise((resolve) =>
-      document.getElementById("btn-debate-continue").addEventListener("click", resolve, { once: true })
-    );
-    debateActions.classList.add("hidden");
-
-    setStep(2, "done"); setLine(2, true);
-    setStep(3, "active");
-    showPanel("panel-chat");
-
-    await initChat(jobId, chatPicker);   // resolves when user clicks "Continuar al veredicto"
-
-    const chatFiles = chatPicker.files();
-    if (chatFiles.length) {
-      await uploadImages(jobId, chatFiles);
-      await runChatVision(jobId);
-    }
-
-    setStep(3, "done"); setLine(3, true);
-    setStep(4, "active");
-    showPanel("panel-verdict");
-
-    await showVerdict(jobId);
-
-    setStep(4, "done"); setLine(4, true);
-    setStep(5, "active");
-    showPanel("panel-approval");
-
-    initApproval(jobId);
+    await runFlowFrom(jobId, 2, null);
 
   } catch (err) {
     console.error(err);

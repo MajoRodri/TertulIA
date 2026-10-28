@@ -1234,13 +1234,21 @@ h3 { font-size: var(--text-xl); }
 
 /* Right-side bubbles: popup opens to the left */
 .hb-tr .hb-popup,
-.hb-br .hb-popup,
-.hb-mr .hb-popup {
+.hb-br .hb-popup {
   right: calc(100% + 14px);
   transform: translateY(-50%) translateX(8px);
 }
 .hb-tr.active .hb-popup,
-.hb-br.active .hb-popup,
+.hb-br.active .hb-popup {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Middle-right bubble (Berto): popup opens to the right to avoid center overlap */
+.hb-mr .hb-popup {
+  left: calc(100% + 14px);
+  transform: translateY(-50%) translateX(-8px);
+}
 .hb-mr.active .hb-popup {
   opacity: 1;
   transform: translateY(-50%) translateX(0);
@@ -1265,11 +1273,16 @@ h3 { font-size: var(--text-xl); }
 }
 
 .hb-tr .hb-popup::before,
-.hb-br .hb-popup::before,
-.hb-mr .hb-popup::before {
+.hb-br .hb-popup::before {
   right: -6px;
   border-top: 1.5px solid var(--border);
   border-right: 1.5px solid var(--border);
+}
+
+.hb-mr .hb-popup::before {
+  left: -6px;
+  border-bottom: 1.5px solid var(--border);
+  border-left: 1.5px solid var(--border);
 }
 
 .hb-name { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.2; }

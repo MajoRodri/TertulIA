@@ -316,13 +316,13 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
 async def chat(
     job_id: str,
     message: str = Form(...),
-    images: list[UploadFile] = File(default=[]),
+    images: Annotated[list[UploadFile] | None, File()] = None,
 ):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     image_data: list[tuple[str, bytes]] = [
         (img.content_type or "image/jpeg", await img.read())
-        for img in images
+        for img in (images or [])
     ]
     return StreamingResponse(
         _stream_chat(job_id, message, image_data),
@@ -623,6 +623,31 @@ async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()])
         raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGES} fotos por análisis")
     _jobs[job_id]["brief"] = brief.model_copy(update={"image_paths": merged})
     return {"paths": saved}
+
+
+@app.get("/api/state/{job_id}")
+async def get_job_state(job_id: str):
+    """Returns enough state to restore the UI after a page refresh."""
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    brief: BusinessBrief = job["brief"]
+    user_profile = brief.user_profile
+    return {
+        "status": job.get("status"),
+        "messages": job.get("messages", []),
+        "chat_history": job.get("chat_history", []),
+        "simulated": job.get("simulated", False),
+        "brief": {
+            "business_type": brief.business_type,
+            "neighbourhood": brief.neighbourhood,
+            "budget_eur": brief.budget_eur,
+            "area_m2": brief.area_m2,
+            "radius_m": brief.radius_m,
+            "notes": brief.notes,
+            "user_profile": user_profile.value if hasattr(user_profile, "value") else str(user_profile),
+        },
+    }
 
 
 # ── Static files (must come after all API routes) ─────────────────────────────

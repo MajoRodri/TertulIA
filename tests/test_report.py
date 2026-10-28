@@ -37,9 +37,9 @@ def test_render_html_contains_key_data():
 
 def test_render_html_traffic_light_class():
     html = render_html(SAMPLE_DATA)
-    assert "active yellow" in html
-    assert "active green" not in html
-    assert "active red" not in html
+    assert "on yellow" in html
+    assert "on green" not in html
+    assert "on red" not in html
 
 
 def test_email_draft_contains_summary():

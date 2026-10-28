@@ -104,6 +104,13 @@ export async function sendChatMessage(jobId, message, files, onMessage) {
   }
 }
 
+// GET /api/state/{jobId}  →  { status, messages, chat_history, simulated, brief }
+export async function getJobState(jobId) {
+  const res = await fetch(`${API_BASE}/api/state/${jobId}`);
+  if (!res.ok) throw new Error(`Error ${res.status} fetching job state`);
+  return res.json();
+}
+
 // ── Mock helpers ──────────────────────────────────────────────
 function simulateMockStream(onMessage, onDone) {
   MOCK_DEBATE.forEach((msg) => setTimeout(() => onMessage(msg), msg.delay));

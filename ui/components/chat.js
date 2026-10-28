@@ -4,6 +4,19 @@ import { AGENT_DISPLAY_NAMES, avatarHtml } from "../utils/agents.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+export function renderChatHistory(chatHistory) {
+  for (const entry of chatHistory) {
+    if (entry.role === "user") {
+      appendUserMessage(entry.text, []);
+    } else {
+      appendAgentMessage({
+        agent: "analyst", name: "Analista",
+        role: "Viabilidad financiera", message: entry.text,
+      });
+    }
+  }
+}
+
 export function initChat(jobId, imagePicker = null) {
   const input       = document.getElementById("chat-input");
   const btnSend     = document.getElementById("btn-chat-send");
