@@ -29,10 +29,19 @@ class ReportBrief(BaseModel):
     profile: str = "analyst"
 
 
+class ReportSource(BaseModel):
+    title: str
+    url: str | None = None
+    source_type: str = ""
+    retrieved_at: str = ""
+
+
 class ReportData(BaseModel):
     brief: ReportBrief
     debate: list[AgentMessage]
     verdict: Verdict
+    sources: list[ReportSource] = []
     generated_on: date = date.today()
-    job_id: str = "—"
+    job_id: str = "N/A"
     simulated: bool = False
+    tokens_used: int = 0

@@ -163,7 +163,6 @@ h3 { font-size: var(--text-xl); }
 .panel-header {
   margin-bottom: var(--s5);
   padding-bottom: var(--s4);
-  border-bottom: 1px solid var(--border);
 }
 
 .panel-header h2 { margin-top: var(--s1); }
@@ -214,6 +213,7 @@ h3 { font-size: var(--text-xl); }
   display: flex;
   align-items: center;
   margin-bottom: var(--s6);
+  padding-right: 52px; /* leave room for .analysis-close (36px button + 16px gap) */
 }
 
 .step {
@@ -814,16 +814,33 @@ h3 { font-size: var(--text-xl); }
   transform: translateY(0);
 }
 
-/* ─── Analysis overlay (main becomes full-screen when active) ── */
-.main.active {
+/* ─── Analysis overlay — floating window centred on the page ─── */
+.main-backdrop {
+  display: none;
   position: fixed;
   inset: 0;
+  z-index: 849;
+  background: rgba(15, 23, 48, .45);
+  backdrop-filter: blur(3px);
+}
+.main-backdrop.active { display: block; }
+
+.main.active {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(960px, calc(100vw - 40px));
+  height: calc(100vh - 80px);
   z-index: 850;
   background: var(--canvas);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 60px rgba(15, 23, 48, .22);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: var(--s3) var(--s5) 0;
+  padding: 56px var(--s5) 0;
 }
 
 /* every visible panel fills the remaining height and scrolls inside itself */
@@ -866,13 +883,32 @@ h3 { font-size: var(--text-xl); }
   padding-top: var(--s4);
 }
 
-/* ─── Analysis top bar (abandon button) ─────────────────────── */
-.analysis-topbar {
+/* ─── Analysis close button (top-right of floating window) ───── */
+.analysis-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
   display: flex;
-  justify-content: flex-start;
-  margin-bottom: var(--s3);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
+.analysis-close:hover {
+  color: var(--rojo);
+  border-color: var(--rojo);
+  background: #fee2e2;
+}
+
+/* keep old class name in case anything references it */
 .analysis-exit {
   font-size: var(--text-sm);
   color: var(--muted);
@@ -894,22 +930,17 @@ h3 { font-size: var(--text-xl); }
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: var(--card);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--s4);
-  transition: opacity 0.5s ease;
+  gap: var(--s3);
+  transition: opacity 0.4s ease;
 }
 .loading-overlay.hidden  { display: none; }
 .loading-overlay.fading  { opacity: 0; pointer-events: none; }
 
-.loading-video {
-  max-width: min(540px, 88vw);
-  max-height: 70vh;
-  display: block;
-}
 
 .loading-label {
   font-size: var(--text-sm);
@@ -1016,7 +1047,7 @@ h3 { font-size: var(--text-xl); }
   z-index: 1;
   text-align: center;
   max-width: 640px;
-  padding: var(--s7) var(--s5);
+  padding: var(--s7) var(--s5) calc(var(--s5) + 72px);
   animation: heroFadeUp 0.7s ease both;
 }
 
@@ -1203,13 +1234,21 @@ h3 { font-size: var(--text-xl); }
 
 /* Right-side bubbles: popup opens to the left */
 .hb-tr .hb-popup,
-.hb-br .hb-popup,
-.hb-mr .hb-popup {
+.hb-br .hb-popup {
   right: calc(100% + 14px);
   transform: translateY(-50%) translateX(8px);
 }
 .hb-tr.active .hb-popup,
-.hb-br.active .hb-popup,
+.hb-br.active .hb-popup {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Middle-right bubble (Berto): popup opens to the right to avoid center overlap */
+.hb-mr .hb-popup {
+  left: calc(100% + 14px);
+  transform: translateY(-50%) translateX(-8px);
+}
 .hb-mr.active .hb-popup {
   opacity: 1;
   transform: translateY(-50%) translateX(0);
@@ -1234,11 +1273,16 @@ h3 { font-size: var(--text-xl); }
 }
 
 .hb-tr .hb-popup::before,
-.hb-br .hb-popup::before,
-.hb-mr .hb-popup::before {
+.hb-br .hb-popup::before {
   right: -6px;
   border-top: 1.5px solid var(--border);
   border-right: 1.5px solid var(--border);
+}
+
+.hb-mr .hb-popup::before {
+  left: -6px;
+  border-bottom: 1.5px solid var(--border);
+  border-left: 1.5px solid var(--border);
 }
 
 .hb-name { font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.2; }
@@ -1781,3 +1825,4 @@ h3 { font-size: var(--text-xl); }
   }
   .reveal { opacity: 1; transform: none; transition: none; }
 }
+

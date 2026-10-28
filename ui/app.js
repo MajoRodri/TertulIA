@@ -1,8 +1,8 @@
-import { runDebate }   from "./components/debate.js";
+import { runDebate, renderStoredDebate } from "./components/debate.js";
 import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
-import { initChat, runChatVision } from "./components/chat.js";
-import { startAnalysis, uploadImages } from "./api.js";
+import { initChat, runChatVision, renderChatHistory } from "./components/chat.js";
+import { startAnalysis, uploadImages, getJobState } from "./api.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -213,8 +213,116 @@ document.addEventListener("keydown", (e) => {
 
 document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);
 
+// ── Session persistence ───────────────────────────────────────
+function saveSession(jobId, step) {
+  sessionStorage.setItem("tertulia_session", JSON.stringify({ jobId, step }));
+}
+
+function clearSession() {
+  sessionStorage.removeItem("tertulia_session");
+}
+
+// ── Activate the main analysis UI frame ───────────────────────
+function activateMainUI() {
+  document.querySelector(".main").classList.add("active");
+  document.getElementById("main-backdrop").classList.add("active");
+  document.getElementById("launcher-btn").classList.add("hidden");
+  document.body.style.overflow = "hidden";
+  document.documentElement.style.overflow = "hidden";
+  document.getElementById("btn-exit").classList.remove("hidden");
+  document.getElementById("stepper").classList.remove("hidden");
+  initStepNav();
+}
+
+// ── Core analysis flow (new + restore share this) ─────────────
+async function runFlowFrom(jobId, startStep, state = null) {
+  // Mark all preceding steps done
+  for (let i = 1; i < startStep; i++) {
+    setStep(i, "done");
+    setLine(i, true);
+  }
+  setStep(startStep, "active");
+
+  if (startStep <= 2) {
+    showPanel("panel-debate");
+    if (state?.messages?.length) {
+      renderStoredDebate(state.messages, state.debate_simulated);
+    } else {
+      await runDebate(jobId, { onFirstAgent: hideLoading });
+    }
+    saveSession(jobId, 2);
+    document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
+    const debateActions = document.getElementById("debate-actions");
+    debateActions.classList.remove("hidden");
+    await new Promise((resolve) =>
+      document.getElementById("btn-debate-continue").addEventListener("click", resolve, { once: true })
+    );
+    debateActions.classList.add("hidden");
+    setStep(2, "done"); setLine(2, true);
+    setStep(3, "active");
+    saveSession(jobId, 3);
+  }
+
+  if (startStep <= 3) {
+    showPanel("panel-chat");
+    if (state?.chat_history?.length) renderChatHistory(state.chat_history);
+    await initChat(jobId, chatPicker);
+    const chatFiles = chatPicker.files();
+    if (chatFiles.length) {
+      await uploadImages(jobId, chatFiles);
+      await runChatVision(jobId);
+    }
+    setStep(3, "done"); setLine(3, true);
+    setStep(4, "active");
+    saveSession(jobId, 4);
+  }
+
+  if (startStep <= 4) {
+    showPanel("panel-verdict");
+    await showVerdict(jobId);
+    setStep(4, "done"); setLine(4, true);
+    setStep(5, "active");
+    saveSession(jobId, 5);
+  }
+
+  showPanel("panel-approval");
+  initApproval(jobId);
+}
+
+// ── Restore session on page load ──────────────────────────────
+async function tryRestoreSession() {
+  const raw = sessionStorage.getItem("tertulia_session");
+  if (!raw) return false;
+
+  let { jobId, step } = JSON.parse(raw);
+  if (!jobId || !step) { clearSession(); return false; }
+
+  let state;
+  try {
+    state = await getJobState(jobId);
+  } catch {
+    clearSession();
+    return false;
+  }
+
+  // Don't restore if debate is still running (can't reconnect to SSE)
+  if (state.status === "running") {
+    clearSession();
+    return false;
+  }
+
+  activateMainUI();
+  populateBriefSummary(state.brief, []);
+
+  await runFlowFrom(jobId, step, state);
+  return true;
+}
+
+tryRestoreSession().catch(console.error);
+
 // ── Abandon analysis ──────────────────────────────────────────
 document.getElementById("btn-exit").addEventListener("click", () => {
+  clearSession();
   location.reload();
 });
 
@@ -223,8 +331,14 @@ const MAX_FILE_MB    = 10;
 const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
 const ALLOWED_HINT   = "JPG o PNG · máx. 10 MB por archivo";
 
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png"]);
+const ALLOWED_EXTS  = new Set([".jpg", ".jpeg", ".png"]);
+
 function validateImageFiles(files) {
   for (const f of files) {
+    const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_TYPES.has(f.type) || !ALLOWED_EXTS.has(ext))
+      return `"${f.name}" no está permitido. Solo se aceptan JPG y PNG.`;
     if (f.size > MAX_FILE_BYTES)
       return `"${f.name}" supera los ${MAX_FILE_MB} MB permitidos.`;
   }
@@ -282,11 +396,14 @@ function attachImagePicker(inputId, hintId, previewId) {
     updateHint();
   });
 
-  return () => managed;
+  return {
+    files: () => [...managed],
+    clear() { managed.length = 0; render(); updateHint(); },
+  };
 }
 
-const getFormImages = attachImagePicker("images",      "images-hint",      "images-preview");
-const getChatImages = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
+const formPicker = attachImagePicker("images",      "images-hint",      "images-preview");
+const chatPicker = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
 
 // ── Brief summary (panel 1 read-only view) ────────────────────
 const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
@@ -339,63 +456,16 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   try {
     const { job_id: jobId } = await startAnalysis(brief);
 
-    const formFiles = getFormImages();
+    const formFiles = formPicker.files();
     if (formFiles.length) await uploadImages(jobId, formFiles);
 
     closeLauncher();
-    document.querySelector(".main").classList.add("active");
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
-    document.getElementById("analysis-topbar").classList.remove("hidden");
+    activateMainUI();
     showLoading();
 
-    populateBriefSummary(brief, getFormImages());
+    populateBriefSummary(brief, formPicker.files());
 
-    document.getElementById("stepper").classList.remove("hidden");
-    initStepNav();
-    setStep(1, "done"); setLine(1, true);
-    setStep(2, "active");
-    showPanel("panel-debate");
-
-    // Hide overlay as soon as the first event lands in the debate feed
-    const feed = document.getElementById("debate-feed");
-    const observer = new MutationObserver(() => { hideLoading(); observer.disconnect(); });
-    observer.observe(feed, { childList: true });
-
-    await runDebate(jobId);
-
-    // Show continue button — user reads the debate then clicks to advance
-    document.getElementById("debate-eyebrow").textContent = "Paso 2 · Completado";
-    const debateActions = document.getElementById("debate-actions");
-    debateActions.classList.remove("hidden");
-    await new Promise((resolve) =>
-      document.getElementById("btn-debate-continue").addEventListener("click", resolve, { once: true })
-    );
-    debateActions.classList.add("hidden");
-
-    setStep(2, "done"); setLine(2, true);
-    setStep(3, "active");
-    showPanel("panel-chat");
-
-    await initChat(jobId);   // resolves when user clicks "Continuar al veredicto"
-
-    const chatFiles = getChatImages();
-    if (chatFiles.length) {
-      await uploadImages(jobId, chatFiles);
-      await runChatVision(jobId);
-    }
-
-    setStep(3, "done"); setLine(3, true);
-    setStep(4, "active");
-    showPanel("panel-verdict");
-
-    await showVerdict(jobId);
-
-    setStep(4, "done"); setLine(4, true);
-    setStep(5, "active");
-    showPanel("panel-approval");
-
-    initApproval(jobId);
+    await runFlowFrom(jobId, 2, null);
 
   } catch (err) {
     console.error(err);

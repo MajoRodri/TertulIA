@@ -10,7 +10,7 @@ export async function showVerdict(jobId) {
     data = await fetchVerdict(jobId);
   } catch (err) {
     const label = document.getElementById("verdict-label");
-    if (label) label.textContent = "No se pudo cargar el veredicto — comprueba la conexión.";
+    if (label) label.textContent = "No se pudo cargar el veredicto. Comprueba la conexión.";
     throw err;
   }
 

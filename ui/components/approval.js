@@ -12,7 +12,8 @@ export function initApproval(jobId) {
     try {
       const result = await approveReport(jobId);
       if (result instanceof Blob) {
-        triggerDownload(result, `report_tertulia_${jobId}.pdf`);
+        const filename = jobId === "demo-001" ? "informe_demo.pdf" : "InformeTertulIA.pdf";
+        triggerDownload(result, filename);
         btnApprove.textContent = "✓ Informe descargado";
       } else {
         btnApprove.disabled = false;
@@ -24,7 +25,7 @@ export function initApproval(jobId) {
       }
     } catch (err) {
       btnApprove.disabled = false;
-      btnApprove.textContent = "Error al conectar — inténtalo de nuevo";
+      btnApprove.textContent = "Error al conectar. Inténtalo de nuevo.";
       btnApprove.title = err.message;
       console.error("approve error:", err);
     }

@@ -14,17 +14,15 @@ const AGENT_THINKING = {
   vision:     "Berto está analizando las imágenes…",
 };
 
-function createTypingIndicator(name = "", agent = "") {
-  const label = agent
-    ? (AGENT_THINKING[agent] ?? `${name} está analizando…`)
-    : "";
+function createTypingIndicator(name = "", agent = "", label = "") {
+  const displayLabel = label || (agent ? (AGENT_THINKING[agent] ?? `${name} está analizando…`) : "");
   const el = document.createElement("div");
   el.className = "debate-message";
   el.id = "typing-indicator";
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
-      ${label ? `<div class="agent-thinking-label">${label}</div>` : ""}
+      ${displayLabel ? `<div class="agent-thinking-label">${displayLabel}</div>` : ""}
       <div class="typing-indicator">
         <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
       </div>
@@ -57,19 +55,33 @@ function showSimulatedWarning() {
   const el = document.createElement("div");
   el.id = "simulated-warning";
   el.className = "simulated-warning";
-  el.textContent = "⚠️ Servidor de análisis no disponible — mostrando datos de ejemplo, no reales.";
+  el.textContent = "⚠️ Servidor de análisis no disponible. Mostrando datos de ejemplo, no reales.";
   feed.insertBefore(el, feed.firstChild);
 }
 
-export function runDebate(jobId) {
+export function renderStoredDebate(messages, simulated) {
   feed.innerHTML = "";
-  feed.appendChild(createTypingIndicator());
+  if (simulated) showSimulatedWarning();
+  for (const msg of messages) {
+    appendMessage({ ...msg, simulated: simulated || msg.simulated });
+  }
+  document.getElementById("typing-indicator")?.remove();
+}
+
+export function runDebate(jobId, { onFirstAgent } = {}) {
+  feed.innerHTML = "";
+  feed.appendChild(createTypingIndicator("", "", "Uniendo a los agentes…"));
+  let firstAgentFired = false;
   return new Promise((resolve, reject) => {
     openDebateStream(
       jobId,
       (data) => {
         if (data.simulated) showSimulatedWarning();
         if (!data.thinking && !data.message) return;
+        if (!firstAgentFired) {
+          firstAgentFired = true;
+          onFirstAgent?.();
+        }
         if (data.thinking) {
           document.getElementById("typing-indicator")?.remove();
           feed.appendChild(createTypingIndicator(data.name, data.agent));

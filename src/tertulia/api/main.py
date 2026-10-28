@@ -10,6 +10,8 @@ Endpoints:
 """
 
 import asyncio
+import base64
+import io
 import json
 import logging
 import uuid
@@ -17,7 +19,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Annotated, AsyncGenerator
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -25,7 +27,7 @@ from pydantic import BaseModel
 
 from tertulia.graph.builder import app as _graph
 from tertulia.report.models import AgentMessage as ReportMessage
-from tertulia.report.models import ReportBrief, ReportData
+from tertulia.report.models import ReportBrief, ReportData, ReportSource
 from tertulia.report.models import Verdict as ReportVerdict
 from tertulia.schemas.models import BusinessBrief, TrafficLight
 from tertulia.schemas.models import Verdict as SchemaVerdict
@@ -122,6 +124,29 @@ def _first_skeleton_for(agent: str) -> dict | None:
     return None
 
 
+# ── Demo job (pre-seeded for USE_MOCK=true frontend mode) ────────────────────
+_jobs["demo-001"] = {
+    "brief": BusinessBrief(
+        business_type="cafe_cowork",
+        neighbourhood="Atocha",
+        budget_eur=80_000,
+        area_m2=120,
+        radius_m=800,
+    ),
+    "verdict": _skeleton_verdict(),
+    "messages": [{k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE],
+    "status": "paused",
+    "paused_at": None,  # skip timeout check for demo
+    "debate_simulated": True,
+    "simulated": True,
+    "is_demo": True,
+    "tokens_used": 0,
+    "sources": [],
+    "findings": [],
+    "traces": [],
+    "errors": [],
+}
+
 # ── Crew helpers ──────────────────────────────────────────────────────────────
 
 async def _prepare_crew(brief: BusinessBrief):
@@ -175,6 +200,7 @@ async def _prepare_crew(brief: BusinessBrief):
         return None
 
 
+
 def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     """Stores step outputs so later steps can reference them via build_inputs."""
     if step == "research":
@@ -219,6 +245,8 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     messages: list[dict] = []
 
     crew = await _prepare_crew(brief)
+
+    debate_simulated = crew is None
 
     if crew is None:
         log.warning("job=%s using skeleton debate — crew unavailable", job_id)
@@ -265,10 +293,11 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 messages.append(payload)
                 yield f"data: {json.dumps(payload)}\n\n"
 
-    _jobs[job_id]["messages"]  = messages
-    _jobs[job_id]["verdict"]   = _skeleton_verdict()
-    _jobs[job_id]["status"]    = "paused"
-    _jobs[job_id]["simulated"] = True  # always until #12 delivers a real verdict
+    _jobs[job_id]["messages"]          = messages
+    _jobs[job_id]["verdict"]           = _skeleton_verdict()
+    _jobs[job_id]["status"]            = "paused"
+    _jobs[job_id]["debate_simulated"]  = debate_simulated
+    _jobs[job_id]["simulated"]         = True  # verdict always skeleton until #12
     _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
 
     graph_config = {"configurable": {"thread_id": job_id}}
@@ -284,16 +313,49 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     yield f"data: {json.dumps({'paused': True})}\n\n"
 
 
-class ChatRequest(BaseModel):
-    message: str
+def _sanitize_chat_image(mime: str, data: bytes) -> tuple[str, bytes]:
+    from PIL import Image, ImageOps  # type: ignore[import-untyped]
+    _ALLOWED = {"JPEG": "image/jpeg", "PNG": "image/png"}
+    try:
+        buf = io.BytesIO(data)
+        with Image.open(buf) as img:
+            fmt = img.format
+            img.verify()
+        if fmt not in _ALLOWED:
+            raise ValueError(f"unsupported format: {fmt}")
+        buf.seek(0)
+        with Image.open(buf) as img:
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail((1600, 1600), Image.LANCZOS)
+            if fmt == "JPEG" and img.mode != "RGB":
+                img = img.convert("RGB")
+            out = io.BytesIO()
+            img.save(out, format=fmt)
+        return _ALLOWED[fmt], out.getvalue()
+    except Exception as exc:
+        raise ValueError("invalid image") from exc
 
 
 @app.post("/api/chat/{job_id}")
-async def chat(job_id: str, req: ChatRequest):
+async def chat(
+    job_id: str,
+    message: str = Form(...),
+    images: Annotated[list[UploadFile] | None, File()] = None,
+):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
+    image_data: list[tuple[str, bytes]] = []
+    for img in (images or []):
+        raw = await img.read()
+        try:
+            mime, clean = await asyncio.to_thread(
+                _sanitize_chat_image, img.content_type or "image/jpeg", raw
+            )
+            image_data.append((mime, clean))
+        except ValueError:
+            continue
     return StreamingResponse(
-        _stream_chat(job_id, req.message),
+        _stream_chat(job_id, message, image_data),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -325,7 +387,11 @@ def _build_chat_system_prompt(job: dict) -> str:
     )
 
 
-async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
+async def _stream_chat(
+    job_id: str,
+    message: str,
+    image_data: list[tuple[str, bytes]] | None = None,
+) -> AsyncGenerator[str, None]:
     job = _jobs[job_id]
     job.setdefault("chat_history", []).append({"role": "user", "text": message})
 
@@ -337,9 +403,20 @@ async def _stream_chat(job_id: str, message: str) -> AsyncGenerator[str, None]:
 
         llm = llm_from_settings()
         system_prompt = _build_chat_system_prompt(job)
+
+        if image_data:
+            user_content: str | list = [{"type": "text", "text": message}]
+            for mime, data in image_data:
+                b64 = base64.b64encode(data).decode()
+                user_content.append(
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                )
+        else:
+            user_content = message
+
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": message},
+            {"role": "user",   "content": user_content},
         ]
         response_text = await asyncio.to_thread(llm.call, messages)
         # crewai LLM.call may return a string or an object with .content
@@ -458,15 +535,16 @@ async def approve(job_id: str, req: ApproveRequest):
         })
         return {"ok": False, "reason": "estudio caducado"}
 
-    await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
-    final = await asyncio.to_thread(_graph.invoke, None, graph_config)
-    _jobs[job_id].update({
-        "traces": final.get("traces", []),
-        "errors": final.get("errors", []),
-        "sources": final.get("sources", []),
-        "findings": final.get("findings", []),
-        "tokens_used": final.get("tokens_used", 0),
-    })
+    if not job.get("is_demo"):
+        await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
+        final = await asyncio.to_thread(_graph.invoke, None, graph_config)
+        _jobs[job_id].update({
+            "traces": final.get("traces", []),
+            "errors": final.get("errors", []),
+            "sources": final.get("sources", []),
+            "findings": final.get("findings", []),
+            "tokens_used": final.get("tokens_used", 0),
+        })
 
     if not req.approved:
         _jobs[job_id]["status"] = "rejected"
@@ -484,6 +562,20 @@ async def approve(job_id: str, req: ApproveRequest):
         {k: v for k, v in m.items() if k != "delay"} for m in _SKELETON_DEBATE
     ]
 
+    raw_sources = job.get("sources") or []
+    pdf_sources: list[ReportSource] = []
+    for s in raw_sources:
+        d = s.model_dump() if hasattr(s, "model_dump") else dict(s)
+        url = d.get("url")
+        if not url or d.get("suspicious"):
+            continue
+        pdf_sources.append(ReportSource(
+            title=d.get("title", url),
+            url=url,
+            source_type=str(d.get("source_type", "")),
+            retrieved_at=str(d.get("retrieved_at", "")),
+        ))
+
     signal_map = {TrafficLight.GREEN: "green", TrafficLight.AMBER: "yellow", TrafficLight.RED: "red"}
     report_signal = signal_map.get(verdict.final_light, "yellow")
 
@@ -498,6 +590,7 @@ async def approve(job_id: str, req: ApproveRequest):
             profile=brief.user_profile.value,
         ),
         debate=[ReportMessage(**m) for m in messages],
+        sources=pdf_sources,
         verdict=ReportVerdict(
             signal=report_signal,
             label=verdict.summary,
@@ -506,19 +599,21 @@ async def approve(job_id: str, req: ApproveRequest):
         ),
         generated_on=date.today(),
         simulated=job.get("simulated", False),
+        tokens_used=job.get("tokens_used", 0),
     )
 
     try:
         from tertulia.report import build_pdf
-        pdf_bytes = build_pdf(report_data)
-    except (ImportError, OSError) as exc:
+        pdf_bytes = await asyncio.to_thread(build_pdf, report_data)
+    except Exception as exc:
         raise HTTPException(status_code=501, detail=f"PDF generation unavailable: {exc}") from exc
     _jobs[job_id]["status"] = "done"
 
+    filename = "informe_demo.pdf" if job.get("is_demo") else "InformeTertulIA.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="report_{job_id}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -554,6 +649,32 @@ async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()])
         raise HTTPException(status_code=400, detail=f"Máximo {MAX_IMAGES} fotos por análisis")
     _jobs[job_id]["brief"] = brief.model_copy(update={"image_paths": merged})
     return {"paths": saved}
+
+
+@app.get("/api/state/{job_id}")
+async def get_job_state(job_id: str):
+    """Returns enough state to restore the UI after a page refresh."""
+    job = _jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    brief: BusinessBrief = job["brief"]
+    user_profile = brief.user_profile
+    return {
+        "status": job.get("status"),
+        "messages": job.get("messages", []),
+        "chat_history": job.get("chat_history", []),
+        "simulated": job.get("simulated", False),
+        "debate_simulated": job.get("debate_simulated", False),
+        "brief": {
+            "business_type": brief.business_type,
+            "neighbourhood": brief.neighbourhood,
+            "budget_eur": brief.budget_eur,
+            "area_m2": brief.area_m2,
+            "radius_m": brief.radius_m,
+            "notes": brief.notes,
+            "user_profile": user_profile.value if hasattr(user_profile, "value") else str(user_profile),
+        },
+    }
 
 
 # ── Static files (must come after all API routes) ─────────────────────────────

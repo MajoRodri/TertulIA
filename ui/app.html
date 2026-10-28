@@ -260,13 +260,17 @@
     </div>
   </section>
 
+  <div class="main-backdrop" id="main-backdrop"></div>
+
   <!-- Main analysis flow -->
   <main class="main page-wrap">
 
-    <!-- Top bar: exit button (shown only during analysis) -->
-    <div class="analysis-topbar hidden" id="analysis-topbar">
-      <button class="analysis-exit" id="btn-exit">← Abandonar análisis</button>
-    </div>
+    <!-- Close button (shown only during analysis) -->
+    <button class="analysis-close hidden" id="btn-exit" aria-label="Abandonar análisis">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
 
     <!-- Progress stepper (hidden until analysis starts) -->
     <nav class="stepper hidden" id="stepper" aria-label="Progreso">
@@ -314,7 +318,7 @@
       </div>
       <div class="debate-feed" id="debate-feed" role="log" aria-live="polite"></div>
       <div class="debate-actions hidden" id="debate-actions">
-        <button class="btn btn-primary" id="btn-debate-continue">Continuar al contexto →</button>
+        <button class="btn btn-primary" id="btn-debate-continue">Continuar al contexto</button>
       </div>
     </section>
 
@@ -348,7 +352,7 @@
       </div>
       <div class="chat-continue-wrap">
         <span class="chat-continue-hint">Cuando hayas añadido todo el contexto que quieras:</span>
-        <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto →</button>
+        <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto</button>
       </div>
     </section>
 
@@ -360,7 +364,7 @@
       </div>
 
       <div id="verdict-simulated-warning" class="simulated-warning hidden">
-        ⚠️ Servidor de análisis no disponible — este veredicto es de ejemplo, no refleja datos reales.
+        ⚠️ Servidor de análisis no disponible. Este veredicto es de ejemplo, no refleja datos reales.
       </div>
 
       <div class="traffic-wrap">
@@ -392,7 +396,7 @@
         </div>
       </div>
       <div class="debate-actions" id="verdict-actions">
-        <button class="btn btn-primary" id="btn-verdict-continue">Continuar a la aprobación →</button>
+        <button class="btn btn-primary" id="btn-verdict-continue">Continuar a la aprobación</button>
       </div>
     </section>
 
@@ -688,7 +692,7 @@
 
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="btn-analyze">Analizar →</button>
+            <button type="submit" class="btn btn-primary" id="btn-analyze">Analizar</button>
           </div>
         </form>
       </div>
@@ -703,7 +707,6 @@
 
   <!-- Loading overlay shown while analysis starts -->
   <div class="loading-overlay hidden" id="loading-overlay">
-    <video class="loading-video" src="/assets/banner.mp4" autoplay muted playsinline></video>
     <p class="loading-label">Analizando…</p>
   </div>
 

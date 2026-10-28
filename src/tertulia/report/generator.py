@@ -42,8 +42,8 @@ _NARANJA_BG   = HexColor("#fde3cf")
 # ── Page geometry ──────────────────────────────────────────────────────────────
 _PAGE_W, _PAGE_H = A4
 _ML = _MR = 2.5 * cm
-_MT = 2.2 * cm
-_MB = 2.0 * cm
+_MT = 2.8 * cm
+_MB = 2.5 * cm
 _TW = _PAGE_W - _ML - _MR   # 16.0 cm text width
 
 # ── Styles ─────────────────────────────────────────────────────────────────────
@@ -86,12 +86,12 @@ def _draw_header_footer(canvas, doc):
     # Top rule
     canvas.setStrokeColor(_BORDER)
     canvas.setLineWidth(0.5)
-    canvas.line(_ML, _PAGE_H - _MT + 4*mm, _PAGE_W - _MR, _PAGE_H - _MT + 4*mm)
+    canvas.line(_ML, _PAGE_H - _MT + 6*mm, _PAGE_W - _MR, _PAGE_H - _MT + 6*mm)
     # Footer
     canvas.setFont("Helvetica", 8)
     canvas.setFillColor(_MUTED)
     canvas.drawCentredString(
-        _PAGE_W / 2, _MB - 6*mm,
+        _PAGE_W / 2, _MB - 8*mm,
         f"TertulIA · Informe generado el {doc.report_date} · Ref. {doc.job_id}",
     )
     canvas.restoreState()
@@ -150,6 +150,16 @@ def _brief_section(data: ReportData) -> list:
     ]
 
 
+_MSG_STYLE = ParagraphStyle(
+    "msg_body",
+    parent=None,
+    fontName="Helvetica", fontSize=9,
+    textColor=_INK, leading=13,
+    leftIndent=8, rightIndent=8,
+    spaceBefore=2, spaceAfter=6,
+)
+
+
 def _debate_section(data: ReportData) -> list:
     if not data.debate:
         return []
@@ -162,22 +172,27 @@ def _debate_section(data: ReportData) -> list:
     col_w = [3.4*cm, _TW - 3.4*cm]
     for i, msg in enumerate(data.debate):
         bg = _CANVAS if i % 2 == 0 else white
-        agent_cell = [
-            Paragraph(msg.name, _STYLES["agent"]),
-            Paragraph(msg.role, _STYLES["role"]),
-        ]
-        row = [agent_cell, Paragraph(msg.message, _STYLES["msg"])]
-        t = Table([[row[0], row[1]]], colWidths=col_w, hAlign="LEFT")
-        t.setStyle(TableStyle([
+        # Header row: agent name + role — always short, safe in a table
+        header = Table(
+            [[Paragraph(msg.name, _STYLES["agent"]), Paragraph(msg.role, _STYLES["role"])]],
+            colWidths=col_w, hAlign="LEFT",
+        )
+        header.setStyle(TableStyle([
             ("BACKGROUND",    (0, 0), (-1, -1), bg),
             ("TOPPADDING",    (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
             ("LEFTPADDING",   (0, 0), (-1, -1), 8),
             ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
             ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-            ("LINEBELOW",     (0, 0), (-1, -1), 0.3, _BORDER),
         ]))
-        flowables.append(t)
+        # Message as a standalone Paragraph so ReportLab can split it across pages
+        msg_style = ParagraphStyle(
+            f"msg_{i}", parent=_MSG_STYLE,
+            backColor=bg,
+        )
+        flowables.append(header)
+        flowables.append(Paragraph(msg.message, msg_style))
+        flowables.append(HRFlowable(width="100%", thickness=0.3, color=_BORDER))
 
     flowables.append(Spacer(1, 7*mm))
     return flowables
@@ -221,6 +236,7 @@ def _verdict_section(data: ReportData) -> list:
     return [
         Paragraph("Veredicto", _STYLES["section"]),
         Spacer(1, 3*mm),
+        # KeepTogether only for the signal badge + summary — short, safe to keep together
         KeepTogether([
             signal_row,
             Spacer(1, 3*mm),
@@ -228,8 +244,9 @@ def _verdict_section(data: ReportData) -> list:
             Spacer(1, 2*mm),
             Paragraph(f"Confianza: {v.confidence}%", _STYLES["conf"]),
             Spacer(1, 5*mm),
-            *reasons,
         ]),
+        # Reasons flow freely so a long list never triggers LayoutError
+        *reasons,
     ]
 
 
@@ -240,7 +257,7 @@ def _simulated_notice() -> list:
         textColor=_NARANJA, leading=12, alignment=TA_CENTER,
     )
     box = Table(
-        [[Paragraph("¡Atención! DATOS DE EJEMPLO — Este informe no refleja datos reales", notice_style)]],
+        [[Paragraph("¡Atención! DATOS DE EJEMPLO. Este informe no refleja datos reales.", notice_style)]],
         colWidths=[_TW], hAlign="LEFT",
     )
     box.setStyle(TableStyle([
@@ -253,10 +270,54 @@ def _simulated_notice() -> list:
     return [box, Spacer(1, 5*mm)]
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
-def build_pdf(data: ReportData) -> bytes:
-    buf = io.BytesIO()
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 
+_AGENT_IMAGES = {
+    "researcher": "portera.png",
+    "analyst":    "chulapo.png",
+    "vision":     "berto.png",
+    "writer":     "pregonero.png",
+    "reviewer":   "revisora.png",
+}
+
+_SIGNAL_LABELS = {
+    "green":  "VIABLE",
+    "yellow": "VIABLE CON RIESGO",
+    "red":    "NO VIABLE",
+}
+
+
+def render_html(data: ReportData) -> str:
+    import markdown as _md
+    from jinja2 import Environment, FileSystemLoader
+    from markupsafe import Markup, escape
+
+    def _md_filter(text: str) -> Markup:
+        return Markup(_md.markdown(str(escape(text or "")), extensions=["nl2br"]))
+
+    _env = Environment(
+        loader=FileSystemLoader(Path(__file__).parent / "templates"),
+        autoescape=True,
+    )
+    _env.filters["md"] = _md_filter
+    assets_url = (_REPO_ROOT / "assets").as_uri() + "/"
+    return _env.get_template("report.html").render(
+        data=data,
+        agent_images=_AGENT_IMAGES,
+        signal_labels=_SIGNAL_LABELS,
+        assets_url=assets_url,
+    )
+
+
+def _build_pdf_weasyprint(data: ReportData) -> bytes:
+    from weasyprint import HTML
+    html = render_html(data)
+    base_url = (_REPO_ROOT / "ui").as_uri() + "/"
+    return HTML(string=html, base_url=base_url).write_pdf()
+
+
+def _build_pdf_reportlab(data: ReportData) -> bytes:
+    buf = io.BytesIO()
     doc = BaseDocTemplate(
         buf,
         pagesize=A4,
@@ -265,14 +326,12 @@ def build_pdf(data: ReportData) -> bytes:
         title=f"TertulIA · {data.brief.sector} · {data.brief.neighborhood}",
         author="TertulIA",
     )
-    # Store metadata the footer callback needs
     doc.report_date = data.generated_on.strftime("%d/%m/%Y")
     doc.job_id      = data.job_id
 
     frame = Frame(_ML, _MB, _TW, _PAGE_H - _MT - _MB, id="main")
     doc.addPageTemplates([PageTemplate(id="main", frames=[frame],
                                        onPage=_draw_header_footer)])
-
     story = (
         _header(data)
         + (_simulated_notice() if data.simulated else [])
@@ -284,11 +343,27 @@ def build_pdf(data: ReportData) -> bytes:
     return buf.getvalue()
 
 
-# kept for backwards compatibility (email drafts, tests)
-def render_html(data: ReportData) -> str:
-    from jinja2 import Environment, FileSystemLoader
-    _env = Environment(
-        loader=FileSystemLoader(Path(__file__).parent / "templates"),
-        autoescape=True,
-    )
-    return _env.get_template("report.html").render(data=data)
+def _build_pdf_playwright(data: ReportData) -> bytes:
+    from playwright.sync_api import sync_playwright
+    html = render_html(data)
+    base_url = (_REPO_ROOT / "assets").as_uri() + "/"
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, base_url=base_url, wait_until="networkidle")
+        pdf = page.pdf(format="A4", print_background=True)
+        browser.close()
+    return pdf
+
+
+# ── Public API ─────────────────────────────────────────────────────────────────
+def build_pdf(data: ReportData) -> bytes:
+    try:
+        return _build_pdf_weasyprint(data)
+    except Exception:
+        pass
+    try:
+        return _build_pdf_playwright(data)
+    except Exception:
+        pass
+    return _build_pdf_reportlab(data)
