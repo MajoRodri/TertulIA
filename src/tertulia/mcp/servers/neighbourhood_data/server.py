@@ -265,6 +265,17 @@ def _number(value: object) -> float | None:
     return float(value)
 
 
+def _https_url(value: object) -> str | None:
+    """A link the analyst can open safely: only https, otherwise None."""
+    url = _text(value)
+    return url if url and url.startswith("https://") else None
+
+
+def _text(value: object) -> str | None:
+    """The value if it is a non-empty text, otherwise None (never a guess)."""
+    return (value.strip() or None) if isinstance(value, str) else None
+
+
 def _foursquare_to_venue(place: dict) -> dict:
     """Turn one Foursquare result into a venue with the same fields as _to_venue.
 
@@ -272,25 +283,25 @@ def _foursquare_to_venue(place: dict) -> dict:
     address empty). Extra fields say where it comes from and how it is tagged.
     """
     location = place.get("location")
-    address = (location.get("formatted_address") or None) if isinstance(location, dict) else None
+    address = _text(location.get("formatted_address")) if isinstance(location, dict) else None
     categories = place.get("categories")
     category_names = [
         c["name"]
         for c in (categories if isinstance(categories, list) else [])
-        if isinstance(c, dict) and isinstance(c.get("name"), str)
+        if isinstance(c, dict) and _text(c.get("name"))
     ]
     return {
-        "name": place.get("name") or None,
+        "name": _text(place.get("name")),
         "brand": None,  # Foursquare has no brand field
         "address": address,
         "lat": _number(place.get("latitude")),
         "lon": _number(place.get("longitude")),
         "opening_hours": None,  # a Premium field: not requested
         # The last time Foursquare refreshed the venue: like OSM's check_date.
-        "check_date": place.get("date_refreshed"),
+        "check_date": _text(place.get("date_refreshed")),
         "osm_url": None,
-        "foursquare_id": place.get("fsq_place_id"),
-        "foursquare_url": place.get("placemaker_url"),
+        "foursquare_id": _text(place.get("fsq_place_id")),
+        "foursquare_url": _https_url(place.get("placemaker_url")),
         "foursquare_categories": category_names,
     }
 
@@ -334,16 +345,20 @@ def _combine(osm_venues: list[dict], fsq_venues: list[dict]) -> list[dict]:
     A place only in Foursquare is marked needs_review, with the reason: the
     system never discards it, the analyst decides (human in the loop).
     """
-    venues = [{**venue, "sources": ["osm"]} for venue in osm_venues]
+    osm = [{**venue, "sources": ["osm"]} for venue in osm_venues]
+    only_fsq: list[dict] = []
     for fsq_venue in fsq_venues:
-        match = next((venue for venue in venues if _same_venue(venue, fsq_venue)), None)
+        # Compared ONLY with the OSM venues: a match with another Foursquare
+        # result must never make a venue look as if OSM had confirmed it.
+        match = next((venue for venue in osm if _same_venue(venue, fsq_venue)), None)
         if match is not None:
             match["sources"] = ["osm", "foursquare"]
             match["foursquare_id"] = fsq_venue["foursquare_id"]
             match["foursquare_url"] = fsq_venue["foursquare_url"]
             match["foursquare_categories"] = fsq_venue["foursquare_categories"]
-        else:
-            venues.append(
+        elif not any(_same_venue(other, fsq_venue) for other in only_fsq):
+            # The same place twice in Foursquare is kept once, still to review.
+            only_fsq.append(
                 {
                     **fsq_venue,
                     "sources": ["foursquare"],
@@ -351,7 +366,7 @@ def _combine(osm_venues: list[dict], fsq_venues: list[dict]) -> list[dict]:
                     "review_reason": _review_reason(fsq_venue),
                 }
             )
-    return venues
+    return osm + only_fsq
 
 
 # Venue fields with free text, written by OSM volunteers or Foursquare users.
@@ -364,7 +379,9 @@ def _flag_injection(venue: dict) -> dict:
     The venue is flagged, not deleted: the graph decides what to do with it
     and the attempt stays in the log (same rule as guardrails.process()).
     """
-    text = " | ".join(venue[field] for field in _TEXT_FIELDS if venue[field])
+    texts = [venue[field] for field in _TEXT_FIELDS if venue[field]]
+    # Foursquare categories are also written by its users: checked too.
+    text = " | ".join(texts + venue.get("foursquare_categories", []))
     result = process(text, source=venue["osm_url"] or venue.get("foursquare_url") or "foursquare")
     return {
         **venue,
@@ -412,11 +429,15 @@ def _answer(
     retrieved_at: str,
     from_cache: bool,
     foursquare_status: str = "not_used",
+    foursquare_limit_reached: bool = False,
 ) -> dict:
     """Build the tool's answer. Live and saved data share this exact format.
 
-    foursquare_status: "used", "failed" (it did not answer: OSM only),
-    "not_used" (not for this category, no key, demo mode or saved data).
+    foursquare_status: "used"; "failed" (it did not answer or answered badly:
+    OSM only); "no_key" (FOURSQUARE_API_KEY is not set); "not_used" (not for
+    this category, demo mode or saved data).
+    foursquare_limit_reached: Foursquare returned its maximum (50), so there
+    may be more venues than the ones listed.
     """
     # Every venue has the same fields, whatever its source.
     defaults = {
@@ -437,11 +458,14 @@ def _answer(
         "total": len(venues),
         "suspicious_count": sum(venue["suspicious"] for venue in venues),
         "needs_review_count": sum(venue["needs_review"] for venue in venues),
+        # total = confirmed + to review: never present the total as confirmed.
+        "confirmed_count": sum(not venue["needs_review"] for venue in venues),
         "venues": venues,
         "source": "OpenStreetMap, via the Overpass API"
         + (" + Foursquare Places API" if used else ""),
         "attribution": ATTRIBUTION + (f" · {FOURSQUARE_ATTRIBUTION}" if used else ""),
         "foursquare_status": foursquare_status,
+        "foursquare_limit_reached": foursquare_limit_reached,
         "retrieved_at": retrieved_at,
         "from_cache": from_cache,
     }
@@ -475,19 +499,25 @@ def _from_saved(neighbourhood: str, category: str, radius_m: int) -> dict:
 
 def _add_foursquare(
     venues: list[dict], lat: float, lon: float, category: str, radius_m: int
-) -> tuple[list[dict], str]:
-    """Add Foursquare venues when it applies. If it fails, OSM alone is still an answer."""
-    if category not in FOURSQUARE_QUERIES or not FOURSQUARE_API_KEY.get_secret_value():
-        return venues, "not_used"
+) -> tuple[list[dict], str, bool]:
+    """Add Foursquare venues when it applies. If it fails, OSM alone is still an answer.
+
+    Returns the venues, the foursquare_status and whether its limit was reached.
+    """
+    if category not in FOURSQUARE_QUERIES:
+        return venues, "not_used", False
+    if not FOURSQUARE_API_KEY.get_secret_value():
+        return venues, "no_key", False
     try:
         fsq_venues = _search_foursquare(lat, lon, category, radius_m)
-    except (httpx.HTTPError, FoursquareAnswerError) as error:
+        # Foursquare's radius is approximate: apply ours, as with the saved data.
+        combined = _combine(venues, _within_radius(fsq_venues, lat, lon, radius_m))
+    except (httpx.HTTPError, FoursquareAnswerError, KeyError, TypeError, ValueError) as error:
+        # Last safety net: whatever Foursquare sends, the OSM search survives.
         # Leave a trace, never the key: the error shows the URL, not the headers.
         logger.warning("Foursquare failed, using OpenStreetMap only: %r", error)
-        return venues, "failed"
-    # Foursquare's radius is approximate: apply ours, as with the saved data.
-    return _combine(venues, _within_radius(fsq_venues, lat, lon, radius_m)), "used"
-
+        return venues, "failed", False
+    return combined, "used", len(fsq_venues) >= FOURSQUARE_LIMIT
 
 # --- Tools (what the model sees in tools/list) -------------------------------
 
@@ -521,10 +551,14 @@ def search_competitors(neighbourhood: str, category: str = "cafe", radius_m: int
                 f"{SOURCE_UNAVAILABLE} OpenStreetMap is not responding and there is "
                 f"no saved data for {neighbourhood!r}"
             ) from error
-    venues, foursquare_status = _add_foursquare(venues, lat, lon, category, radius_m)
+    venues, foursquare_status, limit_reached = _add_foursquare(
+        venues, lat, lon, category, radius_m
+    )
     now = datetime.now(UTC).isoformat()
     centre = {"lat": lat, "lon": lon}
-    return _answer(neighbourhood, category, radius_m, centre, venues, now, False, foursquare_status)
+    return _answer(
+        neighbourhood, category, radius_m, centre, venues, now, False, foursquare_status, limit_reached
+    )
 
 
 # Always last: server.run() waits for messages forever, so any code below it
