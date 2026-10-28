@@ -6,6 +6,7 @@ Que el modelo real responda bien se prueba aparte, a mano, con una clave.
 """
 
 import os
+import threading
 
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
@@ -16,8 +17,10 @@ from crewai.llms.base_llm import BaseLLM  # noqa: E402
 from tertulia.crew.crew import (  # noqa: E402
     LLM_RETRY_ATTEMPTS,
     LLM_TIMEOUT_S,
+    NO_IMAGES_ANSWER,
     NO_TOOLS_NOTE,
     STEPS,
+    VISION_FAILED_ANSWER,
     build_llm,
     build_step_crew,
     review_comments,
@@ -144,14 +147,125 @@ def test_build_llm_does_not_call_the_api():
 # --- Ejecución con el modelo falso ----------------------------------------------
 
 
-def test_research_step_runs_research_and_vision(inputs):
+def test_research_without_photos_skips_the_vision_call(inputs):
+    # Sin fotos, la visión no llama al modelo: una llamada menos (y menos 429)
     llm = FakeLLM(model="fake", received=[])
     result = run_step("research", inputs, llm, NO_TOOLS)
-    assert result == {
-        "research_task": "respuesta de prueba",
-        "vision_task": "respuesta de prueba",
-    }
+    assert result == {"research_task": "respuesta de prueba", "vision_task": NO_IMAGES_ANSWER}
+    assert len(llm.received) == 1  # solo el Investigador
     assert "Atocha" in llm.received[0]  # las variables llegaron al agente
+
+
+def _two_photos(brief):
+    return build_inputs(brief, load_sector("cafe_cowork"), images=["run-1/a.jpg", "run-1/b.jpg"])
+
+
+def test_research_with_photos_runs_both_tasks_in_parallel(brief):
+    # Sin depender del tiempo: cada llamada espera en una barrera de 2. Solo pasan si
+    # las dos tareas están en marcha A LA VEZ; en serie, la barrera se rompe (5 s).
+    barrier = threading.Barrier(2, timeout=5)
+
+    class MeetingLLM(FakeLLM):
+        def call(self, messages, *args, **kwargs):
+            barrier.wait()
+            return super().call(messages, *args, **kwargs)
+
+    llm = MeetingLLM(model="fake", received=[])
+    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
+    assert result == {"research_task": "respuesta de prueba", "vision_task": "respuesta de prueba"}
+    assert not barrier.broken
+
+
+class _FailsFor(FakeLLM):
+    """Falla solo cuando responde al agente cuyo rol contiene ``role``."""
+
+    role: str = ""
+
+    def call(self, messages, *args, **kwargs):
+        if self.role in str(messages):
+            raise RuntimeError(f"fallo simulado de {self.role}")
+        return super().call(messages, *args, **kwargs)
+
+
+def test_vision_failure_keeps_the_research(brief):
+    llm = _FailsFor(model="fake", received=[], role="Analista visual")
+    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
+    assert result["research_task"] == "respuesta de prueba"  # no se pierde
+    assert result["vision_task"].startswith(VISION_FAILED_ANSWER)  # el fallo queda a la vista
+
+
+def test_research_failure_still_raises(brief):
+    llm = _FailsFor(model="fake", received=[], role="Investigador")
+    with pytest.raises(Exception, match="fallo simulado"):
+        run_step("research", _two_photos(brief), llm, NO_TOOLS)
+
+
+def test_tool_errors_from_the_worker_thread_reach_capture_tool_events(brief):
+    # La investigación corre en otro hilo: sus eventos deben llegar al grafo (David)
+    from crewai.events import crewai_event_bus
+    from crewai.tools import BaseTool
+
+    from tertulia.graph.tool_events import capture_tool_events, convert_tool_events
+
+    tool_threads: list[str] = []
+
+    class BrokenSearch(BaseTool):
+        name: str = "search_competitors"
+        description: str = "Herramienta falsa que siempre falla."
+
+        def _run(self, neighbourhood: str) -> str:
+            tool_threads.append(threading.current_thread().name)
+            raise RuntimeError("servidor caído")
+
+    class UsesTheToolOnce(FakeLLM):
+        def call(self, messages, *args, **kwargs):
+            text = str(messages)
+            if "Investigador" in text and "servidor caído" not in text:
+                return 'Thought: busco\nAction: search_competitors\nAction Input: {"neighbourhood": "Atocha"}'
+            return super().call(messages, *args, **kwargs)
+
+    tools = {**NO_TOOLS, "researcher": [BrokenSearch()]}
+    with capture_tool_events() as captured:
+        run_step("research", _two_photos(brief), UsesTheToolOnce(model="fake", received=[]), tools)
+        crewai_event_bus.flush()
+    assert tool_threads and threading.main_thread().name not in tool_threads  # corrió en otro hilo
+    errors = convert_tool_events(captured.events)
+    assert errors, "el error de la herramienta (lanzado en otro hilo) no llegó al grafo"
+
+
+def test_vision_gets_one_step_per_photo():
+    # Con max_iter=5 solo se analizaban 5 de 10 fotos (comprobado con CrewAI 1.15.28)
+    from crewai.tools import BaseTool
+
+    analysed: list[str] = []
+
+    class Photo(BaseTool):
+        name: str = "analyse_image"
+        description: str = "Herramienta falsa para tests."
+
+        def _run(self, image_path: str) -> str:
+            analysed.append(image_path)
+            return "foto analizada"
+
+    class OnePhotoPerStep(FakeLLM):
+        # El Investigador corre a la vez en otro hilo: solo se cuentan las llamadas
+        # del agente de visión, para que el resultado no dependa del orden de los hilos.
+        def call(self, messages, *args, **kwargs):
+            if "Analista visual" not in str(messages):
+                return "Thought: listo\nFinal Answer: hecho"
+            self.received.append(str(messages))
+            n = len(self.received)
+            if n <= 10:
+                return f'Thought: siguiente\nAction: analyse_image\nAction Input: {{"image_path": "f{n}.jpg"}}'
+            return "Thought: listo\nFinal Answer: hecho"
+
+    photos = [f"run-1/f{i}.jpg" for i in range(1, 11)]
+    data = build_inputs(
+        BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha"), load_sector("cafe_cowork"), images=photos
+    )
+    tools = {**NO_TOOLS, "vision": [Photo()]}
+    run_step("research", data, OnePhotoPerStep(model="fake", received=[]), tools)
+    assert len(set(analysed)) == 10
 
 
 def test_writer_receives_previous_results(brief):
