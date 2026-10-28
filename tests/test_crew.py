@@ -6,7 +6,7 @@ Que el modelo real responda bien se prueba aparte, a mano, con una clave.
 """
 
 import os
-import time
+import threading
 
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
@@ -20,6 +20,7 @@ from tertulia.crew.crew import (  # noqa: E402
     NO_IMAGES_ANSWER,
     NO_TOOLS_NOTE,
     STEPS,
+    VISION_FAILED_ANSWER,
     build_llm,
     build_step_crew,
     review_comments,
@@ -155,20 +156,81 @@ def test_research_without_photos_skips_the_vision_call(inputs):
     assert "Atocha" in llm.received[0]  # las variables llegaron al agente
 
 
+def _two_photos(brief):
+    return build_inputs(brief, load_sector("cafe_cowork"), images=["run-1/a.jpg", "run-1/b.jpg"])
+
+
 def test_research_with_photos_runs_both_tasks_in_parallel(brief):
-    class SlowLLM(FakeLLM):
+    # Sin depender del tiempo: cada llamada espera en una barrera de 2. Solo pasan si
+    # las dos tareas están en marcha A LA VEZ; en serie, la barrera se rompe (5 s).
+    barrier = threading.Barrier(2, timeout=5)
+
+    class MeetingLLM(FakeLLM):
         def call(self, messages, *args, **kwargs):
-            time.sleep(1.5)
+            barrier.wait()
             return super().call(messages, *args, **kwargs)
 
-    data = build_inputs(brief, load_sector("cafe_cowork"), images=["run-1/a.jpg", "run-1/b.jpg"])
-    llm = SlowLLM(model="fake", received=[])
-    start = time.monotonic()
-    result = run_step("research", data, llm, NO_TOOLS)
-    elapsed = time.monotonic() - start
+    llm = MeetingLLM(model="fake", received=[])
+    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
     assert result == {"research_task": "respuesta de prueba", "vision_task": "respuesta de prueba"}
-    assert len(llm.received) == 2
-    assert elapsed < 2.8  # en serie serían más de 3 s (1,5 s por llamada)
+    assert not barrier.broken
+
+
+class _FailsFor(FakeLLM):
+    """Falla solo cuando responde al agente cuyo rol contiene ``role``."""
+
+    role: str = ""
+
+    def call(self, messages, *args, **kwargs):
+        if self.role in str(messages):
+            raise RuntimeError(f"fallo simulado de {self.role}")
+        return super().call(messages, *args, **kwargs)
+
+
+def test_vision_failure_keeps_the_research(brief):
+    llm = _FailsFor(model="fake", received=[], role="Analista visual")
+    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
+    assert result["research_task"] == "respuesta de prueba"  # no se pierde
+    assert result["vision_task"].startswith(VISION_FAILED_ANSWER)  # el fallo queda a la vista
+
+
+def test_research_failure_still_raises(brief):
+    llm = _FailsFor(model="fake", received=[], role="Investigador")
+    with pytest.raises(Exception, match="fallo simulado"):
+        run_step("research", _two_photos(brief), llm, NO_TOOLS)
+
+
+def test_tool_errors_from_the_worker_thread_reach_capture_tool_events(brief):
+    # La investigación corre en otro hilo: sus eventos deben llegar al grafo (David)
+    from crewai.events import crewai_event_bus
+    from crewai.tools import BaseTool
+
+    from tertulia.graph.tool_events import capture_tool_events, convert_tool_events
+
+    tool_threads: list[str] = []
+
+    class BrokenSearch(BaseTool):
+        name: str = "search_competitors"
+        description: str = "Herramienta falsa que siempre falla."
+
+        def _run(self, neighbourhood: str) -> str:
+            tool_threads.append(threading.current_thread().name)
+            raise RuntimeError("servidor caído")
+
+    class UsesTheToolOnce(FakeLLM):
+        def call(self, messages, *args, **kwargs):
+            text = str(messages)
+            if "Investigador" in text and "servidor caído" not in text:
+                return 'Thought: busco\nAction: search_competitors\nAction Input: {"neighbourhood": "Atocha"}'
+            return super().call(messages, *args, **kwargs)
+
+    tools = {**NO_TOOLS, "researcher": [BrokenSearch()]}
+    with capture_tool_events() as captured:
+        run_step("research", _two_photos(brief), UsesTheToolOnce(model="fake", received=[]), tools)
+        crewai_event_bus.flush()
+    assert tool_threads and threading.main_thread().name not in tool_threads  # corrió en otro hilo
+    errors = convert_tool_events(captured.events)
+    assert errors, "el error de la herramienta (lanzado en otro hilo) no llegó al grafo"
 
 
 def test_vision_gets_one_step_per_photo():

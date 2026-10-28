@@ -16,6 +16,7 @@ Las herramientas de cada agente salen de agent_tools.py (DEFAULT_TOOLS). Los tes
 pasan herramientas falsas con el parámetro ``tools`` para no arrancar servidores.
 """
 
+import logging
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -27,6 +28,8 @@ from crewai.tools import BaseTool
 
 from tertulia.crew.agent_tools import default_tools
 from tertulia.crew.inputs import NO_IMAGES
+
+logger = logging.getLogger(__name__)
 
 # Herramientas por agente: {"researcher": [...], "analyst": [...]}
 ToolsByAgent = Mapping[str, list[BaseTool]]
@@ -117,6 +120,8 @@ NO_IMAGES_ANSWER = "sin imágenes"
 # Cada foto es una llamada a la herramienta y cada llamada gasta un paso del agente
 # (max_iter). Con 5 pasos solo se analizaban 5 de 10 fotos: se dan pasos de sobra.
 VISION_EXTRA_STEPS = 2
+# Si la visión falla, la investigación se conserva y la visión responde esto (sin inventar).
+VISION_FAILED_ANSWER = "No se pudieron analizar las imágenes"
 
 
 def build_step_crew(step: str, llm: BaseLLM, tools: ToolsByAgent | None = None) -> Crew:
@@ -133,8 +138,17 @@ def build_step_crew(step: str, llm: BaseLLM, tools: ToolsByAgent | None = None) 
     return _build_crew(STEPS[step], llm, tools)
 
 
-def _build_crew(task_names: Sequence[str], llm: BaseLLM, tools: ToolsByAgent | None = None) -> Crew:
-    """Crew con las tareas indicadas (en orden) y los agentes que las hacen."""
+def _build_crew(
+    task_names: Sequence[str],
+    llm: BaseLLM,
+    tools: ToolsByAgent | None = None,
+    min_max_iter: int | None = None,
+) -> Crew:
+    """Crew con las tareas indicadas (en orden) y los agentes que las hacen.
+
+    ``min_max_iter``: si se indica, cada agente tiene al menos esos pasos (se aplica
+    al crear el Agent, no después). Lo usa la visión: un paso por foto.
+    """
     agents_config, tasks_config = load_config()
     agents: dict[str, Agent] = {}
     tasks: list[Task] = []
@@ -146,7 +160,10 @@ def _build_crew(task_names: Sequence[str], llm: BaseLLM, tools: ToolsByAgent | N
                 agent_tools = tools[agent_name]
             else:
                 agent_tools = default_tools(agent_name, llm)
-            agents[agent_name] = Agent(config=agents_config[agent_name], llm=llm, tools=list(agent_tools))
+            agent_config = dict(agents_config[agent_name])
+            if min_max_iter is not None:
+                agent_config["max_iter"] = max(agent_config.get("max_iter", 0), min_max_iter)
+            agents[agent_name] = Agent(config=agent_config, llm=llm, tools=list(agent_tools))
         if not agents[agent_name].tools:
             task_config["description"] += "\n\n" + NO_TOOLS_NOTE
         tasks.append(Task(config=task_config, agent=agents[agent_name], name=task_name))
@@ -179,11 +196,7 @@ def _kickoff(
     tools: ToolsByAgent | None,
     max_iter: int | None = None,
 ) -> dict[str, str]:
-    crew = _build_crew(task_names, llm, tools)
-    if max_iter is not None:
-        for agent in crew.agents:
-            agent.max_iter = max(agent.max_iter, max_iter)
-    result = crew.kickoff(inputs=inputs)
+    result = _build_crew(task_names, llm, tools, min_max_iter=max_iter).kickoff(inputs=inputs)
     return {task_name: output.raw for task_name, output in zip(task_names, result.tasks_output, strict=True)}
 
 
@@ -200,6 +213,7 @@ def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | No
     - Sin fotos: la visión no llama al modelo (una llamada menos y menos riesgo de 429).
     - Con fotos: las dos tareas se ejecutan a la vez, en dos hilos; el paso tarda lo
       que tarde la más lenta, no la suma. La visión recibe un paso por foto.
+    - Si la visión falla, se devuelve igualmente la investigación (no se pierde trabajo).
     """
     photos = _image_count(inputs.get("images", NO_IMAGES))
     if photos == 0:
@@ -209,7 +223,15 @@ def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | No
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="crew-research") as pool:
         research = pool.submit(_kickoff, ("research_task",), inputs, llm, tools)
         vision = pool.submit(_kickoff, ("vision_task",), inputs, llm, tools, photos + VISION_EXTRA_STEPS)
-        return {**research.result(), **vision.result()}
+        # La investigación es imprescindible: si falla, el error sube como antes.
+        research_result = research.result()
+        # La visión no: si falla, se conserva la investigación y el fallo queda a la vista.
+        try:
+            vision_result = vision.result()
+        except Exception as exc:  # noqa: BLE001 - cualquier fallo de la visión
+            logger.warning("Vision task failed, research kept: %s", exc)
+            vision_result = {"vision_task": f"{VISION_FAILED_ANSWER} ({type(exc).__name__}: {exc})"}
+        return {**research_result, **vision_result}
 
 
 def review_comments(review_text: str) -> list[str]:
