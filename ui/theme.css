@@ -941,13 +941,6 @@ h3 { font-size: var(--text-xl); }
 .loading-overlay.hidden  { display: none; }
 .loading-overlay.fading  { opacity: 0; pointer-events: none; }
 
-.loading-video {
-  max-width: min(480px, 85vw);
-  max-height: 60vh;
-  display: block;
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-}
 
 .loading-label {
   font-size: var(--text-sm);
