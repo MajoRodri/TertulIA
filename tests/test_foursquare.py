@@ -163,9 +163,7 @@ def live_coworking(monkeypatch):
 def test_coworkings_combine_both_sources(monkeypatch, live_coworking):
     calls = []
     monkeypatch.setattr(server.httpx, "get", _fake_get([], calls))
-    monkeypatch.setattr(
-        server, "_search_foursquare", lambda *args: [FSQ_SPACES, FSQ_REPSOL, FSQ_SFERA]
-    )
+    monkeypatch.setattr(server, "_search_foursquare", lambda *args: [FSQ_SPACES, FSQ_REPSOL, FSQ_SFERA])
     answer = server.search_competitors("Atocha", "coworking", 800)
     assert answer["foursquare_status"] == "used"
     assert answer["total"] == 3
@@ -225,3 +223,67 @@ def test_demo_mode_never_asks_foursquare(monkeypatch, tmp_path):
     answer = server.search_competitors("Atocha", "coworking", 800)
     assert answer["foursquare_status"] == "not_used"
     assert answer["from_cache"] is True
+
+
+# --- Broken answers and incomplete records (review of PR #64) --------------------
+
+
+def _answer_with(json_body=None, content=None):
+    """A fake httpx.get that returns a 200 answer with this body."""
+
+    def fake(url, params, headers, timeout):
+        request = httpx.Request("GET", url)
+        if content is not None:
+            return httpx.Response(200, content=content, request=request)
+        return httpx.Response(200, json=json_body, request=request)
+
+    return fake
+
+
+@pytest.mark.parametrize(
+    "fake",
+    [
+        _answer_with(content=b"<html>Service unavailable</html>"),  # not JSON
+        _answer_with(json_body={"context": {}}),  # no "results"
+        _answer_with(json_body={"results": "nothing"}),  # results is not a list
+        _answer_with(json_body=["unexpected"]),  # not even an object
+    ],
+)
+def test_a_broken_answer_is_a_clear_error(monkeypatch, fake):
+    monkeypatch.setattr(server.httpx, "get", fake)
+    with pytest.raises(server.FoursquareAnswerError):
+        server._search_foursquare(40.4, -3.68, "coworking", 800)
+
+
+def test_odd_records_are_skipped_or_kept_with_none(monkeypatch):
+    odd = [
+        "not a place",  # skipped
+        {"name": "No categories list", "latitude": 40.4, "longitude": -3.68, "categories": "x"},
+        {"name": "Bad coordinates", "latitude": "40.4", "longitude": True, "location": "x"},
+    ]
+    monkeypatch.setattr(server.httpx, "get", _answer_with(json_body={"results": odd}))
+    venues = server._search_foursquare(40.4, -3.68, "coworking", 800)
+    assert [v["name"] for v in venues] == ["No categories list", "Bad coordinates"]
+    assert venues[0]["foursquare_categories"] == []
+    assert (venues[1]["lat"], venues[1]["lon"], venues[1]["address"]) == (None, None, None)
+
+
+def test_if_foursquare_answers_badly_openstreetmap_alone_is_the_answer(monkeypatch, live_coworking):
+    monkeypatch.setattr(server.httpx, "get", _answer_with(json_body={"context": {}}))
+    answer = server.search_competitors("Atocha", "coworking", 800)
+    assert answer["foursquare_status"] == "failed"
+    assert [v["name"] for v in answer["venues"]] == ["Spaces"]
+
+
+def test_a_venue_with_latitude_but_no_longitude_is_left_out_safely(monkeypatch, live_coworking):
+    half = _fsq("Half Coworking", 40.4010, None)
+    monkeypatch.setattr(server, "_search_foursquare", lambda *args: [half, FSQ_REPSOL])
+    answer = server.search_competitors("Atocha", "coworking", 800)
+    assert [v["name"] for v in answer["venues"]] == ["Spaces", "Repsol"]
+    assert not server._same_venue(OSM_SPACES, _fsq("Spaces", 40.4040, None))
+
+
+def test_short_names_are_not_matched_by_inclusion():
+    osm_hub = _venue("Hub", 40.4040, -3.6900, osm_url="https://www.openstreetmap.org/node/2")
+    fsq_impact_hub = _fsq("Impact Hub Madrid", 40.4041, -3.6900)  # about 10 m away
+    assert not server._same_venue(osm_hub, fsq_impact_hub)

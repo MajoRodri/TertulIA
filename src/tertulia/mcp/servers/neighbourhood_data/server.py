@@ -58,6 +58,8 @@ FOURSQUARE_TIMEOUT_S = 15
 FOURSQUARE_ATTRIBUTION = "Powered by Foursquare"
 # The same venue in both sources: names that match and at most this far apart.
 SAME_VENUE_M = 75
+# Shorter names are not compared by inclusion: "Hub" is inside many names.
+MIN_NAME_LENGTH = 4
 # Foursquare categories that point to an office or a home, not a coworking.
 NOT_COWORKING_CATEGORIES = {"Office", "Home (private)", "Structure", "Business Service"}
 
@@ -239,7 +241,28 @@ def _search_foursquare(lat: float, lon: float, category: str, radius_m: int) -> 
         timeout=FOURSQUARE_TIMEOUT_S,
     )
     response.raise_for_status()
-    return [_foursquare_to_venue(place) for place in response.json()["results"]]
+    # A 200 answer can still be broken (not JSON, no "results"...): check its
+    # shape first, so a bad answer becomes a clear error, never a crash later.
+    try:
+        data = response.json()
+    except ValueError as error:
+        raise FoursquareAnswerError("Foursquare did not answer with JSON") from error
+    results = data.get("results") if isinstance(data, dict) else None
+    if not isinstance(results, list):
+        raise FoursquareAnswerError("Foursquare's answer has no list of results")
+    # A single odd result is skipped; it does not spoil the others.
+    return [_foursquare_to_venue(place) for place in results if isinstance(place, dict)]
+
+
+class FoursquareAnswerError(ValueError):
+    """Foursquare answered, but not in the expected shape."""
+
+
+def _number(value: object) -> float | None:
+    """The value if it is a real number (a coordinate), otherwise None."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
 
 
 def _foursquare_to_venue(place: dict) -> dict:
@@ -248,20 +271,27 @@ def _foursquare_to_venue(place: dict) -> dict:
     Missing data becomes None, never a guess (Foursquare often leaves the
     address empty). Extra fields say where it comes from and how it is tagged.
     """
-    address = place.get("location", {}).get("formatted_address") or None
+    location = place.get("location")
+    address = (location.get("formatted_address") or None) if isinstance(location, dict) else None
+    categories = place.get("categories")
+    category_names = [
+        c["name"]
+        for c in (categories if isinstance(categories, list) else [])
+        if isinstance(c, dict) and isinstance(c.get("name"), str)
+    ]
     return {
         "name": place.get("name") or None,
         "brand": None,  # Foursquare has no brand field
         "address": address,
-        "lat": place.get("latitude"),
-        "lon": place.get("longitude"),
+        "lat": _number(place.get("latitude")),
+        "lon": _number(place.get("longitude")),
         "opening_hours": None,  # a Premium field: not requested
         # The last time Foursquare refreshed the venue: like OSM's check_date.
         "check_date": place.get("date_refreshed"),
         "osm_url": None,
         "foursquare_id": place.get("fsq_place_id"),
         "foursquare_url": place.get("placemaker_url"),
-        "foursquare_categories": [c["name"] for c in place.get("categories", [])],
+        "foursquare_categories": category_names,
     }
 
 
@@ -279,7 +309,9 @@ def _simple_name(name: str | None) -> str:
 def _same_venue(osm_venue: dict, fsq_venue: dict) -> bool:
     """True if both look like the same place: one name contains the other, close by."""
     osm_name, fsq_name = _simple_name(osm_venue["name"]), _simple_name(fsq_venue["name"])
-    if not osm_name or not fsq_name or None in (osm_venue["lat"], fsq_venue["lat"]):
+    if min(len(osm_name), len(fsq_name)) < MIN_NAME_LENGTH:
+        return False
+    if not (_has_point(osm_venue) and _has_point(fsq_venue)):
         return False
     names_match = osm_name in fsq_name or fsq_name in osm_name
     distance = _distance_m(osm_venue["lat"], osm_venue["lon"], fsq_venue["lat"], fsq_venue["lon"])
@@ -322,7 +354,7 @@ def _combine(osm_venues: list[dict], fsq_venues: list[dict]) -> list[dict]:
     return venues
 
 
-# Venue fields with free text written by OSM volunteers.
+# Venue fields with free text, written by OSM volunteers or Foursquare users.
 _TEXT_FIELDS = ("name", "brand", "address", "opening_hours")
 
 
@@ -356,14 +388,18 @@ def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(a))
 
 
+def _has_point(venue: dict) -> bool:
+    """True if the venue has both coordinates as numbers."""
+    return _number(venue.get("lat")) is not None and _number(venue.get("lon")) is not None
+
+
 def _within_radius(venues: list[dict], lat: float, lon: float, radius_m: int) -> list[dict]:
     """Keep the venues that are at most radius_m metres from (lat, lon)."""
     return [
         venue
         for venue in venues
-        # A venue without coordinates cannot be placed, so it is left out.
-        if venue["lat"] is not None
-        and _distance_m(lat, lon, venue["lat"], venue["lon"]) <= radius_m
+        # A venue without both coordinates cannot be placed, so it is left out.
+        if _has_point(venue) and _distance_m(lat, lon, venue["lat"], venue["lon"]) <= radius_m
     ]
 
 
@@ -445,7 +481,7 @@ def _add_foursquare(
         return venues, "not_used"
     try:
         fsq_venues = _search_foursquare(lat, lon, category, radius_m)
-    except httpx.HTTPError as error:
+    except (httpx.HTTPError, FoursquareAnswerError) as error:
         # Leave a trace, never the key: the error shows the URL, not the headers.
         logger.warning("Foursquare failed, using OpenStreetMap only: %r", error)
         return venues, "failed"
