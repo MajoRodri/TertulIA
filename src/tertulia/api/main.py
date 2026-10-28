@@ -573,7 +573,7 @@ async def approve(job_id: str, req: ApproveRequest):
                 asyncio.to_thread(_graph.invoke, None, graph_config), timeout=300.0
             )
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Graph invoke timed out")
+            raise HTTPException(status_code=504, detail="Graph invoke timed out") from None
         _jobs[job_id].update({
             "status": "expired",
             "traces": final.get("traces", []),
@@ -595,7 +595,7 @@ async def approve(job_id: str, req: ApproveRequest):
                 asyncio.to_thread(_graph.invoke, None, graph_config), timeout=300.0
             )
         except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Graph invoke timed out")
+            raise HTTPException(status_code=504, detail="Graph invoke timed out") from None
         _jobs[job_id].update({
             "traces": final.get("traces", []),
             "errors": final.get("errors", []),
