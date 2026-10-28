@@ -31,6 +31,7 @@ from tertulia.report.models import ReportBrief, ReportData, ReportSource
 from tertulia.report.models import Verdict as ReportVerdict
 from tertulia.schemas.models import BusinessBrief, TrafficLight
 from tertulia.schemas.models import Verdict as SchemaVerdict
+from tertulia.trazas import save_traces
 
 # Project root: src/tertulia/api/main.py → 3 levels up
 _ROOT = Path(__file__).resolve().parents[3]
@@ -533,6 +534,7 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
+        save_traces(final.get("traces", []), job_id)
         return {"ok": False, "reason": "estudio caducado"}
 
     if not job.get("is_demo"):
@@ -545,6 +547,7 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
+        save_traces(final.get("traces", []), job_id)
 
     if not req.approved:
         _jobs[job_id]["status"] = "rejected"
