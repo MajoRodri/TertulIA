@@ -51,7 +51,9 @@ export function initChat(jobId, imagePicker = null) {
       setInputLocked(true);
       try {
         await sendChatMessage(jobId, text, files, (msg) => {
-          if (msg.thinking) {
+          if (msg.warning) {
+            appendWarningMessage(msg.warning);
+          } else if (msg.thinking) {
             showTypingIndicator(msg.name, msg.agent);
           } else {
             removeTypingIndicator();
@@ -148,6 +150,17 @@ function appendAgentMessage({ agent, name, role, message }) {
       </div>
       <div class="message-text">${renderMd(message)}</div>
     </div>`;
+  feed.appendChild(el);
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
+}
+
+function appendWarningMessage(text) {
+  const feed = document.getElementById("chat-feed");
+  const el = document.createElement("div");
+  el.className = "chat-warning";
+  const span = document.createElement("span");
+  span.textContent = text;
+  el.appendChild(span);
   feed.appendChild(el);
   el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }

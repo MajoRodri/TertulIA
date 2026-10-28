@@ -649,16 +649,11 @@ body {
     {% endif %}
   </div>
 
-  {%- set ns = namespace(has_foursquare=false) -%}
-  {%- for s in data.sources -%}
-    {%- if s.url and 'foursquare' in s.url -%}{%- set ns.has_foursquare = true -%}{%- endif -%}
-  {%- endfor -%}
-
   <!-- Footer -->
   <div class="report-footer">
     <span>TertulIA · Informe generado el {{ data.generated_on.strftime('%d/%m/%Y') }} · Ref. {{ data.job_id }}{% if data.tokens_used %} · {{ "{:,}".format(data.tokens_used) }} tokens{% endif %}</span>
     <span>Análisis orientativo. Verifica las fuentes antes de tomar decisiones.</span>
-    {% if ns.has_foursquare %}<span>Powered by Foursquare</span>{% endif %}
+    {% if data.foursquare_used %}<span>Powered by Foursquare</span>{% endif %}
   </div>
 
 </div>

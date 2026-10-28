@@ -1,4 +1,5 @@
 import io
+import logging
 from pathlib import Path
 
 from reportlab.lib.colors import HexColor, white
@@ -19,6 +20,8 @@ from reportlab.platypus import (
 )
 
 from .models import ReportData
+
+log = logging.getLogger(__name__)
 
 # ── Brand colours ─────────────────────────────────────────────────────────────
 _AZUL      = HexColor("#2B4EFF")
@@ -361,10 +364,10 @@ def _build_pdf_playwright(data: ReportData) -> bytes:
 def build_pdf(data: ReportData) -> bytes:
     try:
         return _build_pdf_weasyprint(data)
-    except Exception:
-        pass
+    except Exception as exc:
+        log.warning("WeasyPrint failed, trying Playwright: %s", exc)
     try:
         return _build_pdf_playwright(data)
-    except Exception:
-        pass
+    except Exception as exc:
+        log.warning("Playwright failed, falling back to ReportLab: %s", exc)
     return _build_pdf_reportlab(data)

@@ -181,8 +181,42 @@ async def _prepare_crew(brief: BusinessBrief):
             "reviewer":   [],
         }
 
+        _tracking: dict = {"foursquare_used": False}
+
         def _run(step: str, inp: dict) -> dict:
-            return run_step(step, inp, llm, _tools_map)
+            if step != "research":
+                return run_step(step, inp, llm, _tools_map)
+            # For the research step, listen for Foursquare usage via MCP events
+            try:
+                import json as _json
+
+                from crewai.events import crewai_event_bus
+                from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
+
+                detected = [False]
+
+                def _check(source, event):
+                    if event.tool_name != "search_competitors":
+                        return
+                    try:
+                        r = _json.loads(event.result) if isinstance(event.result, str) else event.result
+                        if isinstance(r, dict) and r.get("foursquare_status") == "used":
+                            detected[0] = True
+                    except Exception:
+                        pass
+
+                scope = crewai_event_bus.scoped_handlers()
+                scope.__enter__()
+                crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
+                try:
+                    result = run_step(step, inp, llm, _tools_map)
+                finally:
+                    scope.__exit__(None, None, None)
+                if detected[0]:
+                    _tracking["foursquare_used"] = True
+                return result
+            except Exception:
+                return run_step(step, inp, llm, _tools_map)
 
         def _rebuild(acc: dict) -> dict:
             return build_inputs(
@@ -194,7 +228,7 @@ async def _prepare_crew(brief: BusinessBrief):
                 draft_report=acc.get("draft_report"),
             )
 
-        return _run, _rebuild, initial_inputs
+        return _run, _rebuild, initial_inputs, _tracking
     except Exception as exc:
         log.exception("_prepare_crew failed — falling back to skeleton: %s", exc)
         return None
@@ -259,7 +293,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
             messages.append(payload)
             yield f"data: {json.dumps(payload)}\n\n"
     else:
-        run_step_fn, rebuild_inputs, inputs = crew
+        run_step_fn, rebuild_inputs, inputs, _tracking = crew
         accumulated: dict = {}
 
         for step_name, agents_meta in _STEP_META:
@@ -298,7 +332,8 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["status"]            = "paused"
     _jobs[job_id]["debate_simulated"]  = debate_simulated
     _jobs[job_id]["simulated"]         = True  # verdict always skeleton until #12
-    _jobs[job_id]["paused_at"] = datetime.now(timezone.utc)
+    _jobs[job_id]["paused_at"]         = datetime.now(timezone.utc)
+    _jobs[job_id]["foursquare_used"]   = _tracking.get("foursquare_used", False) if crew else False
 
     graph_config = {"configurable": {"thread_id": job_id}}
     graph_state = {
@@ -345,6 +380,7 @@ async def chat(
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     image_data: list[tuple[str, bytes]] = []
+    rejected = 0
     for img in (images or []):
         raw = await img.read()
         try:
@@ -353,9 +389,9 @@ async def chat(
             )
             image_data.append((mime, clean))
         except ValueError:
-            continue
+            rejected += 1
     return StreamingResponse(
-        _stream_chat(job_id, message, image_data),
+        _stream_chat(job_id, message, image_data, rejected_count=rejected),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -391,9 +427,15 @@ async def _stream_chat(
     job_id: str,
     message: str,
     image_data: list[tuple[str, bytes]] | None = None,
+    rejected_count: int = 0,
 ) -> AsyncGenerator[str, None]:
     job = _jobs[job_id]
     job.setdefault("chat_history", []).append({"role": "user", "text": message})
+
+    if rejected_count:
+        noun = "imagen" if rejected_count == 1 else f"{rejected_count} imágenes"
+        warning = f"No se pudo incluir {noun}: solo se aceptan JPEG y PNG válidos."
+        yield f"data: {json.dumps({'warning': warning})}\n\n"
 
     yield f"data: {json.dumps({'thinking': True, 'agent': 'analyst', 'name': 'Analista'})}\n\n"
 
@@ -405,12 +447,16 @@ async def _stream_chat(
         system_prompt = _build_chat_system_prompt(job)
 
         if image_data:
+            is_gemini = "gemini" in (getattr(llm, "model", "") or "").lower()
             user_content: str | list = [{"type": "text", "text": message}]
             for mime, data in image_data:
                 b64 = base64.b64encode(data).decode()
-                user_content.append(
-                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
-                )
+                if is_gemini:
+                    user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
+                else:
+                    user_content.append(
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                    )
         else:
             user_content = message
 
@@ -600,6 +646,7 @@ async def approve(job_id: str, req: ApproveRequest):
         generated_on=date.today(),
         simulated=job.get("simulated", False),
         tokens_used=job.get("tokens_used", 0),
+        foursquare_used=job.get("foursquare_used", False),
     )
 
     try:

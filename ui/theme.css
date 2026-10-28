@@ -1705,6 +1705,20 @@ h3 { font-size: var(--text-xl); }
 
 .chat-feed:empty { display: none; }
 
+.chat-warning {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.chat-warning span {
+  background: #fef9c3;
+  color: #713f12;
+  border: 1px solid #fde047;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: var(--text-xs, 12px);
+}
+
 .chat-message.user {
   display: flex;
   justify-content: flex-end;

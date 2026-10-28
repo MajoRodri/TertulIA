@@ -45,3 +45,4 @@ class ReportData(BaseModel):
     job_id: str = "N/A"
     simulated: bool = False
     tokens_used: int = 0
+    foursquare_used: bool = False
