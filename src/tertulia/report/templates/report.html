@@ -310,6 +310,22 @@ body {
   color: var(--body);
   line-height: 1.55;
 }
+.bubble-text p          { margin: 0 0 5px; }
+.bubble-text p:last-child { margin-bottom: 0; }
+.bubble-text h1, .bubble-text h2, .bubble-text h3,
+.bubble-text h4, .bubble-text h5 {
+  font-size: 11.5px; font-weight: 700; color: var(--ink);
+  margin: 6px 0 3px;
+}
+.bubble-text ul, .bubble-text ol { margin: 3px 0 5px 16px; }
+.bubble-text li  { margin-bottom: 2px; }
+.bubble-text strong { font-weight: 700; color: var(--ink); }
+.bubble-text em  { font-style: italic; }
+.bubble-text code {
+  font-family: monospace; font-size: 10px;
+  background: var(--canvas); padding: 1px 3px; border-radius: 3px;
+}
+.bubble-text hr  { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 
 /* ── Verdict ─────────────────────────────────────────────── */
 .verdict-card {
@@ -570,7 +586,7 @@ body {
             <span class="bubble-simulated">ejemplo</span>
             {% endif %}
           </div>
-          <div class="bubble-text">{{ msg.message }}</div>
+          <div class="bubble-text">{{ msg.message | md }}</div>
         </div>
       </div>
       {% endfor %}

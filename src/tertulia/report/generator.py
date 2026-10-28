@@ -288,11 +288,18 @@ _SIGNAL_LABELS = {
 
 
 def render_html(data: ReportData) -> str:
+    import markdown as _md
     from jinja2 import Environment, FileSystemLoader
+    from markupsafe import Markup
+
+    def _md_filter(text: str) -> Markup:
+        return Markup(_md.markdown(text or "", extensions=["nl2br"]))
+
     _env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=True,
     )
+    _env.filters["md"] = _md_filter
     assets_url = (_REPO_ROOT / "assets").as_uri() + "/"
     return _env.get_template("report.html").render(
         data=data,
