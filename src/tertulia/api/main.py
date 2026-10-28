@@ -233,7 +233,6 @@ async def _prepare_crew(brief: BusinessBrief):
         return None
 
 
-
 def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     """Stores step outputs so later steps can reference them via build_inputs."""
     if step == "research":
