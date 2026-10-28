@@ -15,7 +15,8 @@ build/
 
 # Datos automáticos (no versionar)
 data/cache/
-outputs/
+outputs/**
+!outputs/.gitkeep
 
 # IDEs
 .vscode/
@@ -25,3 +26,6 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Scripts
+compare_coworkings.py

@@ -14,6 +14,8 @@ import pytest  # noqa: E402
 from crewai.llms.base_llm import BaseLLM  # noqa: E402
 
 from tertulia.crew.crew import (  # noqa: E402
+    LLM_RETRY_ATTEMPTS,
+    LLM_TIMEOUT_S,
     NO_TOOLS_NOTE,
     STEPS,
     build_llm,
@@ -30,6 +32,11 @@ from tertulia.crew.inputs import (  # noqa: E402
 )
 from tertulia.crew.sector import load_sector  # noqa: E402
 from tertulia.schemas import BusinessBrief  # noqa: E402
+
+# Los tests nunca usan las herramientas reales: arrancarían servidores MCP.
+# Un agente que no está en el diccionario recibiría sus herramientas por defecto,
+# así que se deja a TODOS sin herramientas de forma explícita.
+NO_TOOLS: dict = {agent: [] for agent in ("researcher", "vision", "analyst", "writer", "reviewer")}
 
 
 class FakeLLM(BaseLLM):
@@ -91,30 +98,42 @@ def test_lists_are_readable_text(brief):
 
 @pytest.mark.parametrize("step", sorted(STEPS))
 def test_each_step_builds_its_tasks(step):
-    crew = build_step_crew(step, FakeLLM(model="fake"))
+    crew = build_step_crew(step, FakeLLM(model="fake"), NO_TOOLS)
     assert [task.name for task in crew.tasks] == list(STEPS[step])
 
 
 def test_unknown_step_is_rejected():
     with pytest.raises(ValueError, match="unknown step"):
-        build_step_crew("marketing", FakeLLM(model="fake"))
+        build_step_crew("marketing", FakeLLM(model="fake"), NO_TOOLS)
 
 
 def test_tracing_is_disabled():
     # Privacidad: CrewAI no debe subir prompts ni respuestas a sus servidores
-    assert build_step_crew("research", FakeLLM(model="fake")).tracing is False
+    assert build_step_crew("research", FakeLLM(model="fake"), NO_TOOLS).tracing is False
 
 
 def test_agents_without_tools_are_told_so():
     # Prueba real del 23 oct: sin este aviso, el Investigador inventó cifras y enlaces
-    crew = build_step_crew("research", FakeLLM(model="fake"))
+    crew = build_step_crew("research", FakeLLM(model="fake"), NO_TOOLS)
     assert all(NO_TOOLS_NOTE in task.description for task in crew.tasks)
 
 
 def test_no_tools_note_reaches_the_model(inputs):
     llm = FakeLLM(model="fake", received=[])
-    run_step("research", inputs, llm)
+    run_step("research", inputs, llm, NO_TOOLS)
     assert "NO tienes ninguna herramienta" in llm.received[0]
+
+
+def test_gemini_retries_and_timeout_reach_the_client():
+    # Sin esto, un 429 de la capa gratuita falla al primer intento (comprobado)
+    llm = build_llm("gemini", "gemini-3.5-flash-lite", api_key="clave-falsa")
+    options = llm._get_sync_client()._api_client._http_options
+    assert options.timeout == LLM_TIMEOUT_S * 1000
+    assert options.retry_options.attempts == LLM_RETRY_ATTEMPTS
+
+
+def test_other_providers_get_no_gemini_options():
+    assert not getattr(build_llm("openai", "gpt-x", api_key="clave-falsa"), "client_params", None)
 
 
 def test_build_llm_does_not_call_the_api():
@@ -127,7 +146,7 @@ def test_build_llm_does_not_call_the_api():
 
 def test_research_step_runs_research_and_vision(inputs):
     llm = FakeLLM(model="fake", received=[])
-    result = run_step("research", inputs, llm)
+    result = run_step("research", inputs, llm, NO_TOOLS)
     assert result == {
         "research_task": "respuesta de prueba",
         "vision_task": "respuesta de prueba",
@@ -143,7 +162,7 @@ def test_writer_receives_previous_results(brief):
         review_feedback=["Cita la fuente"],
     )
     llm = FakeLLM(model="fake", received=[])
-    run_step("writing", data, llm)
+    run_step("writing", data, llm, NO_TOOLS)
     assert "Hay 4 cafeterías en Atocha" in llm.received[0]
     assert "Cita la fuente" in llm.received[0]
 

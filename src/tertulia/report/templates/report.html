@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --azul:     #2B4EFF;
+    --turquesa: #2ABFBF;
+    --naranja:  #F47C30;
+    --ink:      #0F1730;
+    --body:     #3B4467;
+    --muted:    #7580A0;
+    --border:   #DDE1F0;
+    --canvas:   #F5F6FA;
+    --verde:    #22C55E;
+    --amarillo: #EAB308;
+    --rojo:     #EF4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--body);
+    background: #fff;
+    padding: 48px 56px;
+    line-height: 1.6;
+  }
+
+  /* ── Cover header ── */
+  .cover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--azul);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+  }
+
+  .brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-name em {
+    color: var(--azul);
+    font-style: normal;
+  }
+
+  .brand-tagline {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  .meta-block {
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .meta-block strong { color: var(--ink); }
+
+  /* ── Section titles ── */
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    margin-top: 32px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .eyebrow {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--naranja);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ── Brief table ── */
+  .brief-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .brief-field {
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+
+  .brief-field-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .brief-field-value {
+    font-size: 13px;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .brief-context {
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 0;
+  }
+
+  /* ── Debate ── */
+  .debate-message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 14px;
+    page-break-inside: avoid;
+  }
+
+  .agent-chip {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .agent-chip.researcher { background: var(--azul); }
+  .agent-chip.analyst    { background: var(--turquesa); }
+  .agent-chip.vision     { background: #00B894; }
+  .agent-chip.writer     { background: #6C5CE7; }
+  .agent-chip.reviewer   { background: var(--naranja); }
+
+  .message-body {
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: 0 10px 10px 10px;
+    padding: 10px 14px;
+    flex: 1;
+  }
+
+  .message-header {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+
+  .message-header span {
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 6px;
+  }
+
+  .message-text { font-size: 12px; color: var(--body); }
+
+  /* ── Verdict ── */
+  .verdict-wrap {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 12px;
+  }
+
+  .traffic-column {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+  }
+
+  .dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .dot.active.green  { background: var(--verde);    box-shadow: 0 0 8px var(--verde); }
+  .dot.active.yellow { background: var(--amarillo); box-shadow: 0 0 8px var(--amarillo); }
+  .dot.active.red    { background: var(--rojo);     box-shadow: 0 0 8px var(--rojo); }
+
+  .verdict-info { flex: 1; }
+
+  .verdict-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 300;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .confidence-row {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .confidence-bar {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    max-width: 200px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    border-radius: 999px;
+  }
+
+  .confidence-fill.green  { background: var(--verde); }
+  .confidence-fill.yellow { background: var(--amarillo); }
+  .confidence-fill.red    { background: var(--rojo); }
+
+  .reasons-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .reason-item {
+    display: flex;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--body);
+  }
+
+  .reason-item::before {
+    content: '—';
+    color: var(--turquesa);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 48px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+  <div class="cover-header">
+    <div>
+      <div class="brand-name">Tertul<em>IA</em></div>
+      <div class="brand-tagline">Tu guía, tu vía.</div>
+    </div>
+    <div class="meta-block">
+      <div><strong>Informe de viabilidad</strong></div>
+      <div>{{ data.generated_on.strftime('%d %b %Y') }}</div>
+      <div>Ref. {{ data.job_id }}</div>
+    </div>
+  </div>
+
+  <!-- Brief -->
+  <span class="eyebrow">Encargo</span>
+  <h2 class="section-title">Parámetros del análisis</h2>
+
+  <div class="brief-grid">
+    <div class="brief-field">
+      <div class="brief-field-label">Sector</div>
+      <div class="brief-field-value">{{ data.brief.sector }}</div>
+    </div>
+    <div class="brief-field">
+      <div class="brief-field-label">Zona</div>
+      <div class="brief-field-value">{{ data.brief.neighborhood }}</div>
+    </div>
+    {% if data.brief.budget %}
+    <div class="brief-field">
+      <div class="brief-field-label">Presupuesto</div>
+      <div class="brief-field-value">{{ data.brief.budget }} €</div>
+    </div>
+    {% endif %}
+    {% if data.brief.area %}
+    <div class="brief-field">
+      <div class="brief-field-label">Superficie</div>
+      <div class="brief-field-value">{{ data.brief.area }} m²</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if data.brief.context %}
+  <div class="brief-context">
+    <div class="brief-field-label">Contexto</div>
+    <div style="font-size:12px; color:var(--body); margin-top:4px;">{{ data.brief.context }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Debate -->
+  <span class="eyebrow" style="margin-top:32px; display:block;">Debate entre agentes</span>
+  <h2 class="section-title">Análisis colectivo</h2>
+
+  {% for msg in data.debate %}
+  <div class="debate-message">
+    <div class="agent-chip {{ msg.agent }}">{{ msg.name[:2].upper() }}</div>
+    <div class="message-body">
+      <div class="message-header">{{ msg.name }} <span>{{ msg.role }}</span></div>
+      <div class="message-text">{{ msg.message }}</div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Verdict -->
+  <span class="eyebrow" style="margin-top:32px; display:block;">Veredicto</span>
+  <h2 class="section-title">Resultado del análisis</h2>
+
+  <div class="verdict-wrap">
+    <div class="traffic-column">
+      <div class="dot {% if data.verdict.signal == 'green' %}active green{% endif %}"></div>
+      <div class="dot {% if data.verdict.signal == 'yellow' %}active yellow{% endif %}"></div>
+      <div class="dot {% if data.verdict.signal == 'red' %}active red{% endif %}"></div>
+    </div>
+    <div class="verdict-info">
+      <div class="verdict-label">{{ data.verdict.label }}</div>
+      <div class="confidence-row">Confianza: {{ data.verdict.confidence }}%</div>
+      <div class="confidence-bar">
+        <div class="confidence-fill {{ data.verdict.signal }}" style="width:{{ data.verdict.confidence }}%"></div>
+      </div>
+      <div class="reasons-list">
+        {% for reason in data.verdict.reasons %}
+        <div class="reason-item">{{ reason }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Generado por TertulIA — tertulia.ai</span>
+    <span>Este informe es orientativo. Verifica las fuentes antes de tomar decisiones.</span>
+  </div>
+
+</body>
+</html>

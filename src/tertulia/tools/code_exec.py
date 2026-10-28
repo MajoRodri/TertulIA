@@ -8,6 +8,11 @@ Safety layers (defence in depth):
   2. Child process with ``python -I``, its own temp directory and a clean environment
      (API keys are NOT inherited).
   3. Hard timeout and, on Linux/macOS, a memory limit.
+  4. File guard inside the child (audit hook): the script can only read its own
+     folder and the Python/matplotlib files, and can only write inside its own
+     folder. It cannot open the project's ``.env`` or any other file of the user,
+     whatever the way (``open``, ``pathlib``, ``pandas``...). It also blocks
+     starting programs and opening network connections.
 
 NOTE: this is NOT a full sandbox. Against deliberately malicious code a container
 would be needed. For our scope (code written by our own agent, no network, no
@@ -58,6 +63,75 @@ import matplotlib.pyplot as plt
 import pandas as pd
 DATA = "data"
 OUTPUT = "output"
+'''
+
+# Runs in the child process, after pandas and matplotlib are imported and before the
+# agent's code. An audit hook cannot be removed once installed. Everything lives in
+# one function so that no helper name stays visible to the agent's script.
+_FILE_GUARD = '''
+def _tertulia_file_guard():
+    import os, sys, sysconfig
+
+    real = os.path.realpath
+    work = real(os.getcwd())
+    read_roots = {work}
+    for p in [*sysconfig.get_paths().values(), sys.prefix, sys.base_prefix,
+              sys.exec_prefix, sys.base_exec_prefix]:
+        if p:
+            read_roots.add(real(p))
+    fonts = ["/usr/share/fonts", "/usr/local/share/fonts", "/Library/Fonts",
+             "/System/Library/Fonts"]
+    if os.environ.get("SYSTEMROOT"):
+        fonts.append(os.path.join(os.environ["SYSTEMROOT"], "Fonts"))
+    read_roots.update(real(p) for p in fonts)
+
+    def inside(path, roots):
+        return any(path == r or path.startswith(r + os.sep) for r in roots)
+
+    def as_path(value):
+        if isinstance(value, (str, bytes, os.PathLike)):
+            return real(os.fsdecode(value))
+        return None  # an open file descriptor, None, a flag...
+
+    blocked = {
+        "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.fork", "os.forkpty",
+        "subprocess.Popen", "socket.connect", "socket.bind", "socket.getaddrinfo",
+        "ctypes.dlopen", "webbrowser.open",
+    }
+    reads = {"os.listdir", "os.scandir"}
+    writes = {
+        "os.remove", "os.rename", "os.rmdir", "os.mkdir", "os.truncate", "os.chmod",
+        "os.chown", "os.link", "os.symlink", "shutil.copyfile", "shutil.copytree",
+        "shutil.move", "shutil.rmtree",
+    }
+    write_flags = os.O_WRONLY | os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_TRUNC
+
+    def check(path, roots):
+        if not inside(path, roots):
+            raise PermissionError(f"acceso bloqueado fuera de la carpeta de trabajo: {path}")
+
+    def guard(event, args):
+        if event in blocked:
+            raise PermissionError(f"acción bloqueada: {event}")
+        if event == "open":
+            path = as_path(args[0])
+            if path is None:
+                return
+            mode = args[1] if isinstance(args[1], str) else ""
+            flags = args[2] if isinstance(args[2], int) else 0
+            writing = any(c in mode for c in "wax+") or bool(flags & write_flags)
+            check(path, [work] if writing else read_roots)
+        elif event in reads or event in writes:
+            for arg in args:
+                path = as_path(arg)
+                if path is not None:
+                    check(path, [work] if event in writes else read_roots)
+
+    sys.addaudithook(guard)
+
+
+_tertulia_file_guard()
+del _tertulia_file_guard
 '''
 
 ErrorType = Literal["syntax", "forbidden_code", "timeout", "exception", "internal"]
@@ -138,6 +212,8 @@ def _resource_limiter(max_mem_mb: int):
 
 
 def _prepare_data(data: dict[str, Any] | None, folder: Path) -> None:
+    """Copy the input files. ``data`` comes from our own code, never from the agent:
+    a file path in it is copied as is, so it must not be built from the agent's text."""
     folder.mkdir()
     for name, content in (data or {}).items():
         safe_name = Path(name).name  # blocks ../ paths
@@ -213,7 +289,7 @@ def run_code(
             workdir = Path(tmp)
             _prepare_data(data, workdir / "data")
             (workdir / "output").mkdir()
-            (workdir / "main.py").write_text(_PRELUDE + "\n" + code, encoding="utf-8")
+            (workdir / "main.py").write_text(_PRELUDE + _FILE_GUARD + "\n" + code, encoding="utf-8")
             try:
                 proc = subprocess.run(
                     [sys.executable, "-I", "main.py"],
@@ -253,6 +329,12 @@ def run_code(
     )  # fmt: skip
 
 
-def run_code_tool(code: str, **kwargs: Any) -> dict[str, Any]:
-    """Wrapper to register as a CrewAI/LangGraph tool: returns a serialisable dict."""
-    return run_code(code, **kwargs).model_dump()
+def run_code_tool(code: str) -> dict[str, Any]:
+    """The function to give to the agent (CrewAI/LangGraph): it only accepts ``code``.
+
+    Timeout, memory limit and output folder are fixed. The agent must NOT be able to
+    choose ``data`` (paths of files that are copied for it), ``timeout_s`` or
+    ``outputs_root``: that is why there is no ``**kwargs`` here. Code of ours that is
+    trusted (the graph nodes) calls ``run_code`` directly, with its own ``data``.
+    """
+    return run_code(code).model_dump()
