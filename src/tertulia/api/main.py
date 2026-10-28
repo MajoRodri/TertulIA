@@ -52,7 +52,7 @@ async def lifespan(_app: FastAPI):
         _mcp_researcher_tools = await asyncio.to_thread(researcher_tools)
         log.info("MCP tools ready at startup (%d tools)", len(_mcp_researcher_tools))
     except Exception:
-        log.warning("MCP tools unavailable at startup — debates will run without them")
+        log.warning("MCP tools unavailable at startup — debates will run without them", exc_info=True)
         _mcp_researcher_tools = []
     yield
 
