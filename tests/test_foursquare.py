@@ -350,3 +350,10 @@ def test_categories_also_go_through_the_injection_guard(monkeypatch, live_cowork
     monkeypatch.setattr(server, "_search_foursquare", lambda *args: [sneaky])
     answer = server.search_competitors("Atocha", "coworking", 800)
     assert answer["venues"][1]["suspicious"] is True
+
+def test_the_tool_tells_the_model_to_report_venues_to_review_separately():
+    # Real run (28 Oct): the Researcher reported only the 2 confirmed coworkings
+    # and silently dropped the 8 to review.
+    instructions = server.search_competitors.__doc__
+    assert "Always report" in instructions and "Never drop them" in instructions
+    assert "Foursquare was not checked" in instructions
