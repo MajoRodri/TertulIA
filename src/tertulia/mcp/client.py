@@ -90,7 +90,8 @@ def neighbourhood_data_server() -> MCPServerStdio:
         env={"PYTHONPATH": str(SRC_DIR)},
         # Allow list: a tool added to the server later reaches no agent until
         # someone adds it here on purpose (least privilege).
-        tool_filter=create_static_tool_filter(allowed_tool_names=["search_competitors"]),
+        tool_filter=create_static_tool_filter(
+            allowed_tool_names=["search_competitors", "search_audience_indicators"]),
     )
 
 
