@@ -408,14 +408,16 @@ def _extract_document_text(filename: str, mime: str, data: bytes) -> str:
         return data.decode("utf-8", errors="replace")[:MAX_DOC_CHARS]
     if ext == "pdf" or mime == "application/pdf":
         from pypdf import PdfReader  # type: ignore[import-untyped]
-        from pypdf.errors import PdfReadError  # type: ignore[import-untyped]
         try:
             reader = PdfReader(io.BytesIO(data))
-        except PdfReadError as exc:
+            n_pages = len(reader.pages)
+            if n_pages > MAX_PDF_PAGES:
+                raise ValueError(f"el PDF tiene {n_pages} páginas (máximo {MAX_PDF_PAGES})")
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        except ValueError:
+            raise
+        except Exception as exc:
             raise ValueError(f"el PDF no se puede leer (puede estar cifrado o dañado): {exc}") from exc
-        if len(reader.pages) > MAX_PDF_PAGES:
-            raise ValueError(f"el PDF tiene {len(reader.pages)} páginas (máximo {MAX_PDF_PAGES})")
-        text = "\n".join(page.extract_text() or "" for page in reader.pages)
         if not text.strip():
             raise ValueError("el PDF no contiene texto extraíble (puede ser un PDF escaneado)")
         return text[:MAX_DOC_CHARS]
@@ -460,6 +462,31 @@ def _classify_document(llm, text: str, declared_type: str, brief) -> tuple[bool,
 MAX_DOC_CONTEXT_CHARS = 50_000  # total cap across all uploaded documents
 
 
+def _guard_document(text: str, source: str) -> tuple[bool, list[str], str]:
+    """Runs the injection guard over the full text, processing in MAX_CHARS chunks.
+
+    process() truncates to MAX_CHARS (8 k); documents can be much larger.
+    Returns (suspicious, patterns, wrapped_text).
+    """
+    from tertulia.guardrails.injection import MAX_CHARS
+    from tertulia.guardrails.injection import process as guard_process
+
+    if not text:
+        return False, [], ""
+    suspicious = False
+    patterns: list[str] = []
+    parts: list[str] = []
+    for i in range(0, len(text), MAX_CHARS):
+        result = guard_process(text[i: i + MAX_CHARS], source=source)
+        if result.suspicious:
+            suspicious = True
+            for p in result.patterns:
+                if p not in patterns:
+                    patterns.append(p)
+        parts.append(result.wrapped_text)
+    return suspicious, patterns, "\n".join(parts)
+
+
 async def _process_documents(
     uploads: list[UploadFile],
     doc_types: list[str] | None,
@@ -471,7 +498,6 @@ async def _process_documents(
     Returns (combined_text, rejection_messages).
     """
     from tertulia.guardrails.anonimizacion import _scrub
-    from tertulia.guardrails.injection import process as guard_process
 
     accepted: list[str] = []
     rejected: list[str] = []
@@ -496,11 +522,15 @@ async def _process_documents(
             rejected.append(f'"{upload.filename}": {exc}')
             continue
 
-        # Injection guard + anonymization before classification or storage
-        guarded = guard_process(text, source=f"documento:{upload.filename}")
-        if guarded.suspicious:
-            log.warning("Suspicious content in document %s", upload.filename)
-        text = _scrub(guarded.cleaned)
+        # Injection guard: process full text in chunks, then anonymize
+        suspicious, _patterns, wrapped = _guard_document(text, source=f"documento:{upload.filename}")
+        if suspicious:
+            log.warning("Suspicious content in document %s: %s", upload.filename, _patterns)
+            rejected.append(
+                f'"{upload.filename}" contiene instrucciones sospechosas y no se ha incluido'
+            )
+            continue
+        text = _scrub(wrapped)
 
         is_valid, category_or_reason = await asyncio.to_thread(
             _classify_document, llm, text, declared_type, brief
@@ -547,8 +577,11 @@ async def upload_documents(
 
     if combined:
         existing = job.get("doc_context", "")
-        job["doc_context"] = (existing + "\n\n" + combined).strip() if existing else combined
-        brief.doc_context = job["doc_context"]
+        remaining = MAX_DOC_CONTEXT_CHARS - len(existing)
+        if remaining > 0:
+            trimmed = combined[:remaining]
+            job["doc_context"] = (existing + "\n\n" + trimmed).strip() if existing else trimmed
+            brief.doc_context = job["doc_context"]
 
     return {"accepted": len(files) - len(rejected), "rejected": rejected}
 
@@ -696,7 +729,7 @@ async def _stream_chat(
                     if msg_text else
                     f"DOCUMENTO ADJUNTO:\n{chat_doc_text}"
                 )
-            user_content: str | list = [{"type": "text", "text": msg_text}]
+            user_content: str | list = [{"text": msg_text}]
             for mime, img_bytes in (image_data or []):
                 b64 = base64.b64encode(img_bytes).decode()
                 user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
