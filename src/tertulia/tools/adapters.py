@@ -304,6 +304,21 @@ OSM_URL = "https://www.openstreetmap.org/"
 FOURSQUARE_TITLE = "Foursquare Places API"
 FOURSQUARE_URL = "https://foursquare.com/"
 
+_CATEGORY_LABELS: dict[str, tuple[str, str]] = {
+    "cafe": ("cafeterías", "f"),
+    "cafeteria": ("cafeterías", "f"),
+    "coworking": ("espacios de coworking", "m"),
+    "cowork": ("espacios de coworking", "m"),
+    "bar": ("bares", "m"),
+    "restaurant": ("restaurantes", "m"),
+    "restaurante": ("restaurantes", "m"),
+}
+
+
+def _translate_category(raw: str) -> tuple[str, str]:
+    """Returns (label, gender) where gender is 'm' or 'f'."""
+    return _CATEGORY_LABELS.get(raw.lower(), (raw, "m"))
+
 
 def _parse_retrieved_at(value: Any) -> datetime:
     """Devuelve un datetime con timezone. Si no se puede, ahora mismo (UTC)."""
@@ -330,7 +345,8 @@ def mcp_response_to_sources_and_findings(
     ``research_result``. Así el Writer y la Revisora dejan de leer el texto del
     crew (que se equivoca) y usan los números del servidor.
     """
-    category = response.get("category", "venues")
+    category, gender = _translate_category(response.get("category", "venues"))
+    _adj = "confirmadas" if gender == "f" else "confirmados"
     total = response.get("total", 0)
     confirmed = response.get("confirmed_count", 0)
     needs_review = response.get("needs_review_count", 0)
@@ -380,7 +396,7 @@ def mcp_response_to_sources_and_findings(
         findings.append(
             Finding(
                 id=f"fnd-{next_finding:03d}",
-                claim=f"{confirmed} {category} confirmados en el radio de búsqueda (total: {total})",
+                claim=f"{confirmed} {category} {_adj} en el radio de búsqueda (total: {total})",
                 value=confirmed,
                 unit=category,
                 source_ids=source_ids,

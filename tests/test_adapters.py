@@ -179,7 +179,7 @@ def test_build_cost_labels_from_profile():
 
 def test_mcp_response_basic():
     response = {
-        "category": "cafeterías",
+        "category": "cafe",  # raw value from the MCP server
         "total": 12,
         "confirmed_count": 8,
         "needs_review_count": 2,
@@ -190,6 +190,8 @@ def test_mcp_response_basic():
     assert sources[0].id == "src-001"
     assert any(f.value == 8 for f in findings)
     assert any(f.value == 2 for f in findings)
+    confirmed_finding = next(f for f in findings if f.value == 8)
+    assert "cafeterías confirmadas" in confirmed_finding.claim  # feminine agreement
     assert "cafeterías" in summary
 
 
