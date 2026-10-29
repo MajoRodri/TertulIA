@@ -37,3 +37,13 @@ class AgentState(TypedDict):
     human_approved: bool
     expired: bool  # True when the API reanuda a paused study past HUMAN_TIMEOUT_S
     errors: list[ErrorEntry]
+
+    # 9. Raw text from each crew task (Issue #12). The nodes call run_step()
+    #    and store the text here; the parser turns it into sources/findings.
+    research_result: str
+    vision_result: str
+    analysis_result: str
+
+    # 10. Contexto del chat (Issue #12). Se inyecta antes de reanudar.
+    chat_context: str
+    chat_context_applied: bool

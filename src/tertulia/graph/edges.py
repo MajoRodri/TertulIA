@@ -44,3 +44,17 @@ def should_continue(state: AgentState) -> str:
     # Si no hay comentarios o ya hemos llegado al límite, pasamos a la aprobación humana
     print("[FLUJO] Aprobado o máximo de rondas alcanzado. Pasando a aprobación humana.")
     return "human_approval"
+
+def route_after_approval(state: AgentState) -> str:
+    """Decide si ir a END o relanzar el writer para aplicar el chat_context."""
+    chat_context = state.get("chat_context", "")
+    already_applied = state.get("chat_context_applied", False)
+
+    # Si hay contexto nuevo y no se ha aplicado, vamos al writer
+    if chat_context and not already_applied:
+        print("[FLUJO] Aplicando chat_context: volviendo al Redactor.")
+        return "writer"
+
+    # Si no hay contexto, o ya se aplicó, terminamos
+    print("[FLUJO] Aprobación final. Generando veredicto y terminando.")
+    return "human_approval_end"

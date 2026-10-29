@@ -14,6 +14,9 @@ INITIAL_STATE = {
     "tokens_used": 0,
     "human_approved": False,
     "errors": [],
+    "research_result": "",
+    "vision_result": "",
+    "analysis_result": "",
 }
 
 
@@ -63,3 +66,34 @@ def test_rejection_resumes_graph_and_logs_reject_trace():
     assert traces[0].actor == "human"
     assert traces[0].tool == "ui.reject"
     assert traces[0].inputs == {"human_approved": False}
+
+def test_graph_pauses_twice_and_applies_chat_context():
+    """
+    Simula el flujo real: pausa 1 -> inyecta chat_context -> pausa 2 -> termina.
+    """
+    config = _config("test-chat-context")
+    app.invoke(INITIAL_STATE, config)
+
+    # 1. Primera pausa
+    assert app.get_state(config).next == ("human_approval",)
+
+    # 2. Reanudamos inyectando el chat_context
+    app.update_state(config, {
+        "human_approved": True,
+        "chat_context": "Tengo un local de 120 m2"
+    })
+    app.invoke(None, config)
+
+    # 3. Debería haber vuelto al writer, aplicado el flag, y pausado otra vez
+    state = app.get_state(config)
+    assert state.next == ("human_approval",)
+    assert state.values["chat_context_applied"] is True
+    assert state.values["draft_report"] == "Borrador de informe simulado."
+
+    # 4. Aprobación final
+    app.update_state(config, {"human_approved": True})
+    final = app.invoke(None, config)
+
+    # 5. Fin
+    assert app.get_state(config).next == ()
+    assert final["human_approved"] is True

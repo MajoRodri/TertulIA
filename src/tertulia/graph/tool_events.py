@@ -165,3 +165,57 @@ class capture_tool_events:
     def __exit__(self, exc_type, exc, tb) -> None:
         if self._scope is not None:
             self._scope.__exit__(exc_type, exc, tb)
+
+
+class capture_mcp_responses:
+    """Capture search_competitors responses from CrewAI MCP events (#12).
+
+    Uso en el nodo research:
+
+        with capture_mcp_responses() as captured:
+            result = run_step("research", inputs, llm, tools)
+        sources, findings, summary = mcp_response_to_sources_and_findings(
+            captured.responses[0], ...  # o bucle si hay varias
+        )
+
+    Solo captura el tool "search_competitors". Ignora el resto
+    (search_audience_indicators, fetch) y los results que no son dict.
+    Usa ``scoped_handlers`` de CrewAI, anidable sin conflicto con
+    otros listeners (Majo ya usa uno en main.py).
+    """
+
+    def __init__(self) -> None:
+        self.responses: list[dict] = []
+        self._scope = None
+
+    def __enter__(self) -> "capture_mcp_responses":
+        from crewai.events import crewai_event_bus
+        from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
+
+        self._scope = crewai_event_bus.scoped_handlers()
+        self._scope.__enter__()
+        crewai_event_bus.on(MCPToolExecutionCompletedEvent)(self._on_event)
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        if self._scope is not None:
+            self._scope.__exit__(exc_type, exc, tb)
+
+    def _on_event(self, source, event) -> None:
+        """Adaptador para el bus de CrewAI (source, event)."""
+        self._handle_event(event)
+
+    def _handle_event(self, event) -> None:
+        """Filtra y guarda el result si es una respuesta útil."""
+        if getattr(event, "tool_name", None) != "search_competitors":
+            return
+        result = getattr(event, "result", None)
+        if isinstance(result, str):
+            import json as _json
+
+            try:
+                result = _json.loads(result)
+            except (ValueError, TypeError):
+                return
+        if isinstance(result, dict):
+            self.responses.append(result)
