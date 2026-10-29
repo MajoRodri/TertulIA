@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from tertulia.crew.sector import SectorProfile
+from tertulia.guardrails.injection import clean, process
 from tertulia.schemas import Finding, FindingStatus, Source, SourceType, TraceEntry
 from tertulia.tools.code_exec import ExecutionResult, GeneratedFile
 from tertulia.tools.punto_equilibrio import BreakEvenInput, BreakEvenResult, FixedCost
@@ -438,11 +439,15 @@ def mcp_response_to_sources_and_findings(
             continue
         name = venue.get("name") or "sin nombre"
         reason = venue.get("review_reason") or "pendiente de revisión"
+        # Pasar por el filtro anti prompt injection (Majo - PR #83)
+        clean_text, _ = clean(f"{name} — {reason}")
+        if process(clean_text, source="mcp_venue").suspicious:
+            continue
         venue_source = fsq_id if fsq_id else osm_id
         findings.append(
             Finding(
                 id=f"fnd-{next_finding:03d}",
-                claim=f"'{name}' — {reason}",
+                claim=clean_text,
                 value=None,
                 source_ids=[venue_source],
                 agent="researcher",

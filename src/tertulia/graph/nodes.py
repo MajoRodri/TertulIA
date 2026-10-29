@@ -176,10 +176,14 @@ def vision_charts_node(state: AgentState) -> dict:
     new_errors: list[ErrorEntry] = []
     next_finding = len(existing_findings) + 1
     next_trace = len(existing_traces) + 1
+    tokens_spent = 0
 
     for path in charts:
         try:
+            usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
             analysis = analyse_image(path, llm)
+            usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+            tokens_spent += (usage_after - usage_before)
         except (ImageRejected, AnalysisFailed) as exc:
             new_errors.append(
                 ErrorEntry(
@@ -244,4 +248,6 @@ def vision_charts_node(state: AgentState) -> dict:
         patch["traces"] = existing_traces + new_traces
     if new_errors:
         patch["errors"] = state.get("errors", []) + new_errors
+    if tokens_spent > 0:
+        patch["tokens_used"] = state.get("tokens_used", 0) + tokens_spent
     return patch
