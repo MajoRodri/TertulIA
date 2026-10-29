@@ -339,6 +339,7 @@ def mcp_response_to_sources_and_findings(
     *,
     start_source_index: int = 1,
     start_finding_index: int = 1,
+    discarded_competitors: list[str] | None = None,
 ) -> tuple[list[Source], list[Finding], str]:
     """Convierte una respuesta de search_competitors en Sources, Findings y summary.
 
@@ -432,12 +433,15 @@ def mcp_response_to_sources_and_findings(
         )
         next_finding += 1
 
+    discarded = discarded_competitors or []
     for venue in response.get("venues", []):
+        name = venue.get("name") or "sin nombre"
+        if name in discarded:
+            continue
         if not venue.get("needs_review"):
             continue
         if venue.get("suspicious"):
             continue
-        name = venue.get("name") or "sin nombre"
         reason = venue.get("review_reason") or "pendiente de revisión"
         # Pasar por el filtro anti prompt injection (Majo - PR #83)
         clean_text, _ = clean(f"{name} — {reason}")

@@ -82,10 +82,28 @@ def human_approval_node(state: AgentState) -> dict:
         print("[NODO] Aprobacion humana: informe aprobado.")
     else:
         print("[NODO] Aprobacion humana: informe rechazado.")
+    
+    new_traces = [trace]
+    # Procesar competidores descartados por el humano
+    discarded = state.get("discarded_competitors", [])
+    if discarded:
+        print(f"[NODO] Aprobacion humana: {len(discarded)} competidores descartados.")
+        for name in discarded:
+            new_traces.append(
+                TraceEntry(
+                    id=f"trc-{len(existing_traces) + len(new_traces) + 1:03d}",
+                    timestamp=datetime.now(timezone.utc),
+                    actor="human",
+                    tool="ui.discard_competitor",
+                    inputs={"competitor": name},
+                    output={"decision": "discarded"},
+                )
+            )
+
     return {
         "human_approved": approved,
         "expired": False,
-        "traces": existing_traces + [trace],
+        "traces": existing_traces + new_traces,
     }
 
 

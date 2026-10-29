@@ -50,3 +50,6 @@ class AgentState(TypedDict):
 
     # 11. Resumen de texto generado por el adapter MCP (Issue #12).
     mcp_research_summary: str
+
+    # 12. Competidores descartados por el humano (Issue #12).
+    discarded_competitors: list[str]
