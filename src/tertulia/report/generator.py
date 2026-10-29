@@ -321,11 +321,19 @@ def render_html(data: ReportData) -> str:
     def _md_filter(text: str) -> Markup:
         return Markup(_md.markdown(str(escape(text or "")), extensions=["nl2br", "tables"]))
 
+    def _fmt_val_filter(v) -> str:
+        if v is None:
+            return ""
+        if isinstance(v, int) or (isinstance(v, float) and v == int(v)):
+            return str(int(v))
+        return f"{v:.2f}".replace(".", ",")
+
     _env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=True,
     )
     _env.filters["md"] = _md_filter
+    _env.filters["fmt_val"] = _fmt_val_filter
     assets_url = (_REPO_ROOT / "assets").as_uri() + "/"
     return _env.get_template("report.html").render(
         data=data,

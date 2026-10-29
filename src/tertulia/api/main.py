@@ -340,6 +340,13 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 continue
 
             _accumulate(step_name, result, accumulated)
+            if step_name == "research":
+                summaries = _tracking.get("mcp_research_summary", [])
+                if summaries:
+                    existing = accumulated.get("research_result", "")
+                    accumulated["research_result"] = (
+                        existing + "\n\n" + "\n\n".join(summaries)
+                    ).strip()
             inputs = rebuild_inputs(accumulated)
 
             for meta in agents_meta:
@@ -960,6 +967,14 @@ async def approve(job_id: str, req: ApproveRequest):
             source_type=str(d.get("source_type", "")),
             retrieved_at=str(d.get("retrieved_at", "")),
         ))
+
+    seen_urls: set[str] = set()
+    deduped_sources: list[ReportSource] = []
+    for s in pdf_sources:
+        if s.url and s.url not in seen_urls:
+            seen_urls.add(s.url)
+            deduped_sources.append(s)
+    pdf_sources = deduped_sources
 
     pdf_findings: list[ReportFinding] = []
     for f in (job.get("mcp_findings") or []):

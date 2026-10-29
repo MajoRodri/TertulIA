@@ -72,7 +72,7 @@ def test_report_data_accepts_findings():
     assert data.findings[1].value is None
 
 
-def test_render_html_with_findings_does_not_crash():
+def test_render_html_shows_finding_text():
     data = ReportData(
         job_id="test-003",
         brief=ReportBrief(sector="café-cowork", neighborhood="Atocha"),
@@ -81,4 +81,5 @@ def test_render_html_with_findings_does_not_crash():
         findings=[ReportFinding(claim="5 locales similares encontrados", value=5, unit="locales")],
     )
     html = render_html(data)
-    assert "Atocha" in html
+    assert "5 locales similares encontrados" in html
+    assert "Hallazgos de la investigación" in html
