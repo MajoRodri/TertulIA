@@ -1,4 +1,7 @@
-# README-HELEN · Aportaciones de Helen para el README de TertulIA
+# TertulIA
+
+--
+## README-HELEN · Aportaciones de Helen para el README de TertulIA
 
 > Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Lo iré actualizando a medida que termine cada paso.
 >
@@ -13,7 +16,7 @@
 | Foursquare como segunda fuente / Foursquare as second source | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #64) |
 | `BusinessBrief.image_paths` | `src/tertulia/schemas/models.py` | ✅ Fusionado / Merged (PR #60) |
 | Cliente MCP y servidor fetch / MCP client and fetch server | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py` | ✅ Fusionado / Merged (PR #58) |
-| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67) · 🔄 Tabla de precios en curso / Price table in progress |
+| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67, tabla de precios / price table 29 oct) |
 | Informe completo y Overpass más rápido / Full report and faster Overpass | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #69) |
 | Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Aprobado / Approved |
 
@@ -178,7 +181,9 @@ Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competi
 
 **Probado con 9 fotos reales** (bar, cafetería y coworkings), incluida una mala hecha a través de una cristalera: el modelo bajó la confianza a «media» sin rechazar la foto. El prompt explica qué significa cada categoría (por ejemplo, «espacio de trabajo» es para los clientes; la barra de un café no cuenta), cuándo bajar la confianza y que la calidad de la foto no es una observación. `vision/` no importa nada de `crew/`: la herramienta recibe siempre el modelo, así que las dependencias van en una sola dirección.
 
-**Tests:** 40 (9 del formato, 11 de la carga y 20 de la herramienta), con un modelo falso y sin gastar llamadas.
+**Tabla de precios (29 oct).** El modelo rellena `prices` (producto, tamaño opcional y precio en euros como número; máximo 40, una carta larga no hace fallar el análisis) y `to_text()` dibuja una **tabla en markdown escrita por nuestro código** (Producto / Tamaño / Precio, euros a la española). Los nombres también pasan por el filtro anti prompt injection. El Analista recibe los precios como datos para el ticket medio de café (el café-cowork tiene dos fuentes de ingresos: café y cuotas). Probado en la app con una carta real.
+
+**Tests:** 51 (15 del formato, 11 de la carga y 25 de la herramienta), con un modelo falso y sin gastar llamadas.
 
 ## 6. Seguridad y gobernanza (aportaciones)
 
@@ -348,7 +353,9 @@ Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and
 
 **Tested with 9 real photos** (bar, café and coworkings), including a poor one taken through a window: the model lowered its confidence to "medium" without rejecting the photo. The prompt explains what each category means (e.g. "workspace" is for customers; a coffee bar counter does not count), when to lower the confidence, and that the photo's quality is not an observation. `vision/` imports nothing from `crew/`: the tool always receives the model, so dependencies go one way only.
 
-**Tests:** 40 (9 for the format, 11 for loading and 20 for the tool), with a fake model and no API calls.
+**Price table (29 Oct).** The model fills in `prices` (product, optional size and price in euros as a number; at most 40, so a long menu never makes the analysis fail) and `to_text()` draws a **markdown table written by our code** (Product / Size / Price, euros in Spanish format). Product names also go through the prompt injection guard. The Analyst gets the prices as data for the average coffee ticket (the café-cowork has two income streams: coffee and memberships). Tested in the app with a real menu.
+
+**Tests:** 51 (15 for the format, 11 for loading and 25 for the tool), with a fake model and no API calls.
 
 ## 6. Security and governance (contributions)
 
