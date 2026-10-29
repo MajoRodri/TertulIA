@@ -458,17 +458,17 @@ function validateDocFiles(files) {
   return null;
 }
 
-function attachDocPicker(inputId, typeSelectId, hintId, previewId) {
+function attachDocPicker(inputId, typeSelectId, hintId, previewId, { startHidden = true } = {}) {
   const input    = document.getElementById(inputId);
   const select   = document.getElementById(typeSelectId);
   const hint     = document.getElementById(hintId);
   const preview  = document.getElementById(previewId);
   const managed  = [];   // { file: File, type: string }[]
 
-  select?.classList.add("hidden");
+  if (startHidden) select?.classList.add("hidden");
 
   function syncSelectVisibility() {
-    if (!select) return;
+    if (!select || !startHidden) return;
     select.classList.toggle("hidden", managed.length === 0);
   }
 
@@ -531,7 +531,7 @@ function attachDocPicker(inputId, typeSelectId, hintId, previewId) {
 }
 
 const formDocPicker = attachDocPicker("form-docs", "form-doc-type", "form-docs-hint", "form-docs-preview");
-const chatDocPicker = attachDocPicker("chat-docs", "chat-doc-type", "chat-docs-hint", "chat-docs-preview");
+const chatDocPicker = attachDocPicker("chat-docs", "chat-doc-type", "chat-docs-hint", "chat-docs-preview", { startHidden: false });
 
 // ── Brief summary (panel 1 read-only view) ────────────────────
 const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };

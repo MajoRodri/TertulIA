@@ -399,45 +399,42 @@
         <p class="panel-desc">¿Tienes datos concretos que cambian el análisis? Escríbelos aquí. Los agentes los incorporan antes del veredicto final.</p>
       </div>
       <div class="chat-feed" id="chat-feed" role="log" aria-live="polite"></div>
-      <div class="chat-attachments">
-        <div class="chat-attach-row">
-          <label for="chat-images" class="chat-upload-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-            Fotos
-          </label>
-          <input type="file" id="chat-images" accept=".jpg,.jpeg,.png" multiple class="sr-only" aria-label="Subir fotos del local o competidores" />
-          <span class="form-hint" id="chat-images-hint">JPG o PNG · máx. 10 MB</span>
-        </div>
-        <div id="chat-images-preview" class="upload-preview"></div>
-        <div class="chat-attach-row">
-          <select id="chat-doc-type" class="doc-type-select" aria-label="Tipo de documento">
-            <option value="plan_negocio">Plan de negocio</option>
-            <option value="proyeccion_financiera">Proyección financiera</option>
-            <option value="estudio_mercado">Estudio de mercado</option>
-            <option value="contrato">Contrato / local</option>
-            <option value="presupuesto">Presupuesto de obra</option>
-            <option value="otro">Otro documento</option>
-          </select>
-          <label for="chat-docs" class="chat-upload-label">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Documento
-          </label>
-          <input type="file" id="chat-docs" accept=".pdf,.md" multiple class="sr-only" aria-label="Subir documento del negocio" />
-          <span class="form-hint" id="chat-docs-hint">PDF o Markdown · máx. 5 MB</span>
-        </div>
-        <div id="chat-docs-preview" class="upload-preview doc-preview"></div>
-      </div>
-      <div class="chat-input-wrap">
+      <div id="chat-images-preview" class="upload-preview"></div>
+      <div id="chat-docs-preview" class="upload-preview doc-preview"></div>
+      <div class="chat-composer">
         <textarea
           id="chat-input"
           class="chat-input"
           rows="2"
           placeholder="Ej. El alquiler que me han ofrecido es 2.200 €/mes, no 2.640…"
         ></textarea>
-        <div class="chat-actions">
-          <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto</button>
-          <button class="btn btn-primary" id="btn-chat-send">Enviar</button>
+        <div class="chat-toolbar">
+          <div class="chat-toolbar-attachments">
+            <label for="chat-images" class="chat-icon-btn" title="Fotos · JPG o PNG · máx. 10 MB">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </label>
+            <input type="file" id="chat-images" accept=".jpg,.jpeg,.png" multiple class="sr-only" aria-label="Subir fotos del local o competidores" />
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <select id="chat-doc-type" class="doc-type-inline" aria-label="Tipo de documento">
+              <option value="plan_negocio">Plan de negocio</option>
+              <option value="proyeccion_financiera">Proyección financiera</option>
+              <option value="estudio_mercado">Estudio de mercado</option>
+              <option value="contrato">Contrato / local</option>
+              <option value="presupuesto">Presupuesto de obra</option>
+              <option value="otro">Otro documento</option>
+            </select>
+            <label for="chat-docs" class="chat-icon-btn" title="Documento · PDF o Markdown · máx. 5 MB">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </label>
+            <input type="file" id="chat-docs" accept=".pdf,.md" multiple class="sr-only" aria-label="Subir documento del negocio" />
+          </div>
+          <div class="chat-toolbar-actions">
+            <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto</button>
+            <button class="btn btn-primary" id="btn-chat-send">Enviar</button>
+          </div>
         </div>
+        <small id="chat-images-hint" class="chat-attach-hint" aria-live="polite"></small>
+        <small id="chat-docs-hint"   class="chat-attach-hint" aria-live="polite"></small>
       </div>
     </section>
 
