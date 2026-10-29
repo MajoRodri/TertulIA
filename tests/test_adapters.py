@@ -164,3 +164,13 @@ def test_artifact_finding_points_to_the_chart():
         chart, "Gráfico del punto de equilibrio", finding_id="fnd-009", trace_id="trc-003"
     )
     assert finding.artifact_paths == ["run-001/ab_b.png"] and finding.value is None
+
+def test_build_cost_labels_from_profile():
+    from tertulia.crew.sector import load_sector
+    from tertulia.tools.adapters import build_cost_labels
+
+    profile = load_sector("cafe_cowork")
+    labels = build_cost_labels(profile)
+    assert labels["rent"] == "Alquiler del local"
+    assert "staff" in labels
+    assert len(labels) == len(profile.fixed_cost_items)

@@ -28,6 +28,15 @@ from tertulia.tools.punto_equilibrio import BreakEvenInput, BreakEvenResult, Fix
 USER_INPUT_SOURCE = "user_input"
 
 
+def build_cost_labels(profile: SectorProfile) -> dict[str, str]:
+    """Devuelve el mapeo {key: label} de los costes fijos del perfil.
+
+    Se pasa a break_even_to_findings() para que los hallazgos muestren
+    "Alquiler del local" en vez de "rent".
+    """
+    return {item.key: item.label for item in profile.fixed_cost_items}
+
+
 def break_even_input_from_profile(
     profile: SectorProfile,
     *,
