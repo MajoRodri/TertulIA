@@ -583,7 +583,7 @@ def _build_chat_system_prompt(job: dict) -> str:
     )
     doc_context = job.get("doc_context", "")
     return (
-        "Eres un equipo de consultores expertos en viabilidad de negocios. "
+        "Eres un consultor experto en viabilidad de negocios. "
         "Responde en español de forma clara, directa y profesional. "
         "No repitas saludos ni preámbulos innecesarios.\n\n"
         f"CONTEXTO DEL ANÁLISIS:\n"
@@ -595,7 +595,17 @@ def _build_chat_system_prompt(job: dict) -> str:
         + (f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}\n\n" if doc_context else "")
         + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
         + (f"CONVERSACIÓN PREVIA:\n{history_lines}\n\n" if history_lines else "")
-        + "Responde a la siguiente pregunta o comentario del usuario."
+        + "Responde SOLO a lo que el usuario acaba de aportar en su mensaje. "
+        "No regeneres el informe completo ni uses datos del contexto que el usuario no haya mencionado explícitamente ahora."
+    )
+
+
+def _build_vision_only_prompt(job: dict) -> str:
+    brief: BusinessBrief = job["brief"]
+    return (
+        f"Eres un analista visual. El usuario está evaluando abrir un {brief.business_type} en {brief.neighbourhood}. "
+        "Describe brevemente lo que ves en la imagen: tipo de local, estado, aforo estimado, aspectos positivos y negativos para el negocio. "
+        "Solo describe lo que puedes ver. No uses ningún dato financiero ni de contexto externo."
     )
 
 
@@ -609,6 +619,17 @@ async def _stream_chat(
 ) -> AsyncGenerator[str, None]:
     job = _jobs[job_id]
 
+    if rejected_count:
+        noun = "imagen" if rejected_count == 1 else f"{rejected_count} imágenes"
+        yield f"data: {json.dumps({'warning': f'No se pudo incluir {noun}: solo se aceptan JPEG y PNG válidos.'})}\n\n"
+    for doc_warning in (rejected_docs or []):
+        yield f"data: {json.dumps({'warning': doc_warning})}\n\n"
+
+    # Nothing useful left to send: all attachments rejected and no text typed
+    if not message and not chat_doc_text and not image_data:
+        yield f"data: {json.dumps({'done': True})}\n\n"
+        return
+
     # Build the history label so the context passed to CrewAI at approval reflects attachments
     notes: list[str] = []
     if image_data:
@@ -619,28 +640,31 @@ async def _stream_chat(
     user_history_text = f"{' '.join(notes)} {message}".strip() if notes else message
     job.setdefault("chat_history", []).append({"role": "user", "text": user_history_text})
 
-    if rejected_count:
-        noun = "imagen" if rejected_count == 1 else f"{rejected_count} imágenes"
-        yield f"data: {json.dumps({'warning': f'No se pudo incluir {noun}: solo se aceptan JPEG y PNG válidos.'})}\n\n"
-    for doc_warning in (rejected_docs or []):
-        yield f"data: {json.dumps({'warning': doc_warning})}\n\n"
-
     yield f"data: {json.dumps({'thinking': True, 'agent': 'analyst', 'name': 'Analista'})}\n\n"
 
     response_text: str | None = None
     try:
-        from tertulia.crew.crew import llm_from_settings
+        import litellm
+        from config.settings import settings as _cfg
 
-        llm = llm_from_settings()
-        system_prompt = _build_chat_system_prompt(job)
+        # Image-only with no text: use a minimal prompt so the LLM only describes what it sees
+        if image_data and not message and not chat_doc_text:
+            system_prompt = _build_vision_only_prompt(job)
+        else:
+            system_prompt = _build_chat_system_prompt(job)
 
         # Build user content: always a list if there are images or doc text
         if image_data or chat_doc_text:
-            msg_text = message
+            if message:
+                msg_text = message
+            elif image_data and not chat_doc_text:
+                msg_text = "Analiza esta imagen y comenta brevemente qué ves que sea relevante para el negocio."
+            else:
+                msg_text = ""
             if chat_doc_text:
                 msg_text = (
-                    f"{message}\n\nDOCUMENTO ADJUNTO:\n{chat_doc_text}"
-                    if message else
+                    f"{msg_text}\n\nDOCUMENTO ADJUNTO:\n{chat_doc_text}"
+                    if msg_text else
                     f"DOCUMENTO ADJUNTO:\n{chat_doc_text}"
                 )
             user_content: str | list = [{"type": "text", "text": msg_text}]
@@ -657,10 +681,14 @@ async def _stream_chat(
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_content},
         ]
-        response_text = await asyncio.to_thread(llm.call, messages)
-        # crewai LLM.call may return a string or an object with .content
-        if not isinstance(response_text, str):
-            response_text = getattr(response_text, "content", str(response_text))
+        # litellm converts image_url → inline_data for Gemini; llm.call() goes through
+        # GeminiCompletion (native SDK) which drops image_url parts silently.
+        result = await litellm.acompletion(
+            model=f"{_cfg.LLM_PROVIDER}/{_cfg.LLM_MODEL_NAME}",
+            messages=messages,
+            api_key=_cfg.LLM_API_KEY.get_secret_value(),
+        )
+        response_text = result.choices[0].message.content or ""
     except Exception:
         log.exception("Chat LLM call failed (job=%s, images=%d)", job_id, len(image_data or []))
         response_text = None
