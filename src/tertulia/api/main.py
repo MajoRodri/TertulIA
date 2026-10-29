@@ -596,15 +596,18 @@ def _build_chat_system_prompt(job: dict) -> str:
         + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
         + (f"CONVERSACIÓN PREVIA:\n{history_lines}\n\n" if history_lines else "")
         + "Responde SOLO a lo que el usuario acaba de aportar en su mensaje. "
-        "No regeneres el informe completo ni uses datos del contexto que el usuario no haya mencionado explícitamente ahora."
+        "No regeneres el informe completo ni uses datos del contexto "
+        "que el usuario no haya mencionado explícitamente ahora."
     )
 
 
 def _build_vision_only_prompt(job: dict) -> str:
     brief: BusinessBrief = job["brief"]
     return (
-        f"Eres un analista visual. El usuario está evaluando abrir un {brief.business_type} en {brief.neighbourhood}. "
-        "Describe brevemente lo que ves en la imagen: tipo de local, estado, aforo estimado, aspectos positivos y negativos para el negocio. "
+        f"Eres un analista visual. El usuario está evaluando abrir un {brief.business_type}"
+        f" en {brief.neighbourhood}. "
+        "Describe brevemente lo que ves en la imagen: tipo de local, estado, aforo estimado, "
+        "aspectos positivos y negativos para el negocio. "
         "Solo describe lo que puedes ver. No uses ningún dato financiero ni de contexto externo."
     )
 
@@ -645,6 +648,7 @@ async def _stream_chat(
     response_text: str | None = None
     try:
         import litellm
+
         from config.settings import settings as _cfg
 
         # Image-only with no text: use a minimal prompt so the LLM only describes what it sees

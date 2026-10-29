@@ -58,7 +58,9 @@ def test_agent_fields_exist_in_crewai(name):
 def test_agents_do_not_delegate_and_are_limited(name):
     # El grafo orquesta: un agente no debe repartir trabajo a otros
     assert AGENTS[name]["allow_delegation"] is False
-    assert 1 <= AGENTS[name]["max_iter"] <= 10
+    # researcher needs more steps to avoid cutting off mid-search (raised to 12)
+    limit = 15 if name == "researcher" else 10
+    assert 1 <= AGENTS[name]["max_iter"] <= limit
 
 
 # --- Tareas ---------------------------------------------------------------------
