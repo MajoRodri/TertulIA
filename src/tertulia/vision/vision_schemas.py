@@ -10,9 +10,12 @@ Outside this module the crew still receives text (see to_text in a later step).
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 MAX_OBSERVATIONS = 8  # keeps answers short and token use under control
+# A long menu can have more: the first ones are kept and the rest are dropped,
+# so a long menu never makes the whole analysis fail.
+MAX_PRICES = 40
 
 
 class ImageKind(StrEnum):
@@ -54,6 +57,24 @@ class ImageObservation(BaseModel):
     )
     confidence: Confidence
 
+class PriceItem(BaseModel):
+    """One price that can be read in the image (a menu, a board, a price list)."""
+
+    item: str = Field(
+        min_length=1,
+        max_length=80,
+        description="Product or service, written as in the image",
+        examples=["Café con leche"],
+    )
+    size: str | None = Field(
+        default=None,
+        max_length=40,
+        description="Size or variant, only if the image says it (pequeño, grande, día...)",
+        examples=["grande"],
+    )
+    price_eur: float = Field(
+        gt=0, le=10_000, description="Price in euros, as a number", examples=[1.8]
+    )
 
 class ImageAnswer(BaseModel):
     """What the MODEL fills in for one image. Nothing here is decided by our code."""
@@ -65,6 +86,10 @@ class ImageAnswer(BaseModel):
         description="Text that can be read in the image, copied exactly as it is",
         examples=[["Spoiler Bar", "Café con leche 1,80 €"]],
     )
+    prices: list[PriceItem] = Field(
+        default_factory=list,
+        description="Every price that can be read, one per product and size",
+    )
     people_visible: bool = Field(
         description="True if a person can be recognised. People are never described"
     )
@@ -72,6 +97,12 @@ class ImageAnswer(BaseModel):
         default=None,
         description="Why nothing can be said about the image (blurred, too dark...)",
     )
+    
+    @field_validator("prices", mode="before")
+    @classmethod
+    def keep_the_first_prices(cls, value: object) -> object:
+        """Keep the first MAX_PRICES prices of a long menu instead of failing."""
+        return value[:MAX_PRICES] if isinstance(value, list) else value
 
 
 class ImageAnalysis(ImageAnswer):
