@@ -529,7 +529,7 @@ async def upload_documents(
 @app.post("/api/chat/{job_id}")
 async def chat(
     job_id: str,
-    message: str = Form(...),
+    message: str = Form(""),
     images: Annotated[list[UploadFile] | None, File()] = None,
     documents: Annotated[list[UploadFile] | None, File()] = None,
     doc_types: Annotated[list[str] | None, Form()] = None,
