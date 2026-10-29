@@ -28,7 +28,7 @@ from pydantic import BaseModel
 
 from tertulia.graph.builder import app as _graph
 from tertulia.report.models import AgentMessage as ReportMessage
-from tertulia.report.models import ReportBrief, ReportData, ReportSource
+from tertulia.report.models import ReportBrief, ReportData, ReportFinding, ReportSource
 from tertulia.report.models import Verdict as ReportVerdict
 from tertulia.schemas.models import BusinessBrief, TrafficLight
 from tertulia.schemas.models import Verdict as SchemaVerdict
@@ -220,8 +220,21 @@ async def _prepare_crew(brief: BusinessBrief):
                     return
                 try:
                     r = _json.loads(event.result) if isinstance(event.result, str) else event.result
-                    if isinstance(r, dict) and r.get("foursquare_status") == "used":
+                    if not isinstance(r, dict):
+                        return
+                    if r.get("foursquare_status") == "used":
                         detected[0] = True
+                    from tertulia.tools.adapters import mcp_response_to_sources_and_findings
+                    start_src = 1 + len(_tracking.get("mcp_sources", []))
+                    start_fnd = 1 + len(_tracking.get("mcp_findings", []))
+                    srcs, fnds, summary = mcp_response_to_sources_and_findings(
+                        r,
+                        start_source_index=start_src,
+                        start_finding_index=start_fnd,
+                    )
+                    _tracking.setdefault("mcp_sources", []).extend(srcs)
+                    _tracking.setdefault("mcp_findings", []).extend(fnds)
+                    _tracking.setdefault("mcp_research_summary", []).append(summary)
                 except Exception:
                     pass
 
@@ -327,6 +340,13 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 continue
 
             _accumulate(step_name, result, accumulated)
+            if step_name == "research":
+                summaries = _tracking.get("mcp_research_summary", [])
+                if summaries:
+                    existing = accumulated.get("research_result", "")
+                    accumulated["research_result"] = (
+                        existing + "\n\n" + "\n\n".join(summaries)
+                    ).strip()
             inputs = rebuild_inputs(accumulated)
 
             for meta in agents_meta:
@@ -348,7 +368,10 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["debate_simulated"]  = debate_simulated
     _jobs[job_id]["simulated"]         = True  # verdict always skeleton until #12
     _jobs[job_id]["paused_at"]         = datetime.now(timezone.utc)
-    _jobs[job_id]["foursquare_used"]   = _tracking.get("foursquare_used", False) if crew else False
+    _jobs[job_id]["foursquare_used"]      = _tracking.get("foursquare_used", False) if crew else False
+    _jobs[job_id]["mcp_sources"]          = _tracking.get("mcp_sources", []) if crew else []
+    _jobs[job_id]["mcp_findings"]         = _tracking.get("mcp_findings", []) if crew else []
+    _jobs[job_id]["mcp_research_summary"] = _tracking.get("mcp_research_summary", []) if crew else []
 
     graph_config = {"configurable": {"thread_id": job_id}}
     graph_state = {
@@ -933,6 +956,34 @@ async def approve(job_id: str, req: ApproveRequest):
             source_type=str(d.get("source_type", "")),
             retrieved_at=str(d.get("retrieved_at", "")),
         ))
+    for s in (job.get("mcp_sources") or []):
+        d = s.model_dump() if hasattr(s, "model_dump") else dict(s)
+        url = d.get("url")
+        if not url:
+            continue
+        pdf_sources.append(ReportSource(
+            title=d.get("title", url),
+            url=url,
+            source_type=str(d.get("source_type", "")),
+            retrieved_at=str(d.get("retrieved_at", "")),
+        ))
+
+    seen_urls: set[str] = set()
+    deduped_sources: list[ReportSource] = []
+    for s in pdf_sources:
+        if s.url and s.url not in seen_urls:
+            seen_urls.add(s.url)
+            deduped_sources.append(s)
+    pdf_sources = deduped_sources
+
+    pdf_findings: list[ReportFinding] = []
+    for f in (job.get("mcp_findings") or []):
+        d = f.model_dump() if hasattr(f, "model_dump") else dict(f)
+        pdf_findings.append(ReportFinding(
+            claim=d.get("claim", ""),
+            value=d.get("value"),
+            unit=d.get("unit"),
+        ))
 
     signal_map = {TrafficLight.GREEN: "green", TrafficLight.AMBER: "yellow", TrafficLight.RED: "red"}
     report_signal = signal_map.get(verdict.final_light, "yellow")
@@ -949,6 +1000,7 @@ async def approve(job_id: str, req: ApproveRequest):
         ),
         debate=[ReportMessage(**m) for m in messages],
         sources=pdf_sources,
+        findings=pdf_findings,
         verdict=ReportVerdict(
             signal=report_signal,
             label=verdict.summary,

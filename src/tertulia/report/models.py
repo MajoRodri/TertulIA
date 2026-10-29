@@ -36,11 +36,18 @@ class ReportSource(BaseModel):
     retrieved_at: str = ""
 
 
+class ReportFinding(BaseModel):
+    claim: str
+    value: float | int | None = None
+    unit: str | None = None
+
+
 class ReportData(BaseModel):
     brief: ReportBrief
     debate: list[AgentMessage]
     verdict: Verdict
     sources: list[ReportSource] = []
+    findings: list[ReportFinding] = []
     generated_on: date = date.today()
     job_id: str = "N/A"
     simulated: bool = False

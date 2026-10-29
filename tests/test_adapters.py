@@ -7,6 +7,7 @@ from tertulia.tools.adapters import (
     artifact_finding,
     break_even_input_from_profile,
     break_even_to_findings,
+    mcp_response_to_sources_and_findings,
     trace_from_break_even,
     trace_from_execution,
 )
@@ -174,3 +175,43 @@ def test_build_cost_labels_from_profile():
     assert labels["rent"] == "Alquiler del local"
     assert "staff" in labels
     assert len(labels) == len(profile.fixed_cost_items)
+
+
+def test_mcp_response_basic():
+    response = {
+        "category": "cafe",  # raw value from the MCP server
+        "total": 12,
+        "confirmed_count": 8,
+        "needs_review_count": 2,
+        "foursquare_status": "not_used",
+    }
+    sources, findings, summary = mcp_response_to_sources_and_findings(response)
+    assert len(sources) == 1  # OSM only
+    assert sources[0].id == "src-001"
+    assert any(f.value == 8 for f in findings)
+    assert any(f.value == 2 for f in findings)
+    confirmed_finding = next(f for f in findings if f.value == 8)
+    assert "cafeterías confirmadas" in confirmed_finding.claim  # feminine agreement
+    assert "cafeterías" in summary
+
+
+def test_mcp_response_with_foursquare_adds_second_source():
+    response = {
+        "category": "bares",
+        "total": 5,
+        "confirmed_count": 3,
+        "foursquare_status": "used",
+    }
+    sources, findings, _ = mcp_response_to_sources_and_findings(response)
+    assert len(sources) == 2
+    titles = {s.title for s in sources}
+    assert "Foursquare Places API" in titles
+
+
+def test_mcp_response_start_index_is_respected():
+    response = {"category": "coworking", "total": 4, "confirmed_count": 4}
+    sources, findings, _ = mcp_response_to_sources_and_findings(
+        response, start_source_index=3, start_finding_index=7
+    )
+    assert sources[0].id == "src-003"
+    assert findings[0].id == "fnd-007"
