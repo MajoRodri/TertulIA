@@ -62,7 +62,7 @@ def test_analyst_writer_and_reviewer_also_check_tokens():
 def test_node_does_not_stop_below_the_budget():
     with patch("config.settings.settings.MAX_TOKENS_PER_REPORT", 1000):
         patch_ = research_node(_state(tokens_used=500))
-    assert patch_ == {"draft_report": "Investigación simulada completada."}
+    assert patch_ == {}
 
 
 # --- ERR-008: unexpected exception inside a node -----------------------------

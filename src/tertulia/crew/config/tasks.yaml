@@ -141,6 +141,8 @@ review_task:
 
     Contexto que la persona usuaria contó en el chat: {chat_context}
 
+    Resumen real de datos de competidores (MCP): {mcp_research_summary}
+
     Comprueba que cada cifra del borrador aparece en la investigación, en el
     análisis o en el contexto del chat (en ese caso, marcada como "dato aportado
     por la persona usuaria"), que no hay contradicciones, que los datos que

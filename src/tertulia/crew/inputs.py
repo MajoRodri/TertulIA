@@ -35,6 +35,7 @@ TASK_INPUT_KEYS: frozenset[str] = frozenset(
         "review_feedback",
         # De la interfaz (main.py, Majo): lo que la persona usuaria contó en el chat
         "chat_context",
+        "mcp_research_summary",
     }
 )
 
