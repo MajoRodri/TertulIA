@@ -22,8 +22,8 @@ from tertulia.schemas import Finding, TraceEntry
 
 from .errors import (
     GRAPH_INTERNAL,
-    MISSING_DATA,
     TOKEN_BUDGET_EXHAUSTED,
+    TOOL_FAILURE,
     ErrorEntry,
     ErrorSeverity,
 )
@@ -183,7 +183,7 @@ def vision_charts_node(state: AgentState) -> dict:
         except (ImageRejected, AnalysisFailed) as exc:
             new_errors.append(
                 ErrorEntry(
-                    code=MISSING_DATA,
+                    code=TOOL_FAILURE,
                     node="vision_charts",
                     severity=ErrorSeverity.DEGRADABLE,
                     message=f"No se pudo analizar el gráfico {path}.",
@@ -196,7 +196,7 @@ def vision_charts_node(state: AgentState) -> dict:
         if analysis.kind != "chart":
             new_errors.append(
                 ErrorEntry(
-                    code=MISSING_DATA,
+                    code=TOOL_FAILURE,
                     node="vision_charts",
                     severity=ErrorSeverity.DEGRADABLE,
                     message=f"El modelo no clasificó {path} como gráfico.",

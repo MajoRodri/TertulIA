@@ -5,7 +5,7 @@ Mockean analyse_image y llm_from_settings para no llamar al modelo real.
 
 import pytest
 
-from tertulia.graph.errors import ErrorSeverity
+from tertulia.graph.errors import TOOL_FAILURE, ErrorSeverity
 from tertulia.graph.nodes import vision_charts_node
 from tertulia.graph.state import AgentState
 from tertulia.schemas import Finding
@@ -152,6 +152,7 @@ def test_analysis_failure_records_error(monkeypatch, fake_llm):
     assert "traces" not in patch
     assert len(patch["errors"]) == 1
     assert patch["errors"][0].severity == ErrorSeverity.DEGRADABLE
+    assert patch["errors"][0].code == TOOL_FAILURE
     assert "break_even.png" in patch["errors"][0].message
 
 
@@ -169,6 +170,7 @@ def test_rejected_image_records_error(monkeypatch, fake_llm):
     assert "findings" not in patch
     assert len(patch["errors"]) == 1
     assert patch["errors"][0].severity == ErrorSeverity.DEGRADABLE
+    assert patch["errors"][0].code == TOOL_FAILURE
 
 
 def test_classified_as_photo_records_error(monkeypatch, fake_llm):
