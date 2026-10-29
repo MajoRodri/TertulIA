@@ -1,7 +1,7 @@
 # TertulIA
 
 --
-## README-HELEN · Aportaciones de Helen para el README de TertulIA
+# README-HELEN · Aportaciones de Helen para el README de TertulIA
 
 > Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Lo iré actualizando a medida que termine cada paso.
 >
@@ -19,6 +19,8 @@
 | Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67, tabla de precios / price table 29 oct) |
 | Informe completo y Overpass más rápido / Full report and faster Overpass | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #69) |
 | Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Aprobado / Approved |
+| Fuentes de datos / Data sources (#34) | `docs/fuentes-de-datos.md` | 🔄 En PR / In PR |
+| Ética y gobernanza / Ethics and governance (#35) | `docs/etica-y-gobernanza.md` | 🔄 En PR / In PR |
 
 ---
 
@@ -186,6 +188,8 @@ Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competi
 **Tests:** 51 (15 del formato, 11 de la carga y 25 de la herramienta), con un modelo falso y sin gastar llamadas.
 
 ## 6. Seguridad y gobernanza (aportaciones)
+
+Detalle completo en `docs/etica-y-gobernanza.md` (qué no delegamos en la IA, riesgos y límites) y `docs/fuentes-de-datos.md` (cada fuente con sus términos de uso y límites).
 
 - Defensa en capas contra prompt injection: filtro por reglas + envoltorio de datos + herramientas de solo lectura + aprobación humana antes de cualquier acción con impacto.
 - **Roadmap (datos):** en producción, cargar el extracto de OpenStreetMap de Madrid en una base de datos propia con búsqueda geográfica (por ejemplo, PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos y sin depender del servidor público de Overpass. Opcionalmente, un servidor MCP siempre encendido por HTTP y los informes como tareas en segundo plano.
@@ -358,6 +362,8 @@ Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and
 **Tests:** 51 (15 for the format, 11 for loading and 25 for the tool), with a fake model and no API calls.
 
 ## 6. Security and governance (contributions)
+
+Full detail in `docs/etica-y-gobernanza.md` (what we do not delegate to AI, risks and limits) and `docs/fuentes-de-datos.md` (each source with its terms of use and limits).
 
 - Defence in layers against prompt injection: rule-based guard + data wrapping + read-only tools + human approval before any high-impact action.
 - **Roadmap (data):** in production, load the Madrid OpenStreetMap extract into our own database with geographic search (for example, PostgreSQL + PostGIS), refreshed every night: millisecond queries without depending on the public Overpass server. Optionally, an always-on MCP server over HTTP and reports as background jobs.
