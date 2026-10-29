@@ -47,3 +47,6 @@ class AgentState(TypedDict):
     # 10. Contexto del chat (Issue #12). Se inyecta antes de reanudar.
     chat_context: str
     chat_context_applied: bool
+
+    # 11. Resumen de texto generado por el adapter MCP (Issue #12).
+    mcp_research_summary: str

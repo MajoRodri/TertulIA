@@ -88,7 +88,6 @@ def test_graph_pauses_twice_and_applies_chat_context():
     state = app.get_state(config)
     assert state.next == ("human_approval",)
     assert state.values["chat_context_applied"] is True
-    assert state.values["draft_report"] == "Borrador de informe simulado."
 
     # 4. Aprobación final
     app.update_state(config, {"human_approved": True})

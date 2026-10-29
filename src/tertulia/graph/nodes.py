@@ -82,8 +82,8 @@ def research_node(state: AgentState) -> dict:
         return _record_error(state, _budget_error("research"))
 
     try:
-        print("[NODO] Investigador: buscando fuentes...")
-        return {"draft_report": "Investigación simulada completada."}
+        print("[NODO] Investigador: procesando datos recibidos...")
+        return {}
     except Exception as exc:  # noqa: BLE001 - any failure must not crash the graph
         print(f"[NODO] Investigador: error interno ({exc}).")
         return _record_error(state, _internal_error("research", exc))
@@ -95,8 +95,8 @@ def analyst_node(state: AgentState) -> dict:
         return _record_error(state, _budget_error("analyst"))
 
     try:
-        print("[NODO] Analista: calculando cifras...")
-        return {"draft_report": "Análisis simulado completado."}
+        print("[NODO] Analista: procesando análisis...")
+        return {}
     except Exception as exc:  # noqa: BLE001
         print(f"[NODO] Analista: error interno ({exc}).")
         return _record_error(state, _internal_error("analyst", exc))
@@ -108,8 +108,8 @@ def writer_node(state: AgentState) -> dict:
         return _record_error(state, _budget_error("writer"))
 
     try:
-        print("[NODO] Redactor: redactando el informe...")
-        patch = {"draft_report": "Borrador de informe simulado."}
+        print("[NODO] Redactor: procesando redacción...")
+        patch = {}
         # Si estamos en la segunda pasada con el chat, marcamos el flag para no repetir
         if state.get("chat_context"):
             patch["chat_context_applied"] = True

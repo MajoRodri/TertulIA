@@ -376,12 +376,16 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     graph_config = {"configurable": {"thread_id": job_id}}
     graph_state = {
         "request": brief,
-        "sources": [], "findings": [], "draft_report": "",
+        "sources": _jobs[job_id].get("mcp_sources", []), 
+        "findings": _jobs[job_id].get("mcp_findings", []), 
+        "draft_report": "",
         "review_round": 0, "reviewer_comments": [],
         "verdict": _jobs[job_id]["verdict"],
         "traces": [], "tokens_used": 0,
         "human_approved": False, "expired": False, "errors": [],
         "research_result": "", "vision_result": "", "analysis_result": "",
+        "chat_context": "", "chat_context_applied": False,
+        "mcp_research_summary": "",
     }
     await asyncio.to_thread(_graph.invoke, graph_state, graph_config)
     yield f"data: {json.dumps({'paused': True})}\n\n"
@@ -908,6 +912,7 @@ async def approve(job_id: str, req: ApproveRequest):
         if context_parts:
             from tertulia.guardrails.anonimizacion import _scrub
             state_update["chat_context"] = _scrub("\n\n".join(context_parts))
+        state_update["mcp_research_summary"] = "\n".join(job.get("mcp_research_summary", []))
         await asyncio.to_thread(_graph.update_state, graph_config, state_update)
         try:
             final = await asyncio.wait_for(
