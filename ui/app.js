@@ -2,7 +2,7 @@ import { runDebate, renderStoredDebate } from "./components/debate.js";
 import { showVerdict }  from "./components/verdict.js";
 import { initApproval } from "./components/approval.js";
 import { initChat, runChatVision, renderChatHistory } from "./components/chat.js";
-import { startAnalysis, uploadImages, getJobState } from "./api.js";
+import { startAnalysis, uploadImages, uploadDocuments, getJobState } from "./api.js";
 import { initCustomSelects } from "./components/custom-select.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -299,7 +299,7 @@ async function runFlowFrom(jobId, startStep, state = null) {
   if (startStep <= 3) {
     showPanel("panel-chat");
     if (state?.chat_history?.length) renderChatHistory(state.chat_history);
-    await initChat(jobId, chatPicker);
+    await initChat(jobId, chatPicker, chatDocPicker);
     const chatFiles = chatPicker.files();
     if (chatFiles.length) {
       await uploadImages(jobId, chatFiles);
@@ -354,7 +354,10 @@ async function tryRestoreSession() {
 tryRestoreSession().catch(console.error);
 
 // ── Abandon analysis ──────────────────────────────────────────
+let _analysisAbandoned = false;
+
 document.getElementById("btn-exit").addEventListener("click", () => {
+  _analysisAbandoned = true;
   clearSession();
   location.reload();
 });
@@ -438,6 +441,98 @@ function attachImagePicker(inputId, hintId, previewId) {
 const formPicker = attachImagePicker("images",      "images-hint",      "images-preview");
 const chatPicker = attachImagePicker("chat-images", "chat-images-hint", "chat-images-preview");
 
+// ── Document picker ───────────────────────────────────────────
+const MAX_DOC_MB    = 5;
+const MAX_DOC_BYTES = MAX_DOC_MB * 1024 * 1024;
+const ALLOWED_DOC_TYPES = new Set(["application/pdf", "text/markdown", "text/plain"]);
+const ALLOWED_DOC_EXTS  = new Set([".pdf", ".md"]);
+
+function validateDocFiles(files) {
+  for (const f of files) {
+    const ext = f.name.slice(f.name.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_DOC_EXTS.has(ext))
+      return `"${f.name}" no está permitido. Solo se aceptan PDF y Markdown (.md).`;
+    if (f.size > MAX_DOC_BYTES)
+      return `"${f.name}" supera los ${MAX_DOC_MB} MB permitidos.`;
+  }
+  return null;
+}
+
+function attachDocPicker(inputId, typeSelectId, hintId, previewId) {
+  const input    = document.getElementById(inputId);
+  const select   = document.getElementById(typeSelectId);
+  const hint     = document.getElementById(hintId);
+  const preview  = document.getElementById(previewId);
+  const managed  = [];   // { file: File, type: string }[]
+
+  select?.classList.add("hidden");
+
+  function syncSelectVisibility() {
+    if (!select) return;
+    select.classList.toggle("hidden", managed.length === 0);
+  }
+
+  function updateHint() {
+    if (!hint) return;
+    hint.style.color = "";
+    hint.textContent = managed.length > 0
+      ? `${managed.length} ${managed.length === 1 ? "documento seleccionado" : "documentos seleccionados"}`
+      : "PDF o Markdown · máx. 5 MB · solo documentos del negocio";
+  }
+
+  function render() {
+    if (!preview) return;
+    preview.innerHTML = "";
+    managed.forEach(({ file }, i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "doc-thumb-wrap";
+      wrap.innerHTML = `
+        <svg class="doc-thumb-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="doc-thumb-name">${file.name}</span>
+        <button type="button" class="image-thumb-remove" aria-label="Eliminar ${file.name}">×</button>`;
+      wrap.querySelector(".image-thumb-remove").addEventListener("click", () => {
+        managed.splice(i, 1);
+        render();
+        updateHint();
+        syncSelectVisibility();
+      });
+      preview.appendChild(wrap);
+    });
+    syncSelectVisibility();
+  }
+
+  // Show the type selector as soon as the user opens the file picker
+  input?.addEventListener("click", () => select?.classList.remove("hidden"));
+
+  input?.addEventListener("change", (e) => {
+    const incoming = Array.from(e.target.files ?? []);
+    const err = validateDocFiles(incoming);
+    if (err) {
+      if (hint) { hint.textContent = err; hint.style.color = "var(--rojo)"; }
+      e.target.value = "";
+      syncSelectVisibility();
+      return;
+    }
+    const currentType = select?.value || "otro";
+    for (const f of incoming) {
+      if (!managed.some(x => x.file.name === f.name && x.file.size === f.size))
+        managed.push({ file: f, type: currentType });
+    }
+    e.target.value = "";
+    render();
+    updateHint();
+  });
+
+  return {
+    files:  () => managed.map(x => x.file),
+    types:  () => managed.map(x => x.type),
+    clear() { managed.length = 0; render(); updateHint(); syncSelectVisibility(); },
+  };
+}
+
+const formDocPicker = attachDocPicker("form-docs", "form-doc-type", "form-docs-hint", "form-docs-preview");
+const chatDocPicker = attachDocPicker("chat-docs", "chat-doc-type", "chat-docs-hint", "chat-docs-preview");
+
 // ── Brief summary (panel 1 read-only view) ────────────────────
 const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
 
@@ -477,8 +572,8 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   btn.textContent = "Analizando…";
 
   const brief = {
-    business_type: document.getElementById("sector").value,
-    neighbourhood: document.getElementById("neighborhood").value,
+    business_type: document.getElementById("sector")?.value ?? "",
+    neighbourhood: document.getElementById("neighborhood")?.value ?? "",
     budget_eur:    parseFloat(document.getElementById("budget")?.value) || null,
     area_m2:       parseFloat(document.getElementById("area")?.value)   || null,
     radius_m:      parseInt(document.getElementById("radius")?.value)   || 800,
@@ -489,18 +584,29 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
   try {
     const { job_id: jobId } = await startAnalysis(brief);
 
+    closeLauncher();
+    activateMainUI();
+
+    populateBriefSummary(brief, formPicker.files());
+    showPanel("panel-encargo");
+    setStep(1, "active");
+
     const formFiles = formPicker.files();
     if (formFiles.length) await uploadImages(jobId, formFiles);
 
-    closeLauncher();
-    activateMainUI();
-    showLoading();
-
-    populateBriefSummary(brief, formPicker.files());
+    const formDocs = formDocPicker.files();
+    if (formDocs.length) {
+      const result = await uploadDocuments(jobId, formDocs, formDocPicker.types());
+      if (result.rejected?.length) {
+        const msg = result.rejected.join("\n");
+        alert(`Algunos documentos no se pudieron incluir:\n\n${msg}`);
+      }
+    }
 
     await runFlowFrom(jobId, 2, null);
 
   } catch (err) {
+    if (_analysisAbandoned) return;
     console.error(err);
     btn.disabled = false;
     btn.textContent = "Analizar →";

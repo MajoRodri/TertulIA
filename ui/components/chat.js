@@ -21,18 +21,22 @@ export function renderChatHistory(chatHistory) {
   }
 }
 
-export function initChat(jobId, imagePicker = null) {
+export function initChat(jobId, imagePicker = null, docPicker = null) {
   const input       = document.getElementById("chat-input");
   const btnSend     = document.getElementById("btn-chat-send");
   const btnContinue = document.getElementById("btn-chat-continue");
   const fileInput   = document.getElementById("chat-images");
+  const docInput    = document.getElementById("chat-docs");
 
-  const getFiles  = () => imagePicker ? imagePicker.files() : [];
-  const clearFiles = () => imagePicker?.clear();
+  const getFiles    = () => imagePicker ? imagePicker.files() : [];
+  const clearFiles  = () => imagePicker?.clear();
+  const getDocs     = () => docPicker ? docPicker.files() : [];
+  const getDocTypes = () => docPicker ? docPicker.types() : [];
+  const clearDocs   = () => docPicker?.clear();
 
   return new Promise((resolve) => {
     btnContinue.addEventListener("click", function handler() {
-      if (input.value.trim() || getFiles().length) {
+      if (input.value.trim() || getFiles().length || getDocs().length) {
         const ok = window.confirm("Tienes contenido sin enviar. ¿Continuar al veredicto de todas formas?");
         if (!ok) return;
       }
@@ -46,12 +50,15 @@ export function initChat(jobId, imagePicker = null) {
     });
 
     async function handleSend() {
-      const text  = input.value.trim();
-      const files = getFiles();
-      if (!text && !files.length) return;
+      const text     = input.value.trim();
+      const files    = getFiles();
+      const docs     = getDocs();
+      const docTypes = getDocTypes();
+      if (!text && !files.length && !docs.length) return;
       input.value = "";
       clearFiles();
-      appendUserMessage(text, files);
+      clearDocs();
+      appendUserMessage(text, files, docs);
       setInputLocked(true);
       try {
         await sendChatMessage(jobId, text, files, (msg) => {
@@ -63,7 +70,7 @@ export function initChat(jobId, imagePicker = null) {
             removeTypingIndicator();
             appendAgentMessage(msg);
           }
-        });
+        }, docs, docTypes);
       } finally {
         removeTypingIndicator();
         setInputLocked(false);
@@ -75,6 +82,7 @@ export function initChat(jobId, imagePicker = null) {
       input.disabled   = locked;
       btnSend.disabled = locked;
       if (fileInput) fileInput.disabled = locked;
+      if (docInput)  docInput.disabled  = locked;
       if (locked) btnSend.textContent = "Enviando…";
       else        btnSend.textContent = "Enviar";
     }
@@ -116,7 +124,7 @@ function removeTypingIndicator() {
   document.getElementById("chat-typing")?.remove();
 }
 
-function appendUserMessage(text, files = []) {
+function appendUserMessage(text, files = [], docs = []) {
   const feed = document.getElementById("chat-feed");
   const el = document.createElement("div");
   el.className = "chat-message user";
@@ -130,6 +138,12 @@ function appendUserMessage(text, files = []) {
     img.onload  = () => URL.revokeObjectURL(url);
     img.onerror = () => URL.revokeObjectURL(url);
     bubble.appendChild(img);
+  }
+  for (const doc of docs) {
+    const badge = document.createElement("div");
+    badge.className = "doc-badge";
+    badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> ${esc(doc.name)}`;
+    bubble.appendChild(badge);
   }
   if (text) {
     const span = document.createElement("span");

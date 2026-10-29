@@ -386,16 +386,160 @@ def _sanitize_chat_image(mime: str, data: bytes) -> tuple[str, bytes]:
         raise ValueError("invalid image") from exc
 
 
+# ── Document upload helpers ────────────────────────────────────
+MAX_DOC_MB    = 5
+MAX_DOC_BYTES = MAX_DOC_MB * 1024 * 1024
+MAX_PDF_PAGES = 20
+MAX_DOC_CHARS = 50_000
+
+_DOC_TYPE_LABELS: dict[str, str] = {
+    "plan_negocio":          "Plan de negocio",
+    "proyeccion_financiera": "Proyección financiera",
+    "estudio_mercado":       "Estudio de mercado",
+    "contrato":              "Contrato / local",
+    "presupuesto":           "Presupuesto de obra",
+    "otro":                  "Otro documento",
+}
+
+
+def _extract_document_text(filename: str, mime: str, data: bytes) -> str:
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext in ("md", "txt") or mime in ("text/markdown", "text/plain"):
+        return data.decode("utf-8", errors="replace")[:MAX_DOC_CHARS]
+    if ext == "pdf" or mime == "application/pdf":
+        from pypdf import PdfReader  # type: ignore[import-untyped]
+        reader = PdfReader(io.BytesIO(data))
+        if len(reader.pages) > MAX_PDF_PAGES:
+            raise ValueError(f"el PDF tiene {len(reader.pages)} páginas (máximo {MAX_PDF_PAGES})")
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        if not text.strip():
+            raise ValueError("el PDF no contiene texto extraíble (puede ser un PDF escaneado)")
+        return text[:MAX_DOC_CHARS]
+    raise ValueError(f"formato no soportado: {ext or mime}")
+
+
+def _classify_document(llm, text: str, declared_type: str, brief) -> tuple[bool, str]:
+    """Returns (is_valid, category_or_rejection_reason)."""
+    label = _DOC_TYPE_LABELS.get(declared_type, declared_type)
+    prompt = (
+        f"Clasifica si el siguiente documento es relevante para un análisis de viabilidad "
+        f"de un negocio de tipo '{brief.business_type}' en {brief.neighbourhood}.\n"
+        f"El usuario lo ha declarado como: {label}.\n\n"
+        f"FRAGMENTO DEL DOCUMENTO:\n{text[:1500]}\n\n"
+        "Responde EXACTAMENTE con una sola línea:\n"
+        "VÁLIDO: <categoría breve>   — si es relevante para el análisis de negocio\n"
+        "INVÁLIDO: <motivo breve>    — si no tiene relación con el negocio analizado"
+    )
+    messages = [
+        {"role": "system", "content": (
+            "Eres un clasificador de documentos. Responde solo con VÁLIDO o INVÁLIDO "
+            "seguido de dos puntos y una descripción breve en español."
+        )},
+        {"role": "user", "content": prompt},
+    ]
+    try:
+        response = llm.call(messages)
+        if not isinstance(response, str):
+            response = getattr(response, "content", str(response))
+        response = response.strip()
+        upper = response.upper()
+        if upper.startswith("VÁLIDO") or upper.startswith("VALIDO"):
+            category = response.split(":", 1)[-1].strip() if ":" in response else label
+            return True, category
+        reason = response.split(":", 1)[-1].strip() if ":" in response else response
+        return False, reason
+    except Exception:
+        log.exception("Document classification failed — accepting as fallback")
+        return True, label  # fail-open: no bloquear al usuario si falla la clasificación
+
+
+async def _process_documents(
+    uploads: list[UploadFile],
+    doc_types: list[str] | None,
+    brief,
+    llm,
+) -> tuple[str, list[str]]:
+    """Extracts, validates, and classifies uploaded documents.
+
+    Returns (combined_text, rejection_messages).
+    """
+    accepted: list[str] = []
+    rejected: list[str] = []
+
+    for i, upload in enumerate(uploads):
+        declared_type = (doc_types or [])[i] if doc_types and i < len(doc_types) else "otro"
+        raw = await upload.read()
+
+        if len(raw) > MAX_DOC_BYTES:
+            rejected.append(f'"{upload.filename}" supera los {MAX_DOC_MB} MB permitidos')
+            continue
+
+        try:
+            text = await asyncio.to_thread(
+                _extract_document_text,
+                upload.filename or "",
+                upload.content_type or "",
+                raw,
+            )
+        except ValueError as exc:
+            rejected.append(f'"{upload.filename}": {exc}')
+            continue
+
+        is_valid, category_or_reason = await asyncio.to_thread(
+            _classify_document, llm, text, declared_type, brief
+        )
+        if not is_valid:
+            rejected.append(
+                f'"{upload.filename}" no parece relevante para este análisis: {category_or_reason}'
+            )
+            continue
+
+        label = _DOC_TYPE_LABELS.get(declared_type, declared_type)
+        accepted.append(f"[{label} — {upload.filename}]\n{text}")
+
+    combined = "\n\n---\n\n".join(accepted)
+    return combined, rejected
+
+
+@app.post("/api/documents/{job_id}")
+async def upload_documents(
+    job_id: str,
+    files: Annotated[list[UploadFile], File(...)],
+    doc_types: Annotated[list[str] | None, Form()] = None,
+):
+    """Validates and stores documents uploaded from the Step 1 form."""
+    if job_id not in _jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job = _jobs[job_id]
+    brief = job["brief"]
+
+    from tertulia.crew.crew import llm_from_settings
+    llm = llm_from_settings()
+
+    combined, rejected = await _process_documents(files, doc_types, brief, llm)
+
+    if combined:
+        existing = job.get("doc_context", "")
+        job["doc_context"] = (existing + "\n\n" + combined).strip() if existing else combined
+        brief.doc_context = job["doc_context"]
+
+    return {"accepted": combined.count("---") + 1 if combined else 0, "rejected": rejected}
+
+
 @app.post("/api/chat/{job_id}")
 async def chat(
     job_id: str,
     message: str = Form(...),
     images: Annotated[list[UploadFile] | None, File()] = None,
+    documents: Annotated[list[UploadFile] | None, File()] = None,
+    doc_types: Annotated[list[str] | None, Form()] = None,
 ):
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
+    job = _jobs[job_id]
+
     image_data: list[tuple[str, bytes]] = []
-    rejected = 0
+    rejected_images = 0
     for img in (images or []):
         raw = await img.read()
         try:
@@ -404,9 +548,24 @@ async def chat(
             )
             image_data.append((mime, clean))
         except ValueError:
-            rejected += 1
+            rejected_images += 1
+
+    chat_doc_text = ""
+    rejected_docs: list[str] = []
+    if documents:
+        from tertulia.crew.crew import llm_from_settings
+        brief = job["brief"]
+        chat_doc_text, rejected_docs = await _process_documents(
+            documents, doc_types, brief, llm_from_settings()
+        )
+
     return StreamingResponse(
-        _stream_chat(job_id, message, image_data, rejected_count=rejected),
+        _stream_chat(
+            job_id, message, image_data,
+            rejected_count=rejected_images,
+            chat_doc_text=chat_doc_text,
+            rejected_docs=rejected_docs,
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -422,6 +581,7 @@ def _build_chat_system_prompt(job: dict) -> str:
         f"  {'Usuario' if h['role'] == 'user' else 'Asistente'}: {h['text']}"
         for h in (job.get("chat_history") or [])[:-1]  # exclude the current message
     )
+    doc_context = job.get("doc_context", "")
     return (
         "Eres un equipo de consultores expertos en viabilidad de negocios. "
         "Responde en español de forma clara, directa y profesional. "
@@ -432,7 +592,8 @@ def _build_chat_system_prompt(job: dict) -> str:
         f"  Presupuesto: {brief.budget_eur} EUR\n"
         f"  Superficie: {brief.area_m2} m²\n"
         f"  Notas del usuario: {brief.notes or '(ninguna)'}\n\n"
-        f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
+        + (f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}\n\n" if doc_context else "")
+        + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
         + (f"CONVERSACIÓN PREVIA:\n{history_lines}\n\n" if history_lines else "")
         + "Responde a la siguiente pregunta o comentario del usuario."
     )
@@ -443,14 +604,26 @@ async def _stream_chat(
     message: str,
     image_data: list[tuple[str, bytes]] | None = None,
     rejected_count: int = 0,
+    chat_doc_text: str = "",
+    rejected_docs: list[str] | None = None,
 ) -> AsyncGenerator[str, None]:
     job = _jobs[job_id]
-    job.setdefault("chat_history", []).append({"role": "user", "text": message})
+
+    # Build the history label so the context passed to CrewAI at approval reflects attachments
+    notes: list[str] = []
+    if image_data:
+        n = len(image_data)
+        notes.append(f"[{n} imagen{'es' if n > 1 else ''} adjunta{'s' if n > 1 else ''}]")
+    if chat_doc_text:
+        notes.append("[documento adjunto]")
+    user_history_text = f"{' '.join(notes)} {message}".strip() if notes else message
+    job.setdefault("chat_history", []).append({"role": "user", "text": user_history_text})
 
     if rejected_count:
         noun = "imagen" if rejected_count == 1 else f"{rejected_count} imágenes"
-        warning = f"No se pudo incluir {noun}: solo se aceptan JPEG y PNG válidos."
-        yield f"data: {json.dumps({'warning': warning})}\n\n"
+        yield f"data: {json.dumps({'warning': f'No se pudo incluir {noun}: solo se aceptan JPEG y PNG válidos.'})}\n\n"
+    for doc_warning in (rejected_docs or []):
+        yield f"data: {json.dumps({'warning': doc_warning})}\n\n"
 
     yield f"data: {json.dumps({'thinking': True, 'agent': 'analyst', 'name': 'Analista'})}\n\n"
 
@@ -461,11 +634,22 @@ async def _stream_chat(
         llm = llm_from_settings()
         system_prompt = _build_chat_system_prompt(job)
 
-        if image_data:
-            user_content: str | list = [{"text": message}]
-            for mime, data in image_data:
+        # Build user content: always a list if there are images or doc text
+        if image_data or chat_doc_text:
+            msg_text = message
+            if chat_doc_text:
+                msg_text = (
+                    f"{message}\n\nDOCUMENTO ADJUNTO:\n{chat_doc_text}"
+                    if message else
+                    f"DOCUMENTO ADJUNTO:\n{chat_doc_text}"
+                )
+            user_content: str | list = [{"type": "text", "text": msg_text}]
+            for mime, data in (image_data or []):
                 b64 = base64.b64encode(data).decode()
-                user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime};base64,{b64}"},
+                })
         else:
             user_content = message
 
@@ -603,11 +787,18 @@ async def approve(job_id: str, req: ApproveRequest):
     if not job.get("is_demo"):
         state_update: dict = {"human_approved": req.approved}
         chat_history = job.get("chat_history", [])
+        doc_context = job.get("doc_context", "")
+        context_parts: list[str] = []
+        if doc_context:
+            context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
         if chat_history:
-            state_update["chat_context"] = "\n".join(
+            history_text = "\n".join(
                 f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
                 for h in chat_history
             )
+            context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+        if context_parts:
+            state_update["chat_context"] = "\n\n".join(context_parts)
         await asyncio.to_thread(_graph.update_state, graph_config, state_update)
         try:
             final = await asyncio.wait_for(

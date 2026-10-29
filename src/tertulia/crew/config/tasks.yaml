@@ -25,9 +25,18 @@ research_task:
 
     Responde a estas preguntas: {research_questions}
 
-    Usa solo las herramientas que tienes. Para cada dato indica la fuente
-    (título, enlace y herramienta usada). Si una pregunta no se puede responder
-    con datos, escríbelo como "sin dato". No inventes nombres, cifras ni enlaces.
+    Contexto adicional aportado por la persona usuaria: {notes}
+
+    Documentos aportados por la persona usuaria: {doc_context}
+
+    Si extraes datos del contexto o de los documentos, cítalos como fuente
+    ("Dato aportado por la persona usuaria"). No los mezcles con los datos de
+    las herramientas de búsqueda.
+
+    Usa solo las herramientas que tienes para datos externos. Para cada dato
+    indica la fuente (título, enlace y herramienta usada). Si una pregunta no
+    se puede responder con datos, escríbelo como "sin dato". No inventes
+    nombres, cifras ni enlaces.
   expected_output: >-
     Una lista de hallazgos. Cada hallazgo tiene: la afirmación en español, el
     valor y su unidad si es una cifra, y la fuente de la que sale. Al final, la
@@ -54,7 +63,9 @@ analysis_task:
     Costes fijos mensuales que necesitas: {fixed_cost_items}
 
     Datos aportados por la persona usuaria: presupuesto inicial {budget};
-    alquiler conocido {known_rent}.
+    alquiler conocido {known_rent}; contexto: {notes}.
+
+    Documentos aportados: {doc_context}
 
     Resultado de la investigación:
     {research_result}
@@ -76,6 +87,10 @@ writing_task:
   description: >-
     Redacta en español el informe de viabilidad de un {display_name} en
     {neighbourhood} ({city}) a partir de estos resultados.
+
+    Contexto adicional de la persona usuaria: {notes}
+
+    Documentos aportados: {doc_context}
 
     Investigación:
     {research_result}

@@ -18,6 +18,8 @@ TASK_INPUT_KEYS: frozenset[str] = frozenset(
         "budget",
         "known_rent",
         "radius_m",
+        "notes",
+        "doc_context",
         # Del perfil de sector (config/sectores/<business_type>.yaml)
         "display_name",
         "unit_label",
@@ -77,6 +79,8 @@ def build_inputs(
         "budget": _money(brief.budget_eur),
         "known_rent": _money(brief.known_rent_eur),
         "radius_m": str(brief.radius_m),
+        "notes": _text(brief.notes, NO_DATA),
+        "doc_context": _text(brief.doc_context, "ninguno"),
         "display_name": profile.display_name,
         "unit_label": profile.unit_label,
         "competitor_categories": ", ".join(profile.competitor_categories),
