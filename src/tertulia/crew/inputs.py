@@ -31,6 +31,8 @@ TASK_INPUT_KEYS: frozenset[str] = frozenset(
         "analysis_result",
         "draft_report",
         "review_feedback",
+        # De la interfaz (main.py, Majo): lo que la persona usuaria contó en el chat
+        "chat_context",
     }
 )
 
@@ -39,6 +41,7 @@ NO_DATA = "sin dato"
 NO_IMAGES = "ninguna"
 NO_RESULT = "todavía no disponible"
 FIRST_DRAFT = "ninguno (primera redacción)"
+NO_CONTEXT = "ninguno"
 
 
 def _bullets(items: list[str]) -> str:
@@ -64,10 +67,12 @@ def build_inputs(
     analysis_result: str | None = None,
     draft_report: str | None = None,
     review_feedback: list[str] | None = None,
+    chat_context: str | None = None,
 ) -> dict[str, str]:
     """Devuelve las variables de TASK_INPUT_KEYS, todas como texto y ninguna vacía.
 
     ``images``: si no se pasa, se usan las fotos del encargo (``brief.image_paths``).
+    ``chat_context``: texto del chat de contexto, ya anonimizado por quien llama.
     """
     if images is None:
         images = brief.image_paths
@@ -88,4 +93,5 @@ def build_inputs(
         "analysis_result": _text(analysis_result, NO_RESULT),
         "draft_report": _text(draft_report, NO_RESULT),
         "review_feedback": _bullets(review_feedback) if review_feedback else FIRST_DRAFT,
+        "chat_context": _text(chat_context, NO_CONTEXT),
     }
