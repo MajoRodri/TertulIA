@@ -230,7 +230,8 @@ def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | No
             vision_result = vision.result()
         except Exception as exc:  # noqa: BLE001 - cualquier fallo de la visión
             logger.warning("Vision task failed, research kept: %s", exc)
-            vision_result = {"vision_task": f"{VISION_FAILED_ANSWER} ({type(exc).__name__}: {exc})"}
+            # El detalle técnico solo va al log: la persona usuaria ve un mensaje claro
+            vision_result = {"vision_task": VISION_FAILED_ANSWER}
         return {**research_result, **vision_result}
 
 
