@@ -1,26 +1,28 @@
 # TertulIA
 
 --
+
 # README-HELEN · Aportaciones de Helen para el README de TertulIA
 
-> Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Lo iré actualizando a medida que termine cada paso.
+> Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Ya está completo: todo lo de esta lista está fusionado.
 >
+> _For Majo: everything from my part that should go into the global `README.md`, in Spanish and English. Take what you need and adapt it to the README format. It is now complete: everything listed here is merged._
 
-**Última actualización / Last update:** 29 oct 2026
+**Última actualización / Last update:** 29 oct 2026 · ✅ **Completo / Complete**: toda mi parte está fusionada en `dev` / all my work is merged into `dev`.
 
-| Módulo / Module | Ruta / Path | Estado / Status |
-| --- | --- | --- |
-| Filtro anti prompt injection / Prompt injection guard | `src/tertulia/guardrails/injection.py` | ✅ Fusionado / Merged |
-| Contratos de datos (propuesta como PO) / Data contracts (proposed as PO) | `src/tertulia/schemas/` | ✅ Fusionado / Merged |
-| Servidor MCP / MCP server `neighbourhood_data` | `src/tertulia/mcp/servers/neighbourhood_data/` | ✅ Fusionado / Merged (PR #49) |
-| Foursquare como segunda fuente / Foursquare as second source | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #64) |
-| `BusinessBrief.image_paths` | `src/tertulia/schemas/models.py` | ✅ Fusionado / Merged (PR #60) |
-| Cliente MCP y servidor fetch / MCP client and fetch server | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py` | ✅ Fusionado / Merged (PR #58) |
-| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67, tabla de precios / price table 29 oct) |
-| Informe completo y Overpass más rápido / Full report and faster Overpass | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #69) |
-| Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Aprobado / Approved |
-| Fuentes de datos / Data sources (#34) | `docs/fuentes-de-datos.md` | 🔄 En PR / In PR |
-| Ética y gobernanza / Ethics and governance (#35) | `docs/etica-y-gobernanza.md` | 🔄 En PR / In PR |
+| Módulo / Module                                                             | Ruta / Path                                                                        | Estado / Status                                                            |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Filtro anti prompt injection / Prompt injection guard                       | `src/tertulia/guardrails/injection.py`                                             | ✅ Fusionado / Merged                                                      |
+| Contratos de datos (propuesta como PO) / Data contracts (proposed as PO)    | `src/tertulia/schemas/`                                                            | ✅ Fusionado / Merged                                                      |
+| Servidor MCP / MCP server `neighbourhood_data`                              | `src/tertulia/mcp/servers/neighbourhood_data/`                                     | ✅ Fusionado / Merged (PR #49)                                             |
+| Foursquare como segunda fuente / Foursquare as second source                | `src/tertulia/mcp/servers/neighbourhood_data/server.py`                            | ✅ Fusionado / Merged (PR #64)                                             |
+| `BusinessBrief.image_paths`                                                 | `src/tertulia/schemas/models.py`                                                   | ✅ Fusionado / Merged (PR #60)                                             |
+| Cliente MCP y servidor fetch / MCP client and fetch server                  | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py`                      | ✅ Fusionado / Merged (PR #58)                                             |
+| Agente de visión / Vision agent                                             | `src/tertulia/vision/`                                                             | ✅ Fusionado / Merged (PR #66, #67, tabla de precios / price table 29 oct) |
+| Informe completo y Overpass más rápido / Full report and faster Overpass    | `src/tertulia/mcp/servers/neighbourhood_data/server.py`                            | ✅ Fusionado / Merged (PR #69)                                             |
+| Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Fusionado / Merged                                                      |
+| Fuentes de datos / Data sources (#34)                                       | `docs/fuentes-de-datos.md`                                                         | ✅ Fusionado / Merged                                                      |
+| Ética y gobernanza / Ethics and governance (#35)                            | `docs/etica-y-gobernanza.md`                                                       | ✅ Fusionado / Merged                                                      |
 
 ---
 
@@ -57,13 +59,13 @@ result.wrapped_text    # texto limpio y envuelto, para el agente
 
 Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Modelos Pydantic que usan todos los módulos:
 
-| Modelo | Qué representa | Nombre en la interfaz |
-| --- | --- | --- |
-| `BusinessBrief` | El encargo (sector, barrio, presupuesto, perfil de usuario) | Km. 0 |
-| `Source` | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché) | La Portera |
-| `Finding` | Cada dato o cifra del informe, con su fuente o el código que lo calculó | Chulapo Analytics |
-| `Verdict` | El semáforo, con confianza, motivos, datos que faltan, avisos y corrección del analista | ¿Mola? |
-| `TraceEntry` | Una línea del log de auditoría | — |
+| Modelo          | Qué representa                                                                          | Nombre en la interfaz |
+| --------------- | --------------------------------------------------------------------------------------- | --------------------- |
+| `BusinessBrief` | El encargo (sector, barrio, presupuesto, perfil de usuario)                             | Km. 0                 |
+| `Source`        | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché)    | La Portera            |
+| `Finding`       | Cada dato o cifra del informe, con su fuente o el código que lo calculó                 | Chulapo Analytics     |
+| `Verdict`       | El semáforo, con confianza, motivos, datos que faltan, avisos y corrección del analista | ¿Mola?                |
+| `TraceEntry`    | Una línea del log de auditoría                                                          | —                     |
 
 **Reglas que imponen (Pydantic da error si no se cumplen):**
 
@@ -80,10 +82,10 @@ La confianza la calcula el grafo con una fórmula fija (`compute_confidence()`),
 
 **Herramientas:**
 
-| Herramienta | Qué hace | Estado |
-| --- | --- | --- |
-| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Busca locales de una categoría (`cafe`, `coworking`) en un radio de 100 a 2.000 m alrededor del centro de un barrio o distrito de Madrid. Devuelve nombre, marca, dirección, coordenadas, horario, fecha de comprobación y enlace a OSM de cada local, más el total, la atribución y la fecha de consulta | ✅ Funciona con OpenStreetMap en directo (22 cafeterías en 800 m alrededor de Atocha, 22 oct). ✅ Reserva con datos guardados y modo demo (Atocha y Delicias) |
-| `search_audience_indicators(neighbourhood, radius_m=800)` | Cuenta los lugares de OSM que atraen a cada tipo de público: `travellers` (estaciones, hoteles, museos), `workers` (oficinas sin coworkings, polígonos), `students` (universidades, bibliotecas), `residents` (supermercados, colegios, centros de salud, farmacias) y `food_leisure` (restaurantes, bares, cines, teatros). Por grupo: `count` sin duplicados y `highlights` (hasta 5 nombres) | ✅ Funciona en directo y en modo demo (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 oct) |
+| Herramienta                                                        | Qué hace                                                                                                                                                                                                                                                                                                                                                                                        | Estado                                                                                                                                                        |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Busca locales de una categoría (`cafe`, `coworking`) en un radio de 100 a 2.000 m alrededor del centro de un barrio o distrito de Madrid. Devuelve nombre, marca, dirección, coordenadas, horario, fecha de comprobación y enlace a OSM de cada local, más el total, la atribución y la fecha de consulta                                                                                       | ✅ Funciona con OpenStreetMap en directo (22 cafeterías en 800 m alrededor de Atocha, 22 oct). ✅ Reserva con datos guardados y modo demo (Atocha y Delicias) |
+| `search_audience_indicators(neighbourhood, radius_m=800)`          | Cuenta los lugares de OSM que atraen a cada tipo de público: `travellers` (estaciones, hoteles, museos), `workers` (oficinas sin coworkings, polígonos), `students` (universidades, bibliotecas), `residents` (supermercados, colegios, centros de salud, farmacias) y `food_leisure` (restaurantes, bares, cines, teatros). Por grupo: `count` sin duplicados y `highlights` (hasta 5 nombres) | ✅ Funciona en directo y en modo demo (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 oct)                                                                           |
 
 **Probarlo a mano:**
 
@@ -95,7 +97,7 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 
 **Decisiones de diseño:**
 
-- **Solo lectura (mínimo privilegio):** el servidor no tiene herramientas que envíen, publiquen o borren nada. Si un texto malicioso engaña al modelo, lo peor que puede pasar es una búsqueda de más (evita la *excessive agency*).
+- **Solo lectura (mínimo privilegio):** el servidor no tiene herramientas que envíen, publiquen o borren nada. Si un texto malicioso engaña al modelo, lo peor que puede pasar es una búsqueda de más (evita la _excessive agency_).
 - Todo texto externo pasa por el filtro anti prompt injection antes de devolverse: cada local lleva `suspicious` e `injection_patterns` (los mismos campos que el schema `Source`). Los locales sospechosos se marcan, no se borran.
 - Transporte **stdio**: el servidor corre en local y las claves de API se leen del `.env`, nunca viajan en los mensajes.
 - **El nombre del barrio se valida antes de usarlo en la consulta** (solo letras, espacios y guiones): lo escribe el modelo, y un nombre con comillas o corchetes podría reescribir la consulta a Overpass (como una inyección SQL).
@@ -112,7 +114,7 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 **Segunda fuente para coworkings: Foursquare (solo en directo).** OpenStreetMap se queda corto en coworkings: en una prueba el 27 oct, a 800 m de Atocha, OSM tenía 2 y Foursquare 9, pero varios de Foursquare eran sedes de empresas, porque allí las categorías las ponen sus usuarios.
 
 - Para coworkings, en directo, el servidor combina OSM y Foursquare **sin repetir locales** (nombre que coincide y a ≤ 75 m).
-- Lo que aparece **solo en Foursquare** lleva `needs_review: true` y un `review_reason`: el sistema no descarta nada, **decide el analista** (*human-in-the-loop*).
+- Lo que aparece **solo en Foursquare** lleva `needs_review: true` y un `review_reason`: el sistema no descarta nada, **decide el analista** (_human-in-the-loop_).
 - Cada local indica sus fuentes (`sources`). La respuesta incluye `confirmed_count` y `needs_review_count` (`total` = confirmados + por revisar), `foursquare_status` (`used`, `failed`, `no_key` o `not_used`) y `foursquare_limit_reached` (Foursquare devolvió su máximo de 50: puede haber más).
 - Si Foursquare falla o responde algo roto (no JSON, sin resultados, campos raros o coordenadas incompletas), la búsqueda sigue solo con OSM (`foursquare_status: "failed"`). Cada campo se valida y las categorías de Foursquare también pasan por el filtro anti prompt injection.
 - **Términos de Foursquare:** no permiten guardar sus datos (solo el identificador) y exigen «Powered by Foursquare». Por eso solo se usa en directo, no se guarda nada y en modo demo, con datos guardados o si falla, se usa solo OSM.
@@ -172,12 +174,12 @@ Agent(..., tools=researcher_tools())
 
 **Hecho (27-28 oct, PR #66 y #67):**
 
-| Pieza | Archivo | Qué hace |
-| --- | --- | --- |
-| Prueba manual | `scripts/try_vision.py` | Manda una foto al modelo real (una llamada) y muestra lo que ve |
-| Formato de respuesta | `vision_schemas.py` | `ImageAnswer`: el formulario que rellena el modelo (tipo, hasta 8 observaciones con categoría y confianza alta/media/baja, texto visible, si aparecen personas, motivo si no se puede analizar). `ImageAnalysis`: añade lo que pone nuestro código (la ruta y la revisión de seguridad), que el modelo no puede elegir |
-| Carga segura | `loader.py` | Resuelve la ruta real (enlaces incluidos) y exige que esté dentro de `outputs/`; máximo 10 MB; comprueba que el contenido es JPEG o PNG de verdad; la reduce a 1.600 px y la guarda sin metadatos (se borra la posición GPS) |
-| Herramienta | `tool.py` | `analyse_image()` une todo: carga, modelo con formulario fijo y **filtro anti prompt injection sobre el texto visible y las observaciones**. `to_text()` lo da en español para el crew. `AnalyseImageTool` es la herramienta de CrewAI para el agente `vision` (texto envuelto en `<external_data>`) |
+| Pieza                | Archivo                 | Qué hace                                                                                                                                                                                                                                                                                                               |
+| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prueba manual        | `scripts/try_vision.py` | Manda una foto al modelo real (una llamada) y muestra lo que ve                                                                                                                                                                                                                                                        |
+| Formato de respuesta | `vision_schemas.py`     | `ImageAnswer`: el formulario que rellena el modelo (tipo, hasta 8 observaciones con categoría y confianza alta/media/baja, texto visible, si aparecen personas, motivo si no se puede analizar). `ImageAnalysis`: añade lo que pone nuestro código (la ruta y la revisión de seguridad), que el modelo no puede elegir |
+| Carga segura         | `loader.py`             | Resuelve la ruta real (enlaces incluidos) y exige que esté dentro de `outputs/`; máximo 10 MB; comprueba que el contenido es JPEG o PNG de verdad; la reduce a 1.600 px y la guarda sin metadatos (se borra la posición GPS)                                                                                           |
+| Herramienta          | `tool.py`               | `analyse_image()` une todo: carga, modelo con formulario fijo y **filtro anti prompt injection sobre el texto visible y las observaciones**. `to_text()` lo da en español para el crew. `AnalyseImageTool` es la herramienta de CrewAI para el agente `vision` (texto envuelto en `<external_data>`)                   |
 
 Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competidor) y no inventó precios que no se veían. **Nunca describe a las personas**: solo indica que aparecen. Si la respuesta del modelo no encaja con el formulario, **o el modelo no contesta** (timeout, conexión, cuota), se lanza `AnalysisFailed`: esa foto falla, las demás siguen y la herramienta lo explica en texto, sin usar nunca un análisis a medias.
 
@@ -231,13 +233,13 @@ result.wrapped_text    # cleaned and wrapped text, for the agent
 
 Proposed by Helen as Product Owner and agreed by the team on 21 Oct. Pydantic models used by every module:
 
-| Model | What it represents | UI name |
-| --- | --- | --- |
-| `BusinessBrief` | The request (sector, neighbourhood, budget, user profile) | Km. 0 |
-| `Source` | Where a piece of data comes from (URL, date, tool, suspicious flag, cache flag) | La Portera |
-| `Finding` | Each fact or figure in the report, with its source or the code that computed it | Chulapo Analytics |
-| `Verdict` | The traffic light, with confidence, reasons, missing data, warnings and analyst override | ¿Mola? |
-| `TraceEntry` | One line of the audit log | — |
+| Model           | What it represents                                                                       | UI name           |
+| --------------- | ---------------------------------------------------------------------------------------- | ----------------- |
+| `BusinessBrief` | The request (sector, neighbourhood, budget, user profile)                                | Km. 0             |
+| `Source`        | Where a piece of data comes from (URL, date, tool, suspicious flag, cache flag)          | La Portera        |
+| `Finding`       | Each fact or figure in the report, with its source or the code that computed it          | Chulapo Analytics |
+| `Verdict`       | The traffic light, with confidence, reasons, missing data, warnings and analyst override | ¿Mola?            |
+| `TraceEntry`    | One line of the audit log                                                                | —                 |
 
 **Rules they enforce (Pydantic raises an error otherwise):**
 
@@ -254,10 +256,10 @@ Confidence is computed by the graph with a fixed formula (`compute_confidence()`
 
 **Tools:**
 
-| Tool | What it does | Status |
-| --- | --- | --- |
-| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Finds venues of a category (`cafe`, `coworking`) within 100 to 2,000 m of the centre of a Madrid barrio or district. Returns each venue's name, brand, address, coordinates, opening hours, check date and OSM link, plus the total, the attribution and the retrieval date | ✅ Works with live OpenStreetMap data (22 cafés within 800 m of Atocha, 22 Oct). ✅ Saved-data fallback and demo mode (Atocha and Delicias) |
-| `search_audience_indicators(neighbourhood, radius_m=800)` | Counts the OSM places that bring each kind of public: `travellers` (stations, hotels, museums), `workers` (offices except coworkings, industrial areas), `students` (universities, libraries), `residents` (supermarkets, schools, health centres, pharmacies) and `food_leisure` (restaurants, bars, cinemas, theatres). Per group: `count` without duplicates and `highlights` (up to 5 names) | ✅ Works live and in demo mode (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 Oct) |
+| Tool                                                               | What it does                                                                                                                                                                                                                                                                                                                                                                                     | Status                                                                                                                                      |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Finds venues of a category (`cafe`, `coworking`) within 100 to 2,000 m of the centre of a Madrid barrio or district. Returns each venue's name, brand, address, coordinates, opening hours, check date and OSM link, plus the total, the attribution and the retrieval date                                                                                                                      | ✅ Works with live OpenStreetMap data (22 cafés within 800 m of Atocha, 22 Oct). ✅ Saved-data fallback and demo mode (Atocha and Delicias) |
+| `search_audience_indicators(neighbourhood, radius_m=800)`          | Counts the OSM places that bring each kind of public: `travellers` (stations, hotels, museums), `workers` (offices except coworkings, industrial areas), `students` (universities, libraries), `residents` (supermarkets, schools, health centres, pharmacies) and `food_leisure` (restaurants, bars, cinemas, theatres). Per group: `count` without duplicates and `highlights` (up to 5 names) | ✅ Works live and in demo mode (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 Oct)                                                                |
 
 **Try it by hand:**
 
@@ -269,7 +271,7 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 
 **Design decisions:**
 
-- **Read-only (least privilege):** the server has no tools that send, publish or delete anything. If malicious text tricks the model, the worst outcome is an extra search (it avoids *excessive agency*).
+- **Read-only (least privilege):** the server has no tools that send, publish or delete anything. If malicious text tricks the model, the worst outcome is an extra search (it avoids _excessive agency_).
 - All external text goes through the prompt injection guard before being returned: each venue carries `suspicious` and `injection_patterns` (the same fields as the `Source` schema). Suspicious venues are flagged, not deleted.
 - **stdio** transport: the server runs locally and API keys are read from `.env`; they never travel in the messages.
 - **The neighbourhood name is validated before it goes into the query** (letters, spaces and hyphens only): the model writes it, and a name with quotes or brackets could rewrite the Overpass query (like an SQL injection).
@@ -286,7 +288,7 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 **Second source for coworkings: Foursquare (live only).** OpenStreetMap falls short on coworkings: in a test on 27 Oct, within 800 m of Atocha, OSM had 2 and Foursquare 9, but several of the Foursquare ones were company offices, because its categories are set by its users.
 
 - For coworkings, live, the server combines OSM and Foursquare **without repeating venues** (matching name, at most 75 m apart).
-- Venues found **only in Foursquare** get `needs_review: true` and a `review_reason`: the system discards nothing, **the analyst decides** (*human-in-the-loop*).
+- Venues found **only in Foursquare** get `needs_review: true` and a `review_reason`: the system discards nothing, **the analyst decides** (_human-in-the-loop_).
 - Each venue lists its sources (`sources`). The answer includes `confirmed_count` and `needs_review_count` (`total` = confirmed + to review), `foursquare_status` (`used`, `failed`, `no_key` or `not_used`) and `foursquare_limit_reached` (Foursquare returned its maximum of 50: there may be more).
 - If Foursquare fails or answers with something broken (not JSON, no results, odd fields or incomplete coordinates), the search carries on with OSM alone (`foursquare_status: "failed"`). Every field is validated and Foursquare's categories also go through the prompt injection guard.
 - **Foursquare's terms:** its data cannot be stored (only the id) and "Powered by Foursquare" is required. So it is used live only, nothing is stored, and in demo mode, with saved data or if it fails, OpenStreetMap alone is used.
@@ -346,12 +348,12 @@ Agent(..., tools=researcher_tools())
 
 **Done (27-28 Oct, PR #66 and #67):**
 
-| Piece | File | What it does |
-| --- | --- | --- |
-| Manual test | `scripts/try_vision.py` | Sends one photo to the real model (one call) and prints what it sees |
-| Answer format | `vision_schemas.py` | `ImageAnswer`: the form the model fills in (kind, up to 8 observations with category and high/medium/low confidence, visible text, whether people appear, reason if it cannot be analysed). `ImageAnalysis`: adds what our code sets (the path and the safety check), which the model cannot choose |
-| Safe loading | `loader.py` | Resolves the real path (links included) and requires it to be inside `outputs/`; 10 MB max; checks the content really is JPEG or PNG; reduces it to 1,600 px and saves it without metadata (the GPS position is removed) |
-| Tool | `tool.py` | `analyse_image()` joins it all: loading, the model with a fixed form and **the prompt injection guard on the visible text and the observations**. `to_text()` gives it in Spanish for the crew. `AnalyseImageTool` is the CrewAI tool for the `vision` agent (text wrapped in `<external_data>`) |
+| Piece         | File                    | What it does                                                                                                                                                                                                                                                                                        |
+| ------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Manual test   | `scripts/try_vision.py` | Sends one photo to the real model (one call) and prints what it sees                                                                                                                                                                                                                                |
+| Answer format | `vision_schemas.py`     | `ImageAnswer`: the form the model fills in (kind, up to 8 observations with category and high/medium/low confidence, visible text, whether people appear, reason if it cannot be analysed). `ImageAnalysis`: adds what our code sets (the path and the safety check), which the model cannot choose |
+| Safe loading  | `loader.py`             | Resolves the real path (links included) and requires it to be inside `outputs/`; 10 MB max; checks the content really is JPEG or PNG; reduces it to 1,600 px and saves it without metadata (the GPS position is removed)                                                                            |
+| Tool          | `tool.py`               | `analyse_image()` joins it all: loading, the model with a fixed form and **the prompt injection guard on the visible text and the observations**. `to_text()` gives it in Spanish for the crew. `AnalyseImageTool` is the CrewAI tool for the `vision` agent (text wrapped in `<external_data>`)    |
 
 Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and did not invent prices that could not be seen. **It never describes people**: it only says they appear. If the model's answer does not fit the form, **or the model does not answer** (timeout, connection, quota), `AnalysisFailed` is raised: that photo fails, the others carry on, and the tool explains it as text, never using a half-filled analysis.
 
