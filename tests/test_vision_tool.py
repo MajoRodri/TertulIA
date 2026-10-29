@@ -108,7 +108,7 @@ def test_the_text_for_the_crew_is_in_spanish(photo):
         "run-001/bar.png", _FakeLLM(_answer(people_visible=True)), root=photo
     )
     text = to_text(analysis)
-    assert text.startswith("Imagen: run-001/bar.png (foto)")
+    assert text.startswith("Imagen: bar.png (foto)")
     assert "- [ambiente, confianza alta] Pared de ladrillo visto" in text
     assert "Texto visible: Spoiler Bar | Café con leche 1,80 €" in text
     assert "Aparecen personas (no se describen)." in text

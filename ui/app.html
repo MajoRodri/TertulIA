@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TertulIA - Tu guía, tu vía.</title>
   <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -150,6 +152,75 @@
     </div>
   </section>
 
+  <!-- Upload guide -->
+  <section class="uploads-section" id="uploads-section">
+    <div class="uploads-inner">
+      <span class="eyebrow">Contexto adicional</span>
+      <h2>Qué puedes adjuntar al análisis</h2>
+      <p class="section-sub">Cuanta más información real aportes, mayor precisión tendrá el veredicto.</p>
+
+      <div class="uploads-grid">
+
+        <div class="uploads-card">
+          <div class="uploads-card-icon" style="color:var(--turquesa);background:#d0f5f5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <h3 class="uploads-card-title">Fotos</h3>
+          <p class="uploads-card-desc">El agente visual analiza las imágenes antes del análisis económico.</p>
+          <ul class="uploads-card-list">
+            <li>Fachada o interior del local que estás valorando</li>
+            <li>Competidores del barrio</li>
+            <li>Zona peatonal o entorno próximo</li>
+            <li>Carteles de precios o menús de la competencia</li>
+          </ul>
+          <div class="uploads-card-rules">
+            <span class="uploads-rule">JPG o PNG</span>
+            <span class="uploads-rule">máx. 10 MB por imagen</span>
+          </div>
+        </div>
+
+        <div class="uploads-card">
+          <div class="uploads-card-icon" style="color:var(--azul);background:var(--azul-glow)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h3 class="uploads-card-title">Documentos</h3>
+          <p class="uploads-card-desc">El agente investigador y el analista incorporan tus datos como fuente propia.</p>
+          <ul class="uploads-card-list">
+            <li>Plan de negocio o resumen ejecutivo</li>
+            <li>Proyección financiera o hoja de costes</li>
+            <li>Estudio de mercado propio</li>
+            <li>Contrato de arrendamiento o propuesta de local</li>
+            <li>Presupuesto de obra o reforma</li>
+          </ul>
+          <div class="uploads-card-rules">
+            <span class="uploads-rule">PDF o Markdown</span>
+            <span class="uploads-rule">máx. 5 MB</span>
+            <span class="uploads-rule">máx. 20 páginas (PDF)</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="uploads-notice">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Los documentos pasan por una revisión automática. Si el contenido no está relacionado con el negocio analizado, el sistema los rechaza y te avisa con el motivo.
+      </div>
+      <div class="uploads-notice uploads-notice--privacy">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span><strong>Privacidad:</strong> antes de adjuntar cualquier documento, anonimiza los datos personales que contenga (nombres de terceros, DNI, números de cuenta, etc.). Los archivos se procesan únicamente durante el análisis y no se almacenan de forma permanente.</span>
+      </div>
+
+    </div>
+  </section>
+
   <!-- Study context -->
   <section class="study-section" id="study-section">
     <div class="study-inner">
@@ -218,8 +289,8 @@
               <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
           </div>
-          <div class="study-pillar-title">OpenStreetMap en tiempo real</div>
-          <p class="study-pillar-desc">Competidores reales con nombre, dirección y horario. Sin cifras inventadas.</p>
+          <div class="study-pillar-title">OpenStreetMap + Foursquare</div>
+          <p class="study-pillar-desc">Competidores reales con nombre, dirección y horario desde dos fuentes independientes. Sin cifras inventadas.</p>
         </div>
 
         <div class="study-pillar">
@@ -330,29 +401,42 @@
         <p class="panel-desc">¿Tienes datos concretos que cambian el análisis? Escríbelos aquí. Los agentes los incorporan antes del veredicto final.</p>
       </div>
       <div class="chat-feed" id="chat-feed" role="log" aria-live="polite"></div>
-      <div class="chat-upload-wrap">
-        <label for="chat-images" class="chat-upload-label">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-          Adjuntar fotos
-        </label>
-        <input type="file" id="chat-images" accept=".jpg,.jpeg,.png" multiple class="sr-only" aria-label="Subir fotos del local o competidores" />
-        <span class="form-hint" id="chat-images-hint">JPG o PNG · máx. 10 MB por archivo</span>
-        <div id="chat-images-preview" class="upload-preview"></div>
-      </div>
-      <div class="chat-input-wrap">
+      <div id="chat-images-preview" class="upload-preview"></div>
+      <div id="chat-docs-preview" class="upload-preview doc-preview"></div>
+      <div class="chat-composer">
         <textarea
           id="chat-input"
           class="chat-input"
           rows="2"
           placeholder="Ej. El alquiler que me han ofrecido es 2.200 €/mes, no 2.640…"
         ></textarea>
-        <div class="chat-actions">
-          <button class="btn btn-primary" id="btn-chat-send">Enviar</button>
+        <div class="chat-toolbar">
+          <div class="chat-toolbar-attachments">
+            <label for="chat-images" class="chat-icon-btn" title="Fotos · JPG o PNG · máx. 10 MB">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </label>
+            <input type="file" id="chat-images" accept=".jpg,.jpeg,.png" multiple class="sr-only" aria-label="Subir fotos del local o competidores" />
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <select id="chat-doc-type" class="doc-type-inline" aria-label="Tipo de documento">
+              <option value="plan_negocio">Plan de negocio</option>
+              <option value="proyeccion_financiera">Proyección financiera</option>
+              <option value="estudio_mercado">Estudio de mercado</option>
+              <option value="contrato">Contrato / local</option>
+              <option value="presupuesto">Presupuesto de obra</option>
+              <option value="otro">Otro documento</option>
+            </select>
+            <label for="chat-docs" class="chat-icon-btn" title="Documento · PDF o Markdown · máx. 5 MB">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </label>
+            <input type="file" id="chat-docs" accept=".pdf,.md" multiple class="sr-only" aria-label="Subir documento del negocio" />
+          </div>
+          <div class="chat-toolbar-actions">
+            <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto</button>
+            <button class="btn btn-primary" id="btn-chat-send">Enviar</button>
+          </div>
         </div>
-      </div>
-      <div class="chat-continue-wrap">
-        <span class="chat-continue-hint">Cuando hayas añadido todo el contexto que quieras:</span>
-        <button class="btn btn-secondary" id="btn-chat-continue">Continuar al veredicto</button>
+        <small id="chat-images-hint" class="chat-attach-hint" aria-live="polite"></small>
+        <small id="chat-docs-hint"   class="chat-attach-hint" aria-live="polite"></small>
       </div>
     </section>
 
@@ -688,6 +772,31 @@
               <input type="file" id="images" name="images" accept=".jpg,.jpeg,.png" multiple class="sr-only" />
               <span class="form-hint" id="images-hint">JPG o PNG · máx. 10 MB por archivo</span>
               <div id="images-preview" class="upload-preview"></div>
+            </div>
+
+            <div class="form-field full-width">
+              <label class="form-label-text">Documentos del proyecto (opcional)</label>
+              <div class="doc-upload-row">
+                <select id="form-doc-type" class="doc-type-select" aria-label="Tipo de documento">
+                  <option value="plan_negocio">Plan de negocio</option>
+                  <option value="proyeccion_financiera">Proyección financiera</option>
+                  <option value="estudio_mercado">Estudio de mercado</option>
+                  <option value="contrato">Contrato / local</option>
+                  <option value="presupuesto">Presupuesto de obra</option>
+                  <option value="otro">Otro documento</option>
+                </select>
+                <label for="form-docs" class="form-upload-label">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Adjuntar documento
+                </label>
+                <input type="file" id="form-docs" accept=".pdf,.md" multiple class="sr-only" />
+              </div>
+              <span class="form-hint" id="form-docs-hint">PDF o Markdown · máx. 5 MB · máx. 20 páginas · solo documentos del negocio</span>
+              <p class="form-privacy-hint">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Anonimiza los datos personales del documento antes de subirlo.
+              </p>
+              <div id="form-docs-preview" class="upload-preview doc-preview"></div>
             </div>
 
           </div>

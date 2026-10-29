@@ -38,14 +38,8 @@
 
 /* ── Page layout ────────────────────────────────────────── */
 /*
-  Setting background on html (the root) is the CSS-spec mechanism
-  to paint the page canvas — Chromium uses it as the background
-  for every printed page, including blank space after page breaks.
-*/
-/*
-  body background propagates to the page canvas in CSS when html is transparent —
-  this is the spec-correct way to paint backgrounds on every printed page,
-  including blank areas after page breaks.
+  body background propagates to the page canvas when html is transparent —
+  this paints every printed page, including blank space after page breaks.
 */
 body {
   font-family: 'Inter', system-ui, sans-serif;

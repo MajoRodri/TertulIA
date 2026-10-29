@@ -296,7 +296,7 @@ def render_html(data: ReportData) -> str:
     from markupsafe import Markup, escape
 
     def _md_filter(text: str) -> Markup:
-        return Markup(_md.markdown(str(escape(text or "")), extensions=["nl2br"]))
+        return Markup(_md.markdown(str(escape(text or "")), extensions=["nl2br", "tables"]))
 
     _env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),

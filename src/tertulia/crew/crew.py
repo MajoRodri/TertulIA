@@ -101,7 +101,14 @@ def build_llm(provider: str, model_name: str, api_key: str | None = None) -> LLM
     Nota: ``LLM(max_retries=...)`` no tiene efecto con Gemini en CrewAI 1.15.28.
     """
     extra = {"client_params": _gemini_client_params()} if provider == "gemini" else {}
-    return LLM(model=f"{provider}/{model_name}", api_key=api_key or None, **extra)
+    llm = LLM(model=f"{provider}/{model_name}", api_key=api_key or None, **extra)
+    if provider == "gemini" and hasattr(llm, "thinking_config"):
+        # CrewAI 1.15.28 auto-habilita ThinkingConfig para modelos con versión ≥ 2.5
+        # (gemini-3.5 supera el umbral). gemini-3.5-flash-lite rechaza thinking_config
+        # con 400 INVALID_ARGUMENT, así que se borra después de construir el objeto.
+        # validate_assignment=False en GeminiCompletion permite la asignación directa.
+        llm.thinking_config = None
+    return llm
 
 
 def llm_from_settings() -> LLM:

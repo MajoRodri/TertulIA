@@ -80,6 +80,7 @@ class BusinessBrief(BaseModel):
     radius_m: int = Field(default=800, ge=100, le=2000, description="Search radius in metres")
     user_profile: UserProfile = UserProfile.ANALYST
     notes: str = Field(default="", description="Free text, anonymised before use")
+    doc_context: str = Field(default="", description="Extracted text from user-uploaded documents")
     image_paths: list[str] = Field(
         default_factory=list,
         max_length=MAX_IMAGES,

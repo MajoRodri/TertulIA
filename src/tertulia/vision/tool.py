@@ -14,6 +14,7 @@ AnalyseImageTool wraps it for a CrewAI agent, which receives text.
 """
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from crewai.tools import BaseTool
@@ -157,7 +158,7 @@ def _price_table(analysis: ImageAnalysis) -> list[str]:
 def to_text(analysis: ImageAnalysis) -> str:
     """The analysis as Spanish text for the crew (vision_result)."""
     kind = "gráfico" if analysis.kind == "chart" else "foto"
-    lines = [f"Imagen: {analysis.image_path} ({kind})"]
+    lines = [f"Imagen: {Path(analysis.image_path).name} ({kind})"]
     if analysis.suspicious:
         patterns = ", ".join(analysis.injection_patterns)
         lines.append(

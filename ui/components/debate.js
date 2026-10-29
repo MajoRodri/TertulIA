@@ -18,23 +18,46 @@ const AGENT_THINKING = {
   vision:     "Berto está analizando las imágenes…",
 };
 
+let _thinkingTimer = null;
+let _thinkingStart = null;
+
+function _startThinkingTimer() {
+  _clearThinkingTimer();
+  _thinkingStart = Date.now();
+  _thinkingTimer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - _thinkingStart) / 1000);
+    const el = document.getElementById("thinking-elapsed");
+    if (el) el.textContent = elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
+  }, 1000);
+}
+
+function _clearThinkingTimer() {
+  if (_thinkingTimer) { clearInterval(_thinkingTimer); _thinkingTimer = null; }
+  _thinkingStart = null;
+}
+
 function createTypingIndicator(name = "", agent = "", label = "") {
   const displayLabel = label || (agent ? (AGENT_THINKING[agent] ?? `${name} está analizando…`) : "");
   const el = document.createElement("div");
   el.className = "debate-message";
   el.id = "typing-indicator";
+  const timerHtml = displayLabel
+    ? `<span class="thinking-timer" id="thinking-elapsed">0s</span>`
+    : "";
   el.innerHTML = `
     ${avatarHtml(agent, name)}
     <div class="message-bubble">
-      ${displayLabel ? `<div class="agent-thinking-label">${esc(displayLabel)}</div>` : ""}
+      ${displayLabel ? `<div class="agent-thinking-label">${esc(displayLabel)}${timerHtml}</div>` : ""}
       <div class="typing-indicator">
         <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
       </div>
     </div>`;
+  if (displayLabel) _startThinkingTimer();
   return el;
 }
 
 function appendMessage({ agent, name, role, message, simulated }) {
+  _clearThinkingTimer();
   document.getElementById("typing-indicator")?.remove();
   const displayName = AGENT_DISPLAY_NAMES[agent] ?? name;
   const el = document.createElement("div");

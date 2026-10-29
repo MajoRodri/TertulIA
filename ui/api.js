@@ -73,14 +73,27 @@ export function openVisionStream(jobId, onMessage, onDone, onError) {
   return () => es.close();
 }
 
+// POST /api/documents/{jobId}  →  { accepted, rejected }
+export async function uploadDocuments(jobId, files, types) {
+  if (USE_MOCK || !files.length) return { accepted: 0, rejected: [] };
+  const form = new FormData();
+  for (const f of files) form.append("files", f);
+  for (const t of (types || [])) form.append("doc_types", t);
+  const res = await fetch(`${API_BASE}/api/documents/${jobId}`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`Error ${res.status} uploading documents`);
+  return res.json();
+}
+
 // POST /api/chat/{jobId}  →  SSE stream of agent responses
-export async function sendChatMessage(jobId, message, files, onMessage) {
+export async function sendChatMessage(jobId, message, files, onMessage, docFiles, docTypes) {
   if (USE_MOCK) {
     return simulateMockChatResponse(onMessage);
   }
   const form = new FormData();
   form.append("message", message);
   for (const f of (files || [])) form.append("images", f);
+  for (const f of (docFiles || [])) form.append("documents", f);
+  for (const t of (docTypes || [])) form.append("doc_types", t);
   const res = await fetch(`${API_BASE}/api/chat/${jobId}`, {
     method: "POST",
     body: form,
