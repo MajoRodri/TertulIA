@@ -201,6 +201,29 @@ def _debate_section(data: ReportData) -> list:
     return flowables
 
 
+def _fmt_finding_value(v: float | int) -> str:
+    if isinstance(v, int) or (isinstance(v, float) and v == int(v)):
+        return str(int(v))
+    return f"{v:.2f}".replace(".", ",")
+
+
+def _findings_section(data: ReportData) -> list:
+    if not data.findings:
+        return []
+    flowables: list = [
+        Paragraph("Hallazgos de la investigación", _STYLES["section"]),
+        Spacer(1, 3*mm),
+    ]
+    for f in data.findings:
+        if f.value is not None:
+            text = f"{f.claim}: {_fmt_finding_value(f.value)} {f.unit or ''}".strip()
+        else:
+            text = f.claim
+        flowables.append(Paragraph(f"• {text}", _STYLES["reason"]))
+    flowables.append(Spacer(1, 7*mm))
+    return flowables
+
+
 def _verdict_section(data: ReportData) -> list:
     v = data.verdict
     sig = v.signal
@@ -340,6 +363,7 @@ def _build_pdf_reportlab(data: ReportData) -> bytes:
         + (_simulated_notice() if data.simulated else [])
         + _brief_section(data)
         + _debate_section(data)
+        + _findings_section(data)
         + _verdict_section(data)
     )
     doc.build(story)

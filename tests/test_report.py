@@ -2,6 +2,7 @@ from tertulia.report import (
     AgentMessage,
     ReportBrief,
     ReportData,
+    ReportFinding,
     Verdict,
     build_email_draft,
     render_html,
@@ -53,3 +54,31 @@ def test_email_draft_contains_summary():
 def test_email_draft_signal_label():
     draft = build_email_draft(SAMPLE_DATA)
     assert "Viabilidad media" in draft
+
+
+def test_report_data_accepts_findings():
+    data = ReportData(
+        job_id="test-002",
+        brief=ReportBrief(sector="café-cowork", neighborhood="Atocha"),
+        debate=[],
+        verdict=Verdict(signal="yellow", label="Viable con riesgo", confidence=65, reasons=[]),
+        findings=[
+            ReportFinding(claim="8 cafeterías confirmadas en el radio", value=8, unit="cafeterías"),
+            ReportFinding(claim="Cobertura parcial de la zona norte"),
+        ],
+    )
+    assert len(data.findings) == 2
+    assert data.findings[0].value == 8
+    assert data.findings[1].value is None
+
+
+def test_render_html_with_findings_does_not_crash():
+    data = ReportData(
+        job_id="test-003",
+        brief=ReportBrief(sector="café-cowork", neighborhood="Atocha"),
+        debate=[],
+        verdict=Verdict(signal="green", label="Viable", confidence=80, reasons=[]),
+        findings=[ReportFinding(claim="5 locales similares encontrados", value=5, unit="locales")],
+    )
+    html = render_html(data)
+    assert "Atocha" in html
