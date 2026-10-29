@@ -1,13 +1,9 @@
-# TertulIA
-
----
-
 # README-HELEN · Aportaciones de Helen para el README de TertulIA
 
 > Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Lo iré actualizando a medida que termine cada paso.
 >
 
-**Última actualización / Last update:** 28 oct 2026
+**Última actualización / Last update:** 29 oct 2026
 
 | Módulo / Module | Ruta / Path | Estado / Status |
 | --- | --- | --- |
@@ -17,7 +13,9 @@
 | Foursquare como segunda fuente / Foursquare as second source | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #64) |
 | `BusinessBrief.image_paths` | `src/tertulia/schemas/models.py` | ✅ Fusionado / Merged (PR #60) |
 | Cliente MCP y servidor fetch / MCP client and fetch server | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py` | ✅ Fusionado / Merged (PR #58) |
-| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67) |
+| Agente de visión / Vision agent | `src/tertulia/vision/` | ✅ Fusionado / Merged (PR #66, #67) · 🔄 Tabla de precios en curso / Price table in progress |
+| Informe completo y Overpass más rápido / Full report and faster Overpass | `src/tertulia/mcp/servers/neighbourhood_data/server.py` | ✅ Fusionado / Merged (PR #69) |
+| Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Aprobado / Approved |
 
 ---
 
@@ -80,6 +78,7 @@ La confianza la calcula el grafo con una fórmula fija (`compute_confidence()`),
 | Herramienta | Qué hace | Estado |
 | --- | --- | --- |
 | `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Busca locales de una categoría (`cafe`, `coworking`) en un radio de 100 a 2.000 m alrededor del centro de un barrio o distrito de Madrid. Devuelve nombre, marca, dirección, coordenadas, horario, fecha de comprobación y enlace a OSM de cada local, más el total, la atribución y la fecha de consulta | ✅ Funciona con OpenStreetMap en directo (22 cafeterías en 800 m alrededor de Atocha, 22 oct). ✅ Reserva con datos guardados y modo demo (Atocha y Delicias) |
+| `search_audience_indicators(neighbourhood, radius_m=800)` | Cuenta los lugares de OSM que atraen a cada tipo de público: `travellers` (estaciones, hoteles, museos), `workers` (oficinas sin coworkings, polígonos), `students` (universidades, bibliotecas), `residents` (supermercados, colegios, centros de salud, farmacias) y `food_leisure` (restaurantes, bares, cines, teatros). Por grupo: `count` sin duplicados y `highlights` (hasta 5 nombres) | ✅ Funciona en directo y en modo demo (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 oct) |
 
 **Probarlo a mano:**
 
@@ -96,7 +95,7 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 - Transporte **stdio**: el servidor corre en local y las claves de API se leen del `.env`, nunca viajan en los mensajes.
 - **El nombre del barrio se valida antes de usarlo en la consulta** (solo letras, espacios y guiones): lo escribe el modelo, y un nombre con comillas o corchetes podría reescribir la consulta a Overpass (como una inyección SQL).
 - **Busca por radio** (800 m por defecto) alrededor del centro del barrio, no dentro de sus límites: en Atocha, OpenStreetMap tiene 2 cafeterías dentro del barrio y 41 en el radio.
-- **Tolerancia a fallos:** si el servidor público de Overpass falla (por ejemplo, un 502 puntual), lo reintenta una vez tras 10 s y deja un aviso en el log. Si vuelve a fallar, usa los **datos guardados** del barrio (marcados con `from_cache=True` y su fecha de captura); si no los hay, el dato queda como «sin dato». Un fallo nunca se convierte en «0 resultados».
+- **Tolerancia a fallos:** si el servidor público de Overpass falla (por ejemplo, un 502 puntual), lo reintenta una vez tras 5 s y deja un aviso en el log. Las consultas de una llamada comparten un **presupuesto de 110 s**, para contestar siempre antes del corte de 150 s del cliente; si no queda tiempo, se pasa a los datos guardados. Si vuelve a fallar, usa los **datos guardados** del barrio (marcados con `from_cache=True` y su fecha de captura); si no los hay, el dato queda como «sin dato». Un fallo nunca se convierte en «0 resultados».
 - **Modo demo:** con `DEMO_MODE=true` en el `.env`, la herramienta usa siempre los datos guardados de `data/demo_osm/` (Atocha y Delicias, capturados con 2.000 m y filtrados por distancia al radio pedido): respuesta al instante y sin depender de Overpass. Lo activa una persona antes de arrancar, nunca el modelo; cada resultado sigue indicando `from_cache: true` y la fecha de captura.
 
 **Códigos de error** (acordados con el grafo): cada error del servidor lleva un código, `[invalid_input]` (barrio, categoría o radio no válidos), `[not_found]` (barrio que no existe) o `[source_unavailable]` (OpenStreetMap no responde y no hay datos guardados). Llegan al grafo a través de los eventos MCP de CrewAI (`MCPToolExecutionFailedEvent`). MCP antepone «Error executing tool search_competitors: », así que el código no va al principio: se lee con `error_code()` del cliente (sección 4).
@@ -113,8 +112,19 @@ El script arranca el servidor, pide su lista de herramientas (`tools/list`), lla
 - Si Foursquare falla o responde algo roto (no JSON, sin resultados, campos raros o coordenadas incompletas), la búsqueda sigue solo con OSM (`foursquare_status: "failed"`). Cada campo se valida y las categorías de Foursquare también pasan por el filtro anti prompt injection.
 - **Términos de Foursquare:** no permiten guardar sus datos (solo el identificador) y exigen «Powered by Foursquare». Por eso solo se usa en directo, no se guarda nada y en modo demo, con datos guardados o si falla, se usa solo OSM.
 - La clave (`FOURSQUARE_API_KEY`) la lee el propio servidor del `.env`, como `SecretStr` (nunca sale en logs). Sin clave, todo funciona solo con OSM.
-- ⚠️ `total` incluye los locales por revisar: hasta que el analista revise, no deben contarse como competidores confirmados.
-- **Tests:** 28 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
+- ⚠️ `total` incluye los locales por revisar: hasta que el analista revise, no deben contarse como competidores confirmados. El docstring pide al agente informar siempre de los dos grupos por separado.
+- **`coverage_note`**, escrita por el servidor: en coworkings sin Foursquare (modo demo, sin clave o con fallo) avisa de que puede haber más. Va en la respuesta y no solo en el docstring, porque el modelo no siempre seguía esa regla.
+- **Tests:** 34 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
+
+**Centro del barrio:** si hay captura guardada, el centro se lee de ella (~35 s menos por llamada). Una caché en memoria no sirve: CrewAI arranca el servidor de nuevo en cada llamada.
+
+**Indicadores de público (`search_audience_indicators`).** El informe dejaba «tipo de público» sin dato y en una prueba el agente se lo inventó. Ahora tiene datos reales:
+
+- Una sola consulta a Overpass, generada desde la tabla `AUDIENCE_RULES` (añadir un tipo de lugar = una línea).
+- Duplicados: mismo nombre o misma web a ≤ 200 m cuentan una vez (en Atocha había 3 registros del mismo hotel). Los lugares sin nombre cuentan uno a uno.
+- Los nombres pasan por el filtro anti prompt injection; `indicator_note`, escrita por el servidor, recuerda que son lugares, no personas contadas.
+- Mismo flujo que `search_competitors`: presupuesto de tiempo, caída a datos guardados (`data/demo_osm/audience/`, capturados con `scripts/capture_audience_demo.py`) y modo demo.
+- Está en la lista de herramientas permitidas de `client.py`. Tests: 15 en `tests/test_audience_indicators.py`, con lugares reales de Atocha.
 
 ## 4. Cliente MCP (`src/tertulia/mcp/client.py`)
 
@@ -145,7 +155,7 @@ Agent(..., tools=researcher_tools())
 
 ## 5. Agente de visión (`src/tertulia/vision/`) (#32)
 
-**Qué hará.** Analizar las fotos de locales de la competencia y los gráficos del análisis, y devolver una lista de observaciones en texto, cada una con la imagen de la que sale.
+**Qué hace.** Analiza las fotos de locales de la competencia y los gráficos del análisis, y devuelve una lista de observaciones en texto, cada una con la imagen de la que sale.
 
 **Decidido hasta ahora (27 oct):**
 
@@ -175,6 +185,7 @@ Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competi
 - Defensa en capas contra prompt injection: filtro por reglas + envoltorio de datos + herramientas de solo lectura + aprobación humana antes de cualquier acción con impacto.
 - **Roadmap (datos):** en producción, cargar el extracto de OpenStreetMap de Madrid en una base de datos propia con búsqueda geográfica (por ejemplo, PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos y sin depender del servidor público de Overpass. Opcionalmente, un servidor MCP siempre encendido por HTTP y los informes como tareas en segundo plano.
 - **Roadmap:** añadir un clasificador con IA (por ejemplo, Model Armor de Google Cloud) como segunda capa de detección. No se incluye en la entrega porque envía los textos a un tercero y requiere una cuenta con facturación.
+- **Roadmap (reseñas de la competencia):** hoy el informe las deja en «sin dato», sin inventarlas. Dos vías: un campo opcional en el formulario para pegar reseñas (con el filtro anti prompt injection, registradas como fuente `user_input` y sin nombres de clientes) o Google Places API (revisar coste y condiciones de almacenamiento).
 
 ---
 
@@ -237,6 +248,7 @@ Confidence is computed by the graph with a fixed formula (`compute_confidence()`
 | Tool | What it does | Status |
 | --- | --- | --- |
 | `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Finds venues of a category (`cafe`, `coworking`) within 100 to 2,000 m of the centre of a Madrid barrio or district. Returns each venue's name, brand, address, coordinates, opening hours, check date and OSM link, plus the total, the attribution and the retrieval date | ✅ Works with live OpenStreetMap data (22 cafés within 800 m of Atocha, 22 Oct). ✅ Saved-data fallback and demo mode (Atocha and Delicias) |
+| `search_audience_indicators(neighbourhood, radius_m=800)` | Counts the OSM places that bring each kind of public: `travellers` (stations, hotels, museums), `workers` (offices except coworkings, industrial areas), `students` (universities, libraries), `residents` (supermarkets, schools, health centres, pharmacies) and `food_leisure` (restaurants, bars, cinemas, theatres). Per group: `count` without duplicates and `highlights` (up to 5 names) | ✅ Works live and in demo mode (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 Oct) |
 
 **Try it by hand:**
 
@@ -253,7 +265,7 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 - **stdio** transport: the server runs locally and API keys are read from `.env`; they never travel in the messages.
 - **The neighbourhood name is validated before it goes into the query** (letters, spaces and hyphens only): the model writes it, and a name with quotes or brackets could rewrite the Overpass query (like an SQL injection).
 - **Radius search** (800 m by default) around the neighbourhood centre, not inside its boundary: in Atocha, OpenStreetMap has 2 cafés inside the barrio and 41 within the radius.
-- **Fault tolerance:** if the public Overpass server fails (for example, a one-off 502), it retries once after 10 s and logs a warning. If it fails again, it uses the neighbourhood's **saved data** (marked `from_cache=True`, with its capture date); if there is none, the value is reported as missing. A failure never becomes "0 results".
+- **Fault tolerance:** if the public Overpass server fails (for example, a one-off 502), it retries once after 5 s and logs a warning. The queries of one call share a **110 s time budget**, so the server always answers before the client's 150 s timeout; if time runs out, it falls back to saved data. If it fails again, it uses the neighbourhood's **saved data** (marked `from_cache=True`, with its capture date); if there is none, the value is reported as missing. A failure never becomes "0 results".
 - **Demo mode:** with `DEMO_MODE=true` in `.env`, the tool always uses the saved data in `data/demo_osm/` (Atocha and Delicias, captured within 2,000 m and filtered by distance to the requested radius): instant answers that do not depend on Overpass. A person turns it on before starting, never the model; every result still says `from_cache: true` and gives the capture date.
 
 **Error codes** (agreed with the graph): every server error carries a code, `[invalid_input]` (invalid neighbourhood, category or radius), `[not_found]` (neighbourhood does not exist) or `[source_unavailable]` (OpenStreetMap does not respond and there is no saved data). They reach the graph through CrewAI's MCP events (`MCPToolExecutionFailedEvent`). MCP puts "Error executing tool search_competitors: " in front, so the code is not at the start: it is read with the client's `error_code()` (section 4).
@@ -270,8 +282,19 @@ The script starts the server, asks for its tool list (`tools/list`), calls `sear
 - If Foursquare fails or answers with something broken (not JSON, no results, odd fields or incomplete coordinates), the search carries on with OSM alone (`foursquare_status: "failed"`). Every field is validated and Foursquare's categories also go through the prompt injection guard.
 - **Foursquare's terms:** its data cannot be stored (only the id) and "Powered by Foursquare" is required. So it is used live only, nothing is stored, and in demo mode, with saved data or if it fails, OpenStreetMap alone is used.
 - The key (`FOURSQUARE_API_KEY`) is read by the server itself from `.env`, as a `SecretStr` (never shown in logs). Without a key, everything works with OSM alone.
-- ⚠️ `total` includes venues pending review: until the analyst reviews them, they must not count as confirmed competitors.
-- **Tests:** 28 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
+- ⚠️ `total` includes venues pending review: until the analyst reviews them, they must not count as confirmed competitors. The docstring tells the agent to always report both groups separately.
+- **`coverage_note`**, written by the server: for coworkings without Foursquare (demo mode, no key or failure) it warns there may be more. It is in the answer, not only in the docstring, because the model did not always follow that rule.
+- **Tests:** 34 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
+
+**Neighbourhood centre:** when there is a saved capture, the centre is read from it (~35 s less per call). An in-memory cache does not help: CrewAI starts the server again on every call.
+
+**Audience indicators (`search_audience_indicators`).** The report left "type of public" empty, and in one test the agent made it up. Now it has real data:
+
+- One Overpass query, built from the `AUDIENCE_RULES` table (adding a kind of place = one line).
+- Duplicates: same name or same website within 200 m count once (Atocha had 3 records of the same hotel). Unnamed places count one by one.
+- Names go through the prompt injection guard; `indicator_note`, written by the server, says these are places, not people counted.
+- Same flow as `search_competitors`: time budget, fallback to saved data (`data/demo_osm/audience/`, captured with `scripts/capture_audience_demo.py`) and demo mode.
+- It is on the client's allow list (`client.py`). Tests: 15 in `tests/test_audience_indicators.py`, with real Atocha places.
 
 ## 4. MCP client (`src/tertulia/mcp/client.py`)
 
@@ -302,7 +325,7 @@ Agent(..., tools=researcher_tools())
 
 ## 5. Vision agent (`src/tertulia/vision/`) (#32)
 
-**What it will do.** Analyse photos of competitors' venues and the analysis charts, and return a list of text observations, each with the image it comes from.
+**What it does.** Analyses photos of competitors' venues and the analysis charts, and returns a list of text observations, each with the image it comes from.
 
 **Decided so far (27 Oct):**
 
@@ -332,3 +355,4 @@ Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and
 - Defence in layers against prompt injection: rule-based guard + data wrapping + read-only tools + human approval before any high-impact action.
 - **Roadmap (data):** in production, load the Madrid OpenStreetMap extract into our own database with geographic search (for example, PostgreSQL + PostGIS), refreshed every night: millisecond queries without depending on the public Overpass server. Optionally, an always-on MCP server over HTTP and reports as background jobs.
 - **Roadmap:** add an AI-based classifier (for example, Google Cloud Model Armor) as a second detection layer. Not included in this delivery because it sends the texts to a third party and needs a billing account.
+- **Roadmap (competitor reviews):** today the report leaves them as "no data", without making them up. Two options: an optional form field to paste reviews (through the prompt injection guard, recorded as a `user_input` source and without customer names) or the Google Places API (check cost and storage terms).
