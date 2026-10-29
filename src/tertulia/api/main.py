@@ -601,7 +601,14 @@ async def approve(job_id: str, req: ApproveRequest):
         return {"ok": False, "reason": "estudio caducado"}
 
     if not job.get("is_demo"):
-        await asyncio.to_thread(_graph.update_state, graph_config, {"human_approved": req.approved})
+        state_update: dict = {"human_approved": req.approved}
+        chat_history = job.get("chat_history", [])
+        if chat_history:
+            state_update["chat_context"] = "\n".join(
+                f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
+                for h in chat_history
+            )
+        await asyncio.to_thread(_graph.update_state, graph_config, state_update)
         try:
             final = await asyncio.wait_for(
                 asyncio.to_thread(_graph.invoke, None, graph_config), timeout=300.0
