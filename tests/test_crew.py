@@ -28,6 +28,7 @@ from tertulia.crew.crew import (  # noqa: E402
 )
 from tertulia.crew.inputs import (  # noqa: E402
     FIRST_DRAFT,
+    NO_CONTEXT,
     NO_DATA,
     NO_IMAGES,
     TASK_INPUT_KEYS,
@@ -82,6 +83,17 @@ def test_first_round_defaults(inputs):
     assert inputs["review_feedback"] == FIRST_DRAFT
     assert inputs["images"] == NO_IMAGES
     assert inputs["budget"] == NO_DATA  # no se inventa un presupuesto
+
+
+def test_chat_context_defaults_and_reaches_writer_and_reviewer(brief):
+    profile = load_sector("cafe_cowork")
+    assert build_inputs(brief, profile)["chat_context"] == NO_CONTEXT
+    data = build_inputs(brief, profile, chat_context="Ya tengo un local de 80 m2")
+    assert data["chat_context"] == "Ya tengo un local de 80 m2"
+    for step in ("writing", "review"):
+        llm = FakeLLM(model="fake", received=[])
+        run_step(step, data, llm, NO_TOOLS)
+        assert "Ya tengo un local de 80 m2" in llm.received[0]
 
 
 def test_lists_are_readable_text(brief):
@@ -191,7 +203,8 @@ def test_vision_failure_keeps_the_research(brief):
     llm = _FailsFor(model="fake", received=[], role="Analista visual")
     result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
     assert result["research_task"] == "respuesta de prueba"  # no se pierde
-    assert result["vision_task"].startswith(VISION_FAILED_ANSWER)  # el fallo queda a la vista
+    assert result["vision_task"] == VISION_FAILED_ANSWER  # el fallo queda a la vista...
+    assert "RuntimeError" not in result["vision_task"]  # ...sin detalles técnicos (Majo)
 
 
 def test_research_failure_still_raises(brief):
