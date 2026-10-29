@@ -408,7 +408,11 @@ def _extract_document_text(filename: str, mime: str, data: bytes) -> str:
         return data.decode("utf-8", errors="replace")[:MAX_DOC_CHARS]
     if ext == "pdf" or mime == "application/pdf":
         from pypdf import PdfReader  # type: ignore[import-untyped]
-        reader = PdfReader(io.BytesIO(data))
+        from pypdf.errors import PdfReadError  # type: ignore[import-untyped]
+        try:
+            reader = PdfReader(io.BytesIO(data))
+        except PdfReadError as exc:
+            raise ValueError(f"el PDF no se puede leer (puede estar cifrado o dañado): {exc}") from exc
         if len(reader.pages) > MAX_PDF_PAGES:
             raise ValueError(f"el PDF tiene {len(reader.pages)} páginas (máximo {MAX_PDF_PAGES})")
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
@@ -453,6 +457,9 @@ def _classify_document(llm, text: str, declared_type: str, brief) -> tuple[bool,
         return True, label  # fail-open: no bloquear al usuario si falla la clasificación
 
 
+MAX_DOC_CONTEXT_CHARS = 50_000  # total cap across all uploaded documents
+
+
 async def _process_documents(
     uploads: list[UploadFile],
     doc_types: list[str] | None,
@@ -463,8 +470,12 @@ async def _process_documents(
 
     Returns (combined_text, rejection_messages).
     """
+    from tertulia.guardrails.anonimizacion import _scrub
+    from tertulia.guardrails.injection import process as guard_process
+
     accepted: list[str] = []
     rejected: list[str] = []
+    total_chars = 0
 
     for i, upload in enumerate(uploads):
         declared_type = (doc_types or [])[i] if doc_types and i < len(doc_types) else "otro"
@@ -485,6 +496,12 @@ async def _process_documents(
             rejected.append(f'"{upload.filename}": {exc}')
             continue
 
+        # Injection guard + anonymization before classification or storage
+        guarded = guard_process(text, source=f"documento:{upload.filename}")
+        if guarded.suspicious:
+            log.warning("Suspicious content in document %s", upload.filename)
+        text = _scrub(guarded.cleaned)
+
         is_valid, category_or_reason = await asyncio.to_thread(
             _classify_document, llm, text, declared_type, brief
         )
@@ -494,8 +511,18 @@ async def _process_documents(
             )
             continue
 
+        if total_chars >= MAX_DOC_CONTEXT_CHARS:
+            rejected.append(
+                f'"{upload.filename}" no se incluyó: se alcanzó el límite total de contexto '
+                f"({MAX_DOC_CONTEXT_CHARS // 1000} k caracteres)"
+            )
+            continue
+
         label = _DOC_TYPE_LABELS.get(declared_type, declared_type)
-        accepted.append(f"[{label} — {upload.filename}]\n{text}")
+        entry = f"[{label} — {upload.filename}]\n{text}"
+        remaining = MAX_DOC_CONTEXT_CHARS - total_chars
+        accepted.append(entry[:remaining])
+        total_chars += min(len(entry), remaining)
 
     combined = "\n\n---\n\n".join(accepted)
     return combined, rejected
@@ -523,7 +550,7 @@ async def upload_documents(
         job["doc_context"] = (existing + "\n\n" + combined).strip() if existing else combined
         brief.doc_context = job["doc_context"]
 
-    return {"accepted": combined.count("---") + 1 if combined else 0, "rejected": rejected}
+    return {"accepted": len(files) - len(rejected), "rejected": rejected}
 
 
 @app.post("/api/chat/{job_id}")
@@ -647,9 +674,7 @@ async def _stream_chat(
 
     response_text: str | None = None
     try:
-        import litellm
-
-        from config.settings import settings as _cfg
+        from tertulia.crew.crew import llm_from_settings
 
         # Image-only with no text: use a minimal prompt so the LLM only describes what it sees
         if image_data and not message and not chat_doc_text:
@@ -672,12 +697,9 @@ async def _stream_chat(
                     f"DOCUMENTO ADJUNTO:\n{chat_doc_text}"
                 )
             user_content: str | list = [{"type": "text", "text": msg_text}]
-            for mime, data in (image_data or []):
-                b64 = base64.b64encode(data).decode()
-                user_content.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:{mime};base64,{b64}"},
-                })
+            for mime, img_bytes in (image_data or []):
+                b64 = base64.b64encode(img_bytes).decode()
+                user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
         else:
             user_content = message
 
@@ -685,14 +707,11 @@ async def _stream_chat(
             {"role": "system", "content": system_prompt},
             {"role": "user",   "content": user_content},
         ]
-        # litellm converts image_url → inline_data for Gemini; llm.call() goes through
-        # GeminiCompletion (native SDK) which drops image_url parts silently.
-        result = await litellm.acompletion(
-            model=f"{_cfg.LLM_PROVIDER}/{_cfg.LLM_MODEL_NAME}",
-            messages=messages,
-            api_key=_cfg.LLM_API_KEY.get_secret_value(),
-        )
-        response_text = result.choices[0].message.content or ""
+        # Use inlineData (google-genai format) so GeminiCompletion passes images correctly.
+        llm = llm_from_settings()
+        raw = await asyncio.to_thread(llm.call, messages)
+        response_text = raw if isinstance(raw, str) else getattr(raw, "content", str(raw))
+        response_text = response_text or ""
     except Exception:
         log.exception("Chat LLM call failed (job=%s, images=%d)", job_id, len(image_data or []))
         response_text = None
@@ -830,7 +849,8 @@ async def approve(job_id: str, req: ApproveRequest):
             )
             context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
         if context_parts:
-            state_update["chat_context"] = "\n\n".join(context_parts)
+            from tertulia.guardrails.anonimizacion import _scrub
+            state_update["chat_context"] = _scrub("\n\n".join(context_parts))
         await asyncio.to_thread(_graph.update_state, graph_config, state_update)
         try:
             final = await asyncio.wait_for(
