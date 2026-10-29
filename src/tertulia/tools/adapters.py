@@ -345,7 +345,8 @@ def mcp_response_to_sources_and_findings(
     ``research_result``. Así el Writer y la Revisora dejan de leer el texto del
     crew (que se equivoca) y usan los números del servidor.
     """
-    category, gender = _translate_category(response.get("category", "venues"))
+    raw_category = response.get("category", "venues")
+    category, gender = _translate_category(raw_category)
     _adj = "confirmadas" if gender == "f" else "confirmados"
     total = response.get("total", 0)
     confirmed = response.get("confirmed_count", 0)
@@ -398,7 +399,7 @@ def mcp_response_to_sources_and_findings(
                 id=f"fnd-{next_finding:03d}",
                 claim=f"{confirmed} {category} {_adj} en el radio de búsqueda (total: {total})",
                 value=confirmed,
-                unit=category,
+                unit=raw_category,
                 source_ids=source_ids,
                 agent="researcher",
             )
@@ -411,7 +412,7 @@ def mcp_response_to_sources_and_findings(
                 id=f"fnd-{next_finding:03d}",
                 claim=f"{needs_review} {category} pendientes de revisión (de un total de {total})",
                 value=needs_review,
-                unit=category,
+                unit=raw_category,
                 source_ids=source_ids,
                 agent="researcher",
             )
