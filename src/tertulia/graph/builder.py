@@ -7,7 +7,7 @@ from langgraph.graph import END, START, StateGraph
 
 from tertulia.schemas import TraceEntry
 
-from .edges import should_continue
+from .edges import route_after_approval, should_continue
 from .errors import HUMAN_TIMEOUT, ErrorEntry, ErrorSeverity
 from .nodes import analyst_node, research_node, reviewer_node, vision_charts_node, writer_node
 from .state import AgentState
@@ -118,7 +118,14 @@ workflow.add_conditional_edges(
 )
 
 # 5. Conectamos la aprobacion humana con el final del grafo
-workflow.add_edge("human_approval", END)
+workflow.add_conditional_edges(
+    "human_approval",
+    route_after_approval,
+    {
+        "writer": "writer",
+        "human_approval_end": END
+    }
+)
 
 # 6. Compilamos el grafo con checkpointer y pausa antes de la aprobacion humana.
 #    MemorySaver guarda el estado en memoria del proceso (suficiente para la demo:

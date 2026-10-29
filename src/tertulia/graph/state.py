@@ -43,3 +43,7 @@ class AgentState(TypedDict):
     research_result: str
     vision_result: str
     analysis_result: str
+
+    # 10. Contexto del chat (Issue #12). Se inyecta antes de reanudar.
+    chat_context: str
+    chat_context_applied: bool
