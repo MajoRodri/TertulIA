@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from tertulia.crew.sector import SectorProfile
-from tertulia.schemas import Finding, FindingStatus, TraceEntry
+from tertulia.schemas import Finding, FindingStatus, Source, SourceType, TraceEntry
 from tertulia.tools.code_exec import ExecutionResult, GeneratedFile
 from tertulia.tools.punto_equilibrio import BreakEvenInput, BreakEvenResult, FixedCost
 
@@ -274,3 +274,171 @@ def trace_from_break_even(
         finding_ids=finding_ids or [],
         tokens_used=tokens_used,
     )
+
+
+# --- MCP -> Sources y Findings (Issue #12) ------------------------------------
+#
+# El servidor MCP devuelve la respuesta de search_competitors con los counts
+# reales (confirmed_count, needs_review_count, coverage_note). Convertimos esa
+# respuesta en:
+#   - Sources: de dónde viene el dato (OSM, Foursquare si se consultó).
+#   - Findings: las cifras reales, una por cifra. Sin inventar nada.
+#   - Summary: texto en español con las cifras, para que el Writer y la
+#     Revisora dejen de leer el texto del crew (que se equivoca) y usen estos
+#     números.
+# La lista de venues con needs_review=true se convierte en un Finding por venue,
+# para que el informe los pueda listar. Los suspicious no generan Finding: ya
+# están contados en suspicious_count del servidor.
+
+OSM_TITLE = "OpenStreetMap (Overpass API)"
+OSM_URL = "https://www.openstreetmap.org/"
+FOURSQUARE_TITLE = "Foursquare Places API"
+FOURSQUARE_URL = "https://foursquare.com/"
+
+
+def _parse_retrieved_at(value: Any) -> datetime:
+    """Devuelve un datetime con timezone. Si no se puede, ahora mismo (UTC)."""
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value)
+            return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+        except ValueError:
+            pass
+    return datetime.now(UTC)
+
+
+def mcp_response_to_sources_and_findings(
+    response: dict,
+    *,
+    start_source_index: int = 1,
+    start_finding_index: int = 1,
+) -> tuple[list[Source], list[Finding], str]:
+    """Convierte una respuesta de search_competitors en Sources, Findings y summary.
+
+    El summary es texto en español con las cifras reales, listo para añadir al
+    ``research_result``. Así el Writer y la Revisora dejan de leer el texto del
+    crew (que se equivoca) y usan los números del servidor.
+    """
+    category = response.get("category", "venues")
+    total = response.get("total", 0)
+    confirmed = response.get("confirmed_count", 0)
+    needs_review = response.get("needs_review_count", 0)
+    coverage_note = response.get("coverage_note")
+    foursquare_status = response.get("foursquare_status", "not_used")
+    retrieved_at = _parse_retrieved_at(response.get("retrieved_at"))
+    from_cache = bool(response.get("from_cache", False))
+
+    sources: list[Source] = []
+    findings: list[Finding] = []
+    next_source = start_source_index
+    next_finding = start_finding_index
+
+    osm_id = f"src-{next_source:03d}"
+    sources.append(
+        Source(
+            id=osm_id,
+            source_type=SourceType.OPEN_DATA,
+            title=OSM_TITLE,
+            url=OSM_URL,
+            retrieved_at=retrieved_at,
+            retrieved_by="mcp.osm_search",
+            from_cache=from_cache,
+        )
+    )
+    next_source += 1
+
+    fsq_id: str | None = None
+    if foursquare_status == "used":
+        fsq_id = f"src-{next_source:03d}"
+        sources.append(
+            Source(
+                id=fsq_id,
+                source_type=SourceType.API,
+                title=FOURSQUARE_TITLE,
+                url=FOURSQUARE_URL,
+                retrieved_at=retrieved_at,
+                retrieved_by="mcp.foursquare_search",
+                from_cache=False,
+            )
+        )
+        next_source += 1
+
+    source_ids = [osm_id] + ([fsq_id] if fsq_id else [])
+
+    if confirmed is not None:
+        findings.append(
+            Finding(
+                id=f"fnd-{next_finding:03d}",
+                claim=f"{confirmed} {category} confirmados en el radio de búsqueda (total: {total})",
+                value=confirmed,
+                unit=category,
+                source_ids=source_ids,
+                agent="researcher",
+            )
+        )
+        next_finding += 1
+
+    if needs_review and needs_review > 0:
+        findings.append(
+            Finding(
+                id=f"fnd-{next_finding:03d}",
+                claim=f"{needs_review} {category} pendientes de revisión (de un total de {total})",
+                value=needs_review,
+                unit=category,
+                source_ids=source_ids,
+                agent="researcher",
+            )
+        )
+        next_finding += 1
+
+    if coverage_note:
+        findings.append(
+            Finding(
+                id=f"fnd-{next_finding:03d}",
+                claim=coverage_note,
+                value=None,
+                source_ids=[osm_id],
+                agent="researcher",
+            )
+        )
+        next_finding += 1
+
+    for venue in response.get("venues", []):
+        if not venue.get("needs_review"):
+            continue
+        if venue.get("suspicious"):
+            continue
+        name = venue.get("name") or "sin nombre"
+        reason = venue.get("review_reason") or "pendiente de revisión"
+        venue_source = fsq_id if fsq_id else osm_id
+        findings.append(
+            Finding(
+                id=f"fnd-{next_finding:03d}",
+                claim=f"'{name}' — {reason}",
+                value=None,
+                source_ids=[venue_source],
+                agent="researcher",
+            )
+        )
+        next_finding += 1
+
+    summary = findings_to_summary(findings, category=category)
+    return sources, findings, summary
+
+
+def findings_to_summary(findings: list[Finding], *, category: str | None = None) -> str:
+    """Texto en español con las cifras reales, para el research_result.
+
+    El Writer y la Revisora lo reciben y trabajan con números reales, no con el
+    texto del crew que puede equivocarse. Incluye cada claim de los findings
+    (que ya lleva el número y la unidad cuando aplica) y la coverage_note.
+    """
+    header = "Datos del servidor MCP (search_competitors)"
+    if category:
+        header += f" [{category}]"
+    lines = [header + ":"]
+    for finding in findings:
+        lines.append(f"- {finding.claim}")
+    return "\n".join(lines)
