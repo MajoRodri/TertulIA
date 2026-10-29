@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from tertulia.vision.vision_schemas import (
     MAX_OBSERVATIONS,
+    MAX_PRICES,
     Category,
     Confidence,
     ImageAnalysis,
@@ -75,3 +76,33 @@ def test_the_file_and_the_safety_check_are_added_by_our_code():
     # The model's form has no such fields: it cannot choose the file or the check.
     assert "image_path" not in ImageAnswer.model_fields
     assert "suspicious" not in ImageAnswer.model_fields
+
+
+
+# --- Prices (29 Oct: a real menu read by the model) ----------------------------------
+
+
+def test_prices_are_optional_and_empty_by_default():
+    answer = ImageAnswer(kind="photo", people_visible=False)
+    assert answer.prices == []
+
+
+@pytest.mark.parametrize(
+    "price",
+    [
+        {"item": "", "price_eur": 2.5},  # no product
+        {"item": "Latte", "price_eur": 0},  # not a price
+        {"item": "Latte", "price_eur": -1},
+        {"item": "Latte", "price_eur": "gratis"},
+    ],
+)
+def test_bad_prices_are_rejected(price):
+    with pytest.raises(ValidationError):
+        ImageAnswer(kind="photo", people_visible=False, prices=[price])
+
+
+def test_a_long_menu_keeps_the_first_prices_instead_of_failing():
+    menu = [{"item": f"Producto {n}", "price_eur": 1.0} for n in range(MAX_PRICES + 10)]
+    answer = ImageAnswer(kind="photo", people_visible=False, prices=menu)
+    assert len(answer.prices) == MAX_PRICES
+    assert answer.prices[0].item == "Producto 0"
