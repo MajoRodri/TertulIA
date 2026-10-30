@@ -371,3 +371,82 @@ Full detail in `docs/etica-y-gobernanza.md` (what we do not delegate to AI, risk
 - **Roadmap (data):** in production, load the Madrid OpenStreetMap extract into our own database with geographic search (for example, PostgreSQL + PostGIS), refreshed every night: millisecond queries without depending on the public Overpass server. Optionally, an always-on MCP server over HTTP and reports as background jobs.
 - **Roadmap:** add an AI-based classifier (for example, Google Cloud Model Armor) as a second detection layer. Not included in this delivery because it sends the texts to a third party and needs a billing account.
 - **Roadmap (competitor reviews):** today the report leaves them as "no data", without making them up. Two options: an optional form field to paste reviews (through the prompt injection guard, recorded as a `user_input` source and without customer names) or the Google Places API (check cost and storage terms).
+
+---
+
+# README-MARÍA ISABEL · Agentes (CrewAI) y perfiles de sector
+
+> Para Majo: mi parte para el `README.md` global, en español y en inglés. Coge lo que necesites.
+>
+> _For Majo: my part for the global `README.md`, in Spanish and English. Take what you need._
+
+**Última actualización / Last update:** 30 oct 2026
+
+| Módulo / Module | Ruta / Path | Estado / Status |
+| --- | --- | --- |
+| Perfiles de sector / Sector profiles | `config/sectores/`, `src/tertulia/crew/sector.py` | ✅ Fusionado / Merged (PR #46) |
+| Agentes y tareas / Agents and tasks | `src/tertulia/crew/config/agents.yaml`, `tasks.yaml` | ✅ Fusionado / Merged (PR #48) |
+| Crew por pasos / Step-based crew | `src/tertulia/crew/crew.py`, `inputs.py` | ✅ Fusionado / Merged (PR #50, #53, #65, #73, #75) |
+| Herramientas por agente / Tools per agent | `src/tertulia/crew/agent_tools.py` | ✅ Fusionado / Merged (PR #62) |
+| Decisión del proceso / Process decision (#23) | `docs/decisiones/0002-proceso-crewai.md` | ✅ |
+
+## 🇪🇸 Español
+
+**Qué es.** El equipo de 5 agentes que hace la investigación. LangGraph decide el orden y CrewAI ejecuta **solo el paso** que le pide cada nodo del grafo. La justificación completa está en `docs/decisiones/0002-proceso-crewai.md`.
+
+| Agente | Qué hace | Herramientas |
+| --- | --- | --- |
+| Investigador (`researcher`) | Competencia y público del barrio, con fuente | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
+| Visión (`vision`) | Lee las fotos del encargo | `analyse_image` |
+| Analista (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
+| Redactor (`writer`) | Informe y semáforo propuesto | Ninguna: solo usa lo que le pasa el grafo |
+| Revisor (`reviewer`) | Comprueba cifras y fuentes del borrador | Ninguna |
+
+**Cómo lo llama el grafo:**
+
+```python
+from tertulia.crew.crew import llm_from_settings, review_comments, run_step
+from tertulia.crew.inputs import build_inputs
+from tertulia.crew.sector import load_sector
+
+llm = llm_from_settings()  # modelo de config/settings.py y .env
+data = build_inputs(brief, load_sector(brief.business_type), chat_context="...")
+out = run_step("research", data, llm)  # {"research_task": "...", "vision_task": "..."}
+```
+
+Pasos: `research` (Investigador y Visión en paralelo), `analysis`, `writing` y `review`. `review_comments()` convierte la respuesta del Revisor en `reviewer_comments` (lista vacía = aprobado).
+
+**Añadir un sector nuevo** (sin tocar código):
+
+1. Copia `config/sectores/_plantilla.yaml` como `config/sectores/<sector>.yaml` (minúsculas y guiones bajos).
+2. Rellena qué buscar y qué costes pedir. **Sin cifras:** los importes salen de fuentes o de la persona usuaria.
+3. Ejecuta `pytest`: los tests comprueban que el perfil carga y es válido (campos conocidos, sin repetidos, nombre de archivo igual a `business_type`).
+
+**Fiabilidad:**
+
+- Los agentes no pueden delegar trabajo (`allow_delegation: false`) y tienen un número de pasos limitado (`max_iter`).
+- Un agente sin herramientas recibe un aviso para que responda «sin dato» en vez de inventar (lo aprendimos en la primera prueba real).
+- Con Gemini: 5 reintentos ante el error 429 y 90 s de tiempo límite por intento.
+- `tracing=False`: CrewAI no sube prompts ni respuestas a sus servidores.
+
+**Tests:** `test_sector.py`, `test_crew_config.py`, `test_crew.py` y `test_agent_tools.py`, con un modelo falso: sin claves, sin internet y sin coste.
+
+## 🇬🇧 English
+
+**What it is.** The 5-agent team that runs the research. LangGraph decides the order; CrewAI runs **only the step** each graph node asks for. Full rationale in `docs/decisiones/0002-proceso-crewai.md`.
+
+| Agent | What it does | Tools |
+| --- | --- | --- |
+| Researcher (`researcher`) | Competitors and audience of the area, with sources | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
+| Vision (`vision`) | Reads the photos in the brief | `analyse_image` |
+| Analyst (`analyst`) | Break-even point and charts | `break_even`, `run_python` |
+| Writer (`writer`) | Report and proposed traffic light | None: only uses what the graph passes |
+| Reviewer (`reviewer`) | Checks the draft's figures and sources | None |
+
+**How the graph calls it:** `run_step(step, build_inputs(...), llm)` with steps `research` (Researcher and Vision in parallel), `analysis`, `writing` and `review`. `review_comments()` turns the Reviewer's answer into `reviewer_comments` (empty list = approved).
+
+**Adding a sector** (no code changes): copy `config/sectores/_plantilla.yaml` to `config/sectores/<sector>.yaml`, fill in what to search for and which costs to ask for (**no figures**), and run `pytest` to check the profile loads and is valid.
+
+**Reliability:** no delegation between agents and a limited number of steps; agents without tools are told to answer "no data" instead of inventing (learnt in the first real run); with Gemini, 5 retries on error 429 and a 90 s timeout per attempt; `tracing=False`, so CrewAI uploads nothing to its servers.
+
+**Tests:** `test_sector.py`, `test_crew_config.py`, `test_crew.py` and `test_agent_tools.py`, with a fake model: no keys, no internet, no cost.
