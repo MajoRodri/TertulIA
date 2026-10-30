@@ -7,6 +7,9 @@ import { initCustomSelects } from "./components/custom-select.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// ── Calm mode (auto, via prefers-reduced-motion) ──────────────
+if (prefersReducedMotion) document.body.classList.add("calm-mode");
+
 initCustomSelects();
 
 // ── Hero bubbles: scroll convergence + 1s cycling, pause on hover ──
@@ -85,6 +88,16 @@ initCustomSelects();
     ".study-section .section-sub",
     ".study-block",
     ".study-pillar",
+    ".report-section .eyebrow",
+    ".report-section h2",
+    ".report-section .section-sub",
+    ".report-card",
+    ".uploads-section .eyebrow",
+    ".uploads-section h2",
+    ".uploads-section .section-sub",
+    ".uploads-card",
+    ".uploads-notice",
+    ".manual-inner",
   ];
 
   const observer = new IntersectionObserver((entries) => {
@@ -96,7 +109,7 @@ initCustomSelects();
   TARGETS.flatMap(sel => [...document.querySelectorAll(sel)]).forEach(el => {
     el.classList.add("reveal");
     // stagger siblings inside grids
-    if (el.matches(".how-step, .study-pillar, .study-block")) {
+    if (el.matches(".how-step, .study-pillar, .study-block, .report-card, .uploads-card")) {
       const idx = [...el.parentElement.children].indexOf(el);
       el.style.transitionDelay = `${idx * 0.1}s`;
     }
@@ -248,11 +261,33 @@ document.getElementById("hero-scroll")?.addEventListener("click", openLauncher);
 
 // ── Session persistence ───────────────────────────────────────
 function saveSession(jobId, step) {
-  sessionStorage.setItem("tertulia_session", JSON.stringify({ jobId, step }));
+  const createdAt = sessionStorage.getItem("tertulia_session")
+    ? JSON.parse(sessionStorage.getItem("tertulia_session")).createdAt ?? Date.now()
+    : Date.now();
+  sessionStorage.setItem("tertulia_session", JSON.stringify({ jobId, step, createdAt }));
 }
 
 function clearSession() {
   sessionStorage.removeItem("tertulia_session");
+  clearTimeout(_timeoutWarningTimer);
+}
+
+// ── Timeout warning (avisa 30 min antes de las 24h) ───────────
+const SESSION_TTL_MS  = 24 * 60 * 60 * 1000;
+const WARN_BEFORE_MS  = 30 * 60 * 1000;
+let _timeoutWarningTimer = null;
+
+function scheduleTimeoutWarning(createdAt) {
+  clearTimeout(_timeoutWarningTimer);
+  const warnAt = createdAt + SESSION_TTL_MS - WARN_BEFORE_MS;
+  const delay  = warnAt - Date.now();
+  if (delay <= 0) { _showTimeoutWarning(); return; }
+  _timeoutWarningTimer = setTimeout(_showTimeoutWarning, delay);
+}
+
+function _showTimeoutWarning() {
+  const banner = document.getElementById("timeout-warning");
+  if (banner) banner.classList.remove("hidden");
 }
 
 // ── Activate the main analysis UI frame ───────────────────────
@@ -327,8 +362,9 @@ async function tryRestoreSession() {
   const raw = sessionStorage.getItem("tertulia_session");
   if (!raw) return false;
 
-  let { jobId, step } = JSON.parse(raw);
+  let { jobId, step, createdAt } = JSON.parse(raw);
   if (!jobId || !step) { clearSession(); return false; }
+  if (createdAt) scheduleTimeoutWarning(createdAt);
 
   let state;
   try {
@@ -536,7 +572,12 @@ const chatDocPicker = attachDocPicker("chat-docs", "chat-doc-type", "chat-docs-h
 // ── Brief summary (panel 1 read-only view) ────────────────────
 const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
 
-function populateBriefSummary(brief, files) {
+function _briefEsc(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// rejectedDocs: null = upload pending (no badge); string[] = upload done (badge per file)
+function populateBriefSummary(brief, imageFiles, docFiles = [], rejectedDocs = null) {
   const dl = document.getElementById("brief-summary");
   if (!dl) return;
   const rows = [
@@ -554,12 +595,27 @@ function populateBriefSummary(brief, files) {
       <dd class="brief-value">${value}</dd>
     </div>`).join("");
 
-  if (files.length) {
-    const thumbs = files.map(f => {
+  if (imageFiles.length) {
+    const thumbs = imageFiles.map(f => {
       const url = URL.createObjectURL(f);
-      return `<img class="image-thumb" src="${url}" alt="${f.name}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`;
+      return `<img class="image-thumb" src="${url}" alt="${_briefEsc(f.name)}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">`;
     }).join("");
     dl.innerHTML += `<div class="brief-row"><dt class="brief-label">Fotos</dt><dd class="brief-value"><div class="upload-preview" style="margin:0">${thumbs}</div></dd></div>`;
+  }
+
+  if (docFiles.length) {
+    const docIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+    const items = docFiles.map(f => {
+      let badge = "";
+      if (rejectedDocs !== null) {
+        const rejected = rejectedDocs.some(msg => msg.includes(f.name));
+        badge = rejected
+          ? `<span class="doc-status-badge doc-status-badge--rejected">No relevante</span>`
+          : `<span class="doc-status-badge doc-status-badge--accepted">Incluido</span>`;
+      }
+      return `<div class="doc-summary-item">${docIcon}<span class="doc-summary-name">${_briefEsc(f.name)}</span>${badge}</div>`;
+    }).join("");
+    dl.innerHTML += `<div class="brief-row"><dt class="brief-label">Documentos</dt><dd class="brief-value"><div class="doc-summary-list">${items}</div></dd></div>`;
   }
 }
 
@@ -587,16 +643,18 @@ document.getElementById("form-brief").addEventListener("submit", async (e) => {
     closeLauncher();
     activateMainUI();
 
-    populateBriefSummary(brief, formPicker.files());
+    const formFiles = formPicker.files();
+    const formDocs  = formDocPicker.files();
+
+    populateBriefSummary(brief, formFiles, formDocs);
     showPanel("panel-encargo");
     setStep(1, "active");
 
-    const formFiles = formPicker.files();
     if (formFiles.length) await uploadImages(jobId, formFiles);
 
-    const formDocs = formDocPicker.files();
     if (formDocs.length) {
       const result = await uploadDocuments(jobId, formDocs, formDocPicker.types());
+      populateBriefSummary(brief, formFiles, formDocs, result.rejected ?? []);
       if (result.rejected?.length) {
         const msg = result.rejected.join("\n");
         alert(`Algunos documentos no se pudieron incluir:\n\n${msg}`);

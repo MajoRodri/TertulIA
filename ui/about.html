@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sobre nosotros · TertulIA</title>
+  <link rel="stylesheet" href="theme.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <a href="app.html" style="display:flex;align-items:center;gap:var(--s3);text-decoration:none">
+          <img src="../assets/logo.png" alt="TertulIA" class="brand-logo" />
+          <span class="brand-tagline">Tu guía, tu vía.</span>
+        </a>
+      </div>
+      <nav class="header-nav" aria-label="Secciones">
+        <a class="header-nav-link" href="app.html">Inicio</a>
+        <a class="header-nav-link header-nav-link--active" href="about.html">Sobre nosotros</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+  <section class="study-section" id="about">
+    <div class="study-inner">
+
+      <!-- Intro -->
+      <span class="eyebrow">Sobre nosotros</span>
+      <h2>Un estudio de viabilidad al alcance de cualquier emprendedor</h2>
+      <p class="section-sub">TertulIA es un proyecto que usa inteligencia artificial para ayudar a quienes quieren abrir un negocio en Madrid a tomar una decisión informada, sin necesitar grandes recursos ni conocimientos técnicos.</p>
+
+      <!-- El problema -->
+      <div class="study-block study-block--left">
+        <div class="study-block-label">01 · El problema que queremos resolver</div>
+        <div class="study-block-body">
+          <h3>Abrir un negocio no debería ser una apuesta a ciegas</h3>
+          <p>La mitad de los negocios locales cierran en sus primeros dos años. Muchas veces no es por falta de ganas ni de trabajo: es por falta de información. ¿Cuánta competencia hay en el barrio? ¿A qué tipo de público llega ese local? ¿Los números cuadran?</p>
+          <p>Un estudio de viabilidad profesional cuesta miles de euros y semanas de espera. TertulIA hace esa misma investigación en minutos, con datos reales y sin inventar nada. Si un dato no existe, lo dice claramente en lugar de rellenarlo con suposiciones.</p>
+        </div>
+      </div>
+
+      <!-- Cómo funciona -->
+      <div class="study-block study-block--right">
+        <div class="study-block-label">02 · El equipo de IA detrás del análisis</div>
+        <div class="study-block-body">
+          <h3>Cinco especialistas que trabajan juntos por ti</h3>
+          <p>En lugar de un único modelo que intenta hacerlo todo, TertulIA reparte el trabajo entre cinco agentes de inteligencia artificial, cada uno con su función concreta. Nadie puede inventarse un dato: si no hay fuente, el agente lo marca como información no disponible.</p>
+          <ul class="agent-list">
+            <li>
+              <span class="agent-list-name">La Portera <span class="agent-list-alias">Investigadora</span></span>
+              <span>Busca los negocios similares al tuyo en un radio de hasta 2 km usando datos reales de OpenStreetMap y Foursquare. Nombre, dirección, horario y enlace de cada local, sin inventar ninguno.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">Berto <span class="agent-list-alias">Especialista Visual</span></span>
+              <span>Analiza las fotos que tú adjuntes del barrio o de la competencia. Lee carteles, detecta el ambiente del local y añade observaciones que los datos solos no pueden capturar.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">El Chulapo <span class="agent-list-alias">Analista</span></span>
+              <span>Con los datos recogidos, calcula cuánto necesitas vender para cubrir gastos, estima márgenes y detecta si los números son viables. Solo usa cifras que pueda justificar.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">El Pregonero <span class="agent-list-alias">Redactor</span></span>
+              <span>Convierte todo el análisis en un informe claro, con un semáforo verde, ámbar o rojo y los motivos concretos que lo justifican.</span>
+            </li>
+            <li>
+              <span class="agent-list-name">La Revisora <span class="agent-list-alias">Revisora</span></span>
+              <span>Repasa el borrador del informe y lo devuelve al Pregonero si encuentra algo sin fuente o con contradicciones. Puede hacer hasta tres rondas de correcciones.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- De dónde vienen los datos -->
+      <div class="study-block study-block--left">
+        <div class="study-block-label">03 · De dónde vienen los datos</div>
+        <div class="study-block-body">
+          <h3>Fuentes reales, no estimaciones genéricas</h3>
+          <p>La información sobre la competencia viene de <strong>OpenStreetMap</strong> (el mapa colaborativo más grande del mundo) y de <strong>Foursquare</strong>, que aporta una segunda fuente independiente especialmente útil para espacios de trabajo y coworkings. Cada resultado incluye nombre, dirección, horario y la fecha exacta en la que se consultó.</p>
+          <p>Para conocer el tipo de público que frecuenta la zona, el sistema cuenta los lugares cercanos que atraen a cada perfil: estaciones, hoteles, universidades, colegios, oficinas, restaurantes… Todo a partir de datos reales del mapa, no de suposiciones.</p>
+          <p>Además, puedes adjuntar fotos del barrio o de locales de la competencia. El sistema las analiza y extrae observaciones concretas, como los precios que aparezcan en carteles o el tipo de ambiente del local.</p>
+        </div>
+      </div>
+
+      <!-- Garantías -->
+      <div class="study-pillars">
+
+        <div class="study-pillar">
+          <div class="study-pillar-icon" style="color:var(--verde);background:#dcfce7">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="study-pillar-title">Sin datos inventados</div>
+          <p class="study-pillar-desc">Si la información no existe o no se puede verificar, el informe lo indica claramente. El semáforo baja de confianza en lugar de rellenar huecos con suposiciones.</p>
+        </div>
+
+        <div class="study-pillar">
+          <div class="study-pillar-icon" style="color:var(--azul);background:var(--azul-glow)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <div class="study-pillar-title">La última palabra es tuya</div>
+          <p class="study-pillar-desc">Antes de generar el informe final, el analista humano revisa el borrador y decide si aprobarlo o pedir cambios. La IA propone; la persona decide.</p>
+        </div>
+
+        <div class="study-pillar">
+          <div class="study-pillar-icon" style="color:#6C5CE7;background:#ede9fe">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+          </div>
+          <div class="study-pillar-title">Todo tiene fuente</div>
+          <p class="study-pillar-desc">Cada cifra del informe apunta al lugar de donde vino: una URL, una fecha de consulta o la fórmula que se usó para calcularlo.</p>
+        </div>
+
+        <div class="study-pillar">
+          <div class="study-pillar-icon" style="color:var(--turquesa);background:#d0f5f5">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div class="study-pillar-title">Protegido contra manipulaciones</div>
+          <p class="study-pillar-desc">Todo texto externo que entra en el sistema (páginas web, descripciones de locales) pasa por un filtro de seguridad antes de llegar a los agentes.</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Curiosidades -->
+  <section class="curiosities-section" id="curiosidades">
+    <div class="curiosities-inner">
+
+      <span class="eyebrow">Curiosidades</span>
+      <h2>Los nombres tienen historia</h2>
+      <p class="section-sub">Cada agente lleva el nombre de un personaje castizo del Madrid de siempre. No es casualidad.</p>
+
+      <div class="curiosities-grid">
+
+        <article class="curiosity-card curiosity-card--featured">
+          <div class="curiosity-card-header">
+            <img src="/assets/berta.png" alt="Berta" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">Berta</div>
+              <div class="curiosity-role">Coordinadora · La cara de TertulIA</div>
+              <div class="curiosity-badge">La que dirige la tertulia</div>
+            </div>
+          </div>
+          <p>En los grandes cafés del Madrid del siglo XIX, las tertulias lo eran todo. Escritores y políticos se reunían en el Café Gijón o el Pombo para debatir. En cada tertulia había una figura clave: la dueña del café, que dejaba hablar a cada uno y ponía orden cuando llegaba la hora. Berta es esa figura: escucha a los cinco agentes, recoge sus análisis y te da el veredicto final.</p>
+        </article>
+
+        <article class="curiosity-card">
+          <div class="curiosity-card-header">
+            <img src="/assets/portera.png" alt="La Portera" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">La Portera</div>
+              <div class="curiosity-role">Investigadora</div>
+            </div>
+          </div>
+          <p>Las porteras de las casas de vecinos madrileñas eran una institución. Sentadas en su garita junto al portal, no se les escapaba nada: quién entraba, quién salía, quién tenía visita, quién llegaba tarde. Eran el Google Maps del barrio antes de que existiera Google. La nuestra cambió las cortinas por OpenStreetMap, pero el instinto es el mismo.</p>
+        </article>
+
+        <article class="curiosity-card">
+          <div class="curiosity-card-header">
+            <img src="/assets/chulapo.png" alt="El Chulapo" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">El Chulapo</div>
+              <div class="curiosity-role">Analista</div>
+            </div>
+          </div>
+          <p>Los chulapos son los personajes más castizos del Madrid popular. Nacieron en barrios como La Latina o Lavapiés, siempre con su gorra, su chaleco y sus alpargatas, listos para bailar el chotis en la Verbena de la Paloma. Eran directos, despiertos y no se dejaban engañar con cuentas turbias. El nuestro hereda esa picardía: si los números no cuadran, lo dice sin rodeos.</p>
+        </article>
+
+        <article class="curiosity-card">
+          <div class="curiosity-card-header">
+            <img src="/assets/pregonero.png" alt="El Pregonero" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">El Pregonero</div>
+              <div class="curiosity-role">Redactor</div>
+            </div>
+          </div>
+          <p>Antes de los periódicos, antes de las redes sociales, antes del WhatsApp del vecindario, estaba el pregonero. Recorría las calles de Madrid a voz en grito anunciando decretos reales, precios del mercado y noticias del reino. Era el algoritmo del siglo XVI. El nuestro ya no grita por las plazas, pero sigue convirtiendo datos en algo que todo el mundo entiende.</p>
+        </article>
+
+        <article class="curiosity-card">
+          <div class="curiosity-card-header">
+            <img src="/assets/berto.png" alt="Berto" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">Berto</div>
+              <div class="curiosity-role">Especialista Visual</div>
+            </div>
+          </div>
+          <p>Los fotógrafos del Retiro fueron durante décadas parte del paisaje del parque. Los domingos montaban su cámara cerca del estanque y sabían en un vistazo quién quería salir bien en la foto y quién prefería que no lo vieran. Berto heredó ese ojo: no se le escapa un cartel de precios, una fachada en mal estado ni un local que promete más de lo que ofrece.</p>
+        </article>
+
+        <article class="curiosity-card">
+          <div class="curiosity-card-header">
+            <img src="/assets/revisora.png" alt="La Revisora" class="curiosity-avatar" />
+            <div>
+              <div class="curiosity-name">La Revisora</div>
+              <div class="curiosity-role">Revisora</div>
+            </div>
+          </div>
+          <p>En los años cuarenta, las revisoras del tranvía madrileño fueron las primeras mujeres en ocupar ese puesto. Con su uniforme y su talonario, recorrían los vagones sin dejar pasar un billete caducado ni una excusa mal contada. Eran metódicas e imposibles de engañar. La nuestra hace lo mismo: si una cifra no tiene fuente, el informe vuelve para atrás.</p>
+        </article>
+
+      </div>
+
+    </div>
+  </section>
+  </main>
+
+  <script>
+    // ── Calm mode (auto, via prefers-reduced-motion) ──────────
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      document.body.classList.add("calm-mode");
+
+    // ── Scroll reveal ──────────────────────────────────────────
+    (function () {
+      const TARGETS = [
+        ".study-section .eyebrow",
+        ".study-section h2",
+        ".study-section .section-sub",
+        ".study-block",
+        ".study-pillar",
+        ".curiosities-section .eyebrow",
+        ".curiosities-section h2",
+        ".curiosities-section .section-sub",
+        ".curiosity-card",
+      ];
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => e.target.classList.toggle("visible", e.isIntersecting));
+      }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
+      TARGETS.flatMap(sel => [...document.querySelectorAll(sel)]).forEach(el => {
+        el.classList.add("reveal");
+        if (el.matches(".study-block, .study-pillar, .curiosity-card, .curiosity-card--featured")) {
+          const idx = [...el.parentElement.children].indexOf(el);
+          el.style.transitionDelay = `${idx * 0.1}s`;
+        }
+        observer.observe(el);
+      });
+    })();
+  </script>
+</body>
+</html>

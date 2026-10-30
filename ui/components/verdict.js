@@ -2,6 +2,8 @@ import { fetchVerdict } from "../api.js";
 import { avatarHtml } from "../utils/agents.js";
 import { renderMd } from "../utils/markdown.js";
 
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const LIGHT_COLOR = { green: "var(--verde)", amber: "var(--amarillo)", red: "var(--rojo)" };
 const LIGHT_TO_DOT = { green: "green", amber: "yellow", red: "red" };
 const LIGHT_EMOJI  = { green: "🟢", amber: "🟡", red: "🔴" };
@@ -29,7 +31,7 @@ function _showTyping() {
       </div>
     </div>`;
   feed.appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 }
 
 function _removeTyping() {
@@ -125,7 +127,7 @@ export async function showVerdict(jobId) {
       <div class="message-text">${_buildMessage(data)}</div>
     </div>`;
   feed.appendChild(el);
-  el.scrollIntoView({ behavior: "smooth", block: "end" });
+  el.scrollIntoView({ behavior: prefersReducedMotion ? "instant" : "smooth", block: "end" });
 
   document.getElementById("btn-verdict-continue").classList.remove("hidden");
 
