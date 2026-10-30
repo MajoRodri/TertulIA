@@ -1,7 +1,5 @@
 import { approveReport } from "../api.js";
 
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 export function initApproval(jobId) {
   const btnApprove = document.getElementById("btn-approve");
   const btnReject  = document.getElementById("btn-reject");
@@ -21,7 +19,7 @@ export function initApproval(jobId) {
         btnApprove.textContent = reason === "estudio caducado"
           ? "Estudio caducado. Inicia un análisis nuevo"
           : `No se pudo generar el informe: ${reason}`;
-        btnApprove.title = JSON.stringify(result);
+        btnApprove.title = result.reason ?? result.status ?? "error desconocido";
       }
     } catch (err) {
       btnApprove.disabled = false;
@@ -32,6 +30,7 @@ export function initApproval(jobId) {
   });
 
   btnReject.addEventListener("click", async () => {
+    if (!confirm("¿Seguro que quieres rechazar el análisis? Volverás al debate para ajustar los datos.")) return;
     await approveReport(jobId, false).catch(() => {});
     document.getElementById("panel-approval").classList.add("hidden");
     document.getElementById("panel-debate").classList.remove("hidden");

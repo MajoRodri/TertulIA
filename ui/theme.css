@@ -146,24 +146,6 @@ h3 { font-size: var(--text-xl); }
   color: var(--azul);
 }
 
-/* ─── Calm mode: desactiva todas las animaciones ─────────────── */
-body.calm-mode *,
-body.calm-mode *::before,
-body.calm-mode *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-}
-
-body.calm-mode .reveal {
-  opacity: 1 !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-body.calm-mode .hero-blob {
-  animation: none !important;
-}
 
 .brand {
   display: flex;
@@ -591,6 +573,28 @@ body.calm-mode .hero-blob {
   font-size: var(--text-sm);
   color: var(--muted);
   margin-bottom: var(--s2);
+}
+
+.verdict-confidence--unreliable {
+  color: var(--amarillo);
+  font-style: italic;
+}
+
+.foursquare-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: #f0f4ff;
+  border: 1px solid #c7d4f5;
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.foursquare-badge-name {
+  color: var(--azul);
 }
 
 .confidence-bar {
@@ -2495,14 +2499,6 @@ body.calm-mode .hero-blob {
   .hero-trust     { gap: var(--s3); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .reveal { opacity: 1; transform: none; transition: none; }
-}
 
 /* ─── Custom select ──────────────────────────────────────────── */
 .csel {

@@ -94,10 +94,18 @@ export async function sendChatMessage(jobId, message, files, onMessage, docFiles
   for (const f of (files || [])) form.append("images", f);
   for (const f of (docFiles || [])) form.append("documents", f);
   for (const t of (docTypes || [])) form.append("doc_types", t);
-  const res = await fetch(`${API_BASE}/api/chat/${jobId}`, {
-    method: "POST",
-    body: form,
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 300_000);
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/chat/${jobId}`, {
+      method: "POST",
+      body: form,
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) throw new Error(`Error ${res.status} sending chat message`);
   const reader  = res.body.getReader();
   const decoder = new TextDecoder();

@@ -5,11 +5,6 @@ import { initChat, runChatVision, renderChatHistory } from "./components/chat.js
 import { startAnalysis, uploadImages, uploadDocuments, getJobState } from "./api.js";
 import { initCustomSelects } from "./components/custom-select.js";
 
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-// ── Calm mode (auto, via prefers-reduced-motion) ──────────────
-if (prefersReducedMotion) document.body.classList.add("calm-mode");
-
 initCustomSelects();
 
 // ── Hero bubbles: scroll convergence + 1s cycling, pause on hover ──
@@ -66,7 +61,7 @@ initCustomSelects();
     bubbles.forEach(b => { b.style.animation = "none"; });
     window.addEventListener("scroll", updateScroll, { passive: true });
     activate(0);
-    if (!prefersReducedMotion) start();
+    start();
   }
 
   const fallback = setTimeout(enable, 1800);
@@ -121,10 +116,6 @@ initCustomSelects();
 function showLoading() {
   const el = document.getElementById("loading-overlay");
   el.classList.remove("hidden", "fading");
-  if (prefersReducedMotion) {
-    const video = el.querySelector("video");
-    video?.pause();
-  }
 }
 
 function hideLoading() {
@@ -289,6 +280,11 @@ function _showTimeoutWarning() {
   const banner = document.getElementById("timeout-warning");
   if (banner) banner.classList.remove("hidden");
 }
+
+document.getElementById("timeout-warning-close")
+  ?.addEventListener("click", () =>
+    document.getElementById("timeout-warning")?.classList.add("hidden")
+  );
 
 // ── Activate the main analysis UI frame ───────────────────────
 function activateMainUI() {

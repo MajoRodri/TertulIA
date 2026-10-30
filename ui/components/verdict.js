@@ -1,6 +1,6 @@
 import { fetchVerdict } from "../api.js";
 import { avatarHtml } from "../utils/agents.js";
-import { renderMd } from "../utils/markdown.js";
+import { renderMd, renderMdInline } from "../utils/markdown.js";
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -39,27 +39,40 @@ function _removeTyping() {
 }
 
 function _buildMessage(data) {
-  const light      = data.final_light ?? data.light ?? "amber";
-  const confidence = data.final_confidence != null
-    ? Math.round(data.final_confidence * 100)
-    : (data.confidence ?? 0);
-  const summary    = data.summary ?? data.label ?? "";
-  const reasons    = data.reasons ?? [];
-  const color      = LIGHT_COLOR[light] ?? "var(--azul)";
-  const dotClass   = LIGHT_TO_DOT[light] ?? "yellow";
-  const emoji      = LIGHT_EMOJI[light] ?? "🟡";
-  const lightLabel = LIGHT_LABEL[light] ?? "Viabilidad media";
+  const light        = data.final_light ?? data.light ?? "amber";
+  const rawConf      = data.final_confidence ?? data.confidence ?? 0;
+  const confidence   = Number.isFinite(rawConf) ? Math.round(rawConf * 100) : 0;
+  const confReliable = data.confidence_reliable !== false; // H-60: false when API has no real findings
+  const summary      = data.summary ?? data.label ?? "";
+  const reasons      = data.reasons ?? [];
+  const color        = LIGHT_COLOR[light] ?? "var(--azul)";
+  const dotClass     = LIGHT_TO_DOT[light] ?? "yellow";
 
   const reasonsHtml = reasons.length
-    ? `<ul class="verdict-reasons-list">${reasons.map(r => `<li>${_esc(r)}</li>`).join("")}</ul>`
+    ? `<ul class="verdict-reasons-list">${reasons.map(r => `<li>${renderMdInline(r)}</li>`).join("")}</ul>`
     : "";
 
   const missingHtml = data.missing_data?.length
-    ? `<div class="verdict-missing-wrap"><strong>Datos no disponibles</strong><ul>${data.missing_data.map(m => `<li>${_esc(m)}</li>`).join("")}</ul></div>`
+    ? `<div class="verdict-missing-wrap"><strong>Datos no disponibles</strong><ul>${data.missing_data.map(m => `<li>${renderMdInline(m)}</li>`).join("")}</ul></div>`
     : "";
 
   const warningsHtml = data.warnings?.length
-    ? `<div class="verdict-warnings-wrap"><strong>Avisos de fuentes</strong><ul>${data.warnings.map(w => `<li>${_esc(w)}</li>`).join("")}</ul></div>`
+    ? `<div class="verdict-warnings-wrap"><strong>Avisos de fuentes</strong><ul>${data.warnings.map(w => `<li>${renderMdInline(w)}</li>`).join("")}</ul></div>`
+    : "";
+
+  const confidenceHtml = confReliable
+    ? `<div class="verdict-confidence">Confianza: ${confidence}%</div>
+       <div class="confidence-bar">
+         <div class="confidence-fill" style="width:${confidence}%;background:${color}"></div>
+       </div>`
+    : `<div class="verdict-confidence verdict-confidence--unreliable">Confianza: no calculada (sin datos verificados)</div>`;
+
+  // D2: required by Foursquare ToS when their data contributed to the analysis
+  const foursquareBadge = data.foursquare_used
+    ? `<div class="foursquare-badge">
+         <span class="foursquare-badge-text">Datos verificados con</span>
+         <strong class="foursquare-badge-name">Foursquare</strong>
+       </div>`
     : "";
 
   return `
@@ -72,15 +85,13 @@ function _buildMessage(data) {
         </div>
         <div class="verdict-chat-info">
           <div class="verdict-label">${_esc(summary)}</div>
-          <div class="verdict-confidence">Confianza: ${confidence}%</div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" style="width:${confidence}%;background:${color}"></div>
-          </div>
+          ${confidenceHtml}
         </div>
       </div>
       ${reasonsHtml}
       ${missingHtml}
       ${warningsHtml}
+      ${foursquareBadge}
     </div>`;
 }
 
