@@ -2,8 +2,9 @@ import io
 import logging
 from pathlib import Path
 
+from reportlab.graphics.shapes import Circle, Drawing
 from reportlab.lib.colors import HexColor, white
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import cm, mm
@@ -65,19 +66,19 @@ _STYLES = {
     "label":    _s("label",    fontName="Helvetica-Bold", fontSize=8,
                                textColor=_MUTED, leading=11),
     "value":    _s("value",    fontName="Helvetica", fontSize=10,
-                               textColor=_INK, leading=13),
+                               textColor=_INK, leading=13, alignment=TA_JUSTIFY),
     "agent":    _s("agent",    fontName="Helvetica-Bold", fontSize=9,
                                textColor=_INK, leading=12),
     "role":     _s("role",     fontName="Helvetica-Oblique", fontSize=8,
                                textColor=_MUTED, leading=11),
     "msg":      _s("msg",      fontName="Helvetica", fontSize=9,
-                               textColor=_INK, leading=13),
+                               textColor=_INK, leading=13, alignment=TA_JUSTIFY),
     "verdict":  _s("verdict",  fontName="Helvetica-Bold", fontSize=18,
                                textColor=_INK, leading=22, alignment=TA_CENTER),
     "conf":     _s("conf",     fontName="Helvetica", fontSize=10,
                                textColor=_MUTED, leading=13, alignment=TA_CENTER),
     "reason":   _s("reason",   fontName="Helvetica", fontSize=9,
-                               textColor=_INK, leading=13),
+                               textColor=_INK, leading=13, alignment=TA_JUSTIFY),
     "footer":   _s("footer",   fontName="Helvetica", fontSize=8,
                                textColor=_MUTED, leading=10, alignment=TA_CENTER),
 }
@@ -160,6 +161,7 @@ _MSG_STYLE = ParagraphStyle(
     textColor=_INK, leading=13,
     leftIndent=8, rightIndent=8,
     spaceBefore=2, spaceAfter=6,
+    alignment=TA_JUSTIFY,
 )
 
 
@@ -224,55 +226,100 @@ def _findings_section(data: ReportData) -> list:
     return flowables
 
 
+def _traffic_light_drawing(active: str) -> Drawing:
+    """Three stacked circles — only the active one is filled."""
+    dot_r  = 7
+    gap    = 6
+    total_h = 3 * (2 * dot_r) + 2 * gap
+    d = Drawing(2 * dot_r, total_h)
+    colors_order = [(_VERDE, "green"), (_AMARILLO, "yellow"), (_ROJO, "red")]
+    for i, (col, key) in enumerate(colors_order):
+        cy = total_h - dot_r - i * (2 * dot_r + gap)
+        if key == active:
+            c = Circle(dot_r, cy, dot_r, fillColor=col, strokeColor=col, strokeWidth=0)
+        else:
+            c = Circle(dot_r, cy, dot_r, fillColor=HexColor("#E2E8F0"),
+                       strokeColor=HexColor("#CBD5E1"), strokeWidth=0.5)
+        d.add(c)
+    return d
+
+
 def _verdict_section(data: ReportData) -> list:
-    v = data.verdict
-    sig = v.signal
+    v      = data.verdict
+    sig    = v.signal
     color  = _SIGNAL_COLOR.get(sig, _AMARILLO)
     bg     = _SIGNAL_BG.get(sig, _AMARILLO_BG)
     label  = _SIGNAL_LABEL.get(sig, sig.upper())
 
     signal_style = ParagraphStyle(
         "signal_label",
-        fontName="Helvetica-Bold", fontSize=13,
-        textColor=color, leading=16, alignment=TA_CENTER,
+        fontName="Helvetica-Bold", fontSize=10,
+        textColor=color, leading=13, alignment=TA_CENTER,
     )
     verdict_summary_style = ParagraphStyle(
         "verdict_summary",
-        fontName="Helvetica", fontSize=11,
-        textColor=_INK, leading=15, alignment=TA_CENTER,
+        fontName="Helvetica-Bold", fontSize=10,
+        textColor=_INK, leading=13,
+    )
+    conf_style = ParagraphStyle(
+        "verdict_conf",
+        fontName="Helvetica", fontSize=9,
+        textColor=_MUTED, leading=12,
+    )
+    reason_style = ParagraphStyle(
+        "verdict_reason",
+        fontName="Helvetica", fontSize=9,
+        textColor=_INK, leading=13, alignment=TA_JUSTIFY,
     )
 
-    signal_row = Table(
-        [[Paragraph(label, signal_style)]],
-        colWidths=[_TW], hAlign="LEFT",
+    light_drawing = _traffic_light_drawing(sig)
+    dot_col_w = 22
+    info_col_w = _TW - dot_col_w
+
+    # Confidence bar as a thin coloured rule
+    bar_w    = info_col_w - 16   # inner padding
+    bar_fill = bar_w * (v.confidence / 100)
+
+    semaforo_table = Table(
+        [[light_drawing,
+          [
+              Paragraph(label, signal_style),
+              Spacer(1, 2*mm),
+              Paragraph(v.label, verdict_summary_style),
+              Spacer(1, 1*mm),
+              Paragraph(f"Confianza: {v.confidence}%", conf_style),
+              HRFlowable(width=bar_fill, thickness=3, color=color,
+                         hAlign="LEFT", spaceAfter=0),
+          ]
+        ]],
+        colWidths=[dot_col_w, info_col_w],
+        hAlign="LEFT",
     )
-    signal_row.setStyle(TableStyle([
+    semaforo_table.setStyle(TableStyle([
         ("BACKGROUND",    (0, 0), (-1, -1), bg),
         ("TOPPADDING",    (0, 0), (-1, -1), 10),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 10),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
         ("BOX",           (0, 0), (-1, -1), 0.5, color),
         ("ROUNDEDCORNERS", [4]),
     ]))
 
     reasons = [
-        Paragraph(f"• {r}", _STYLES["reason"])
+        Paragraph(f"• {r}", reason_style)
         for r in (v.reasons or [])
     ]
 
     return [
         Paragraph("Veredicto", _STYLES["section"]),
         Spacer(1, 3*mm),
-        # KeepTogether only for the signal badge + summary — short, safe to keep together
         KeepTogether([
-            signal_row,
-            Spacer(1, 3*mm),
-            Paragraph(v.label, verdict_summary_style),
-            Spacer(1, 2*mm),
-            Paragraph(f"Confianza: {v.confidence}%", _STYLES["conf"]),
+            semaforo_table,
             Spacer(1, 5*mm),
         ]),
-        # Reasons flow freely so a long list never triggers LayoutError
         *reasons,
+        Spacer(1, 5*mm),
     ]
 
 

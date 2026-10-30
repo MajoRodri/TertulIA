@@ -137,6 +137,135 @@ def _skeleton_verdict() -> SchemaVerdict:
     )
 
 
+def _verdict_from_draft(
+    draft: str,
+    findings: list,
+    sources: list,
+) -> SchemaVerdict:
+    """Parse the writer's Markdown draft to build a real Verdict.
+
+    The writing task always ends with a semáforo section that contains the
+    traffic light color and bullet-point reasons. If parsing fails for any
+    field, safe fallbacks are used so the verdict is never None.
+    """
+    import re
+
+    from tertulia.schemas.models import compute_confidence
+
+    confidence = compute_confidence(findings, sources)
+
+    # Locate the semáforo / veredicto section (last ## heading that matches).
+    semaforo_block = ""
+    match = re.search(
+        r"#{1,3}[^#\n]*[Ss]em[aá]foro[^#\n]*\n(.*?)(?=\n#{1,3}|\Z)",
+        draft,
+        re.DOTALL,
+    )
+    if match:
+        semaforo_block = match.group(1)
+
+    # Determine traffic light from color keywords.
+    search_in = semaforo_block or draft
+    if re.search(r"\b[Vv]erde\b", search_in):
+        light = TrafficLight.GREEN
+    elif re.search(r"\b[Rr]ojo\b", search_in):
+        light = TrafficLight.RED
+    else:
+        light = TrafficLight.AMBER
+
+    # Extract bullet-point reasons from the semáforo block.
+    reasons: list[str] = [
+        m.group(1).strip()
+        for m in re.finditer(r"^[-*]\s+(.+)", semaforo_block, re.MULTILINE)
+    ]
+    if not reasons:
+        reasons = ["Ver informe completo para los motivos del semáforo."]
+
+    # Build summary: first non-bullet, non-empty line in the semáforo block,
+    # or fall back to the first line of the Resumen section.
+    summary = ""
+    for line in semaforo_block.splitlines():
+        line = line.strip()
+        if line and not line.startswith(("-", "*", "#")):
+            summary = line
+            break
+    if not summary:
+        resumen = re.search(r"#{1,3}[^#\n]*[Rr]esumen[^#\n]*\n(.+)", draft)
+        summary = resumen.group(1).strip() if resumen else "Análisis de viabilidad completado."
+
+    return SchemaVerdict(
+        light=light,
+        confidence=confidence,
+        summary=summary,
+        reasons=reasons,
+    )
+
+
+async def _compute_and_cache_verdict(job_id: str) -> None:
+    """Compute the real verdict and cache it in _jobs.
+
+    Called lazily from GET /api/verdict when the user reaches step 4.
+    At that point the chat_history from step 3 is already available, so we
+    can run the writer with chat_context to get a context-informed verdict.
+
+    If no chat_context exists we extract the verdict from the debate draft.
+    If the crew call fails we fall back to the debate draft silently.
+    """
+    job = _jobs[job_id]
+
+    chat_history = job.get("chat_history", [])
+    doc_context  = job.get("doc_context", "")
+    context_parts: list[str] = []
+    if doc_context:
+        context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
+    if chat_history:
+        history_text = "\n".join(
+            f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
+            for h in chat_history
+        )
+        context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+
+    from tertulia.guardrails.anonimizacion import _scrub
+    chat_context = _scrub("\n\n".join(context_parts)) if context_parts else ""
+
+    draft    = job.get("draft_report", "")
+    findings = job.get("mcp_findings", [])
+    sources  = job.get("mcp_sources", [])
+
+    if chat_context and draft:
+        try:
+            from tertulia.crew.crew import llm_from_settings, run_step
+            from tertulia.crew.inputs import build_inputs
+            from tertulia.crew.sector import load_sector
+
+            brief: BusinessBrief = job["brief"]
+            profile = load_sector(brief.business_type)
+            inputs = build_inputs(
+                brief, profile,
+                research_result=job.get("research_result"),
+                vision_result=job.get("vision_result"),
+                analysis_result=job.get("analysis_result"),
+                draft_report=draft,
+                chat_context=chat_context,
+                mcp_research_summary="\n".join(job.get("mcp_research_summary", [])),
+            )
+            result = await asyncio.to_thread(run_step, "writing", inputs, llm_from_settings())
+            draft = result.get("writing_task") or draft
+            _jobs[job_id]["draft_report"]           = draft
+            _jobs[job_id]["chat_context_precomputed"] = True
+        except Exception:
+            log.warning("writer rerun for verdict failed job=%s, falling back to debate draft", job_id, exc_info=True)
+
+    try:
+        verdict = _verdict_from_draft(draft, findings, sources)
+        _jobs[job_id]["verdict"]   = verdict
+        _jobs[job_id]["simulated"] = False
+    except Exception:
+        log.warning("verdict extraction failed job=%s, keeping skeleton", job_id, exc_info=True)
+
+    _jobs[job_id]["verdict_ready"] = True
+
+
 def _first_skeleton_for(agent: str) -> dict | None:
     """First skeleton message matching the given agent id."""
     for msg in _SKELETON_DEBATE:
@@ -182,10 +311,7 @@ async def _prepare_crew(brief: BusinessBrief):
 
         profile = load_sector(brief.business_type)
         llm = llm_from_settings()
-        abs_image_paths = [
-            str(_ROOT / "outputs" / p) for p in brief.image_paths
-        ]
-        initial_inputs = build_inputs(brief, profile, images=abs_image_paths or None)
+        initial_inputs = build_inputs(brief, profile, images=brief.image_paths or None)
 
         mcp_researcher = _mcp_researcher_tools
 
@@ -255,6 +381,7 @@ async def _prepare_crew(brief: BusinessBrief):
                 vision_result=acc.get("vision_result"),
                 analysis_result=acc.get("analysis_result"),
                 draft_report=acc.get("draft_report"),
+                mcp_research_summary="\n".join(_tracking.get("mcp_research_summary", [])),
             )
 
         return _run, _rebuild, initial_inputs, _tracking
@@ -272,6 +399,8 @@ def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
         acc["analysis_result"] = result.get("analysis_task", "")
     elif step == "writing":
         acc["draft_report"]    = result.get("writing_task", "")
+    elif step == "review":
+        acc["review_result"]   = result.get("review_task", "")
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -362,11 +491,17 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
                 messages.append(payload)
                 yield f"data: {json.dumps(payload)}\n\n"
 
+        _jobs[job_id]["research_result"] = accumulated.get("research_result", "")
+        _jobs[job_id]["vision_result"]   = accumulated.get("vision_result", "")
+        _jobs[job_id]["analysis_result"] = accumulated.get("analysis_result", "")
+        _jobs[job_id]["draft_report"]    = accumulated.get("draft_report", "")
+
     _jobs[job_id]["messages"]          = messages
-    _jobs[job_id]["verdict"]           = _skeleton_verdict()
     _jobs[job_id]["status"]            = "paused"
     _jobs[job_id]["debate_simulated"]  = debate_simulated
-    _jobs[job_id]["simulated"]         = True  # verdict always skeleton until #12
+    _jobs[job_id]["verdict"]           = _skeleton_verdict()
+    _jobs[job_id]["simulated"]         = debate_simulated
+    _jobs[job_id]["verdict_ready"]     = False
     _jobs[job_id]["paused_at"]         = datetime.now(timezone.utc)
     _jobs[job_id]["foursquare_used"]      = _tracking.get("foursquare_used", False) if crew else False
     _jobs[job_id]["mcp_sources"]          = _tracking.get("mcp_sources", []) if crew else []
@@ -376,16 +511,18 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     graph_config = {"configurable": {"thread_id": job_id}}
     graph_state = {
         "request": brief,
-        "sources": _jobs[job_id].get("mcp_sources", []), 
-        "findings": _jobs[job_id].get("mcp_findings", []), 
-        "draft_report": "",
+        "sources":  _jobs[job_id].get("mcp_sources", []),
+        "findings": _jobs[job_id].get("mcp_findings", []),
+        "draft_report":         _jobs[job_id].get("draft_report", ""),
+        "research_result":      _jobs[job_id].get("research_result", ""),
+        "vision_result":        _jobs[job_id].get("vision_result", ""),
+        "analysis_result":      _jobs[job_id].get("analysis_result", ""),
+        "mcp_research_summary": "\n".join(_jobs[job_id].get("mcp_research_summary", [])),
         "review_round": 0, "reviewer_comments": [],
         "verdict": _jobs[job_id]["verdict"],
         "traces": [], "tokens_used": 0,
         "human_approved": False, "expired": False, "errors": [],
-        "research_result": "", "vision_result": "", "analysis_result": "",
         "chat_context": "", "chat_context_applied": False,
-        "mcp_research_summary": "",
         "discarded_competitors": [],
     }
     await asyncio.to_thread(_graph.invoke, graph_state, graph_config)
@@ -813,8 +950,7 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
         from tertulia.crew.inputs import build_inputs
         from tertulia.crew.sector import load_sector
 
-        abs_image_paths = [str(_ROOT / "outputs" / p) for p in brief.image_paths]
-        if not abs_image_paths:
+        if not brief.image_paths:
             yield f"data: {json.dumps({'done': True})}\n\n"
             return
 
@@ -825,7 +961,7 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
             return
 
         profile = load_sector(brief.business_type)
-        inputs = build_inputs(brief, profile, images=abs_image_paths)
+        inputs = build_inputs(brief, profile, images=brief.image_paths)
 
         yield f"data: {json.dumps({'thinking': True, 'agent': 'vision', 'name': 'Berto'})}\n\n"
 
@@ -854,6 +990,11 @@ async def get_verdict(job_id: str):
     job = _jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    # Compute the real verdict on first call (lazy). If the debate was real and
+    # the user provided chat_context in step 3, the writer reruns with that
+    # context before extracting the traffic light and confidence.
+    if not job.get("verdict_ready") and not job.get("debate_simulated", True):
+        await _compute_and_cache_verdict(job_id)
     verdict: SchemaVerdict = job.get("verdict") or _skeleton_verdict()
     result = verdict.model_dump()
     result["tokens_used"] = job.get("tokens_used", 0)
@@ -914,6 +1055,11 @@ async def approve(job_id: str, req: ApproveRequest):
             from tertulia.guardrails.anonimizacion import _scrub
             state_update["chat_context"] = _scrub("\n\n".join(context_parts))
         state_update["mcp_research_summary"] = "\n".join(job.get("mcp_research_summary", []))
+        # If the verdict endpoint already ran the writer with chat_context (step 4
+        # computes the verdict lazily), skip the writer rerun in the graph so we
+        # don't call the LLM twice for the same context.
+        if job.get("chat_context_precomputed"):
+            state_update["chat_context_applied"] = True
         await asyncio.to_thread(_graph.update_state, graph_config, state_update)
         try:
             final = await asyncio.wait_for(

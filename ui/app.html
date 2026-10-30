@@ -451,36 +451,10 @@
         ⚠️ Servidor de análisis no disponible. Este veredicto es de ejemplo, no refleja datos reales.
       </div>
 
-      <div class="traffic-wrap">
-        <div class="traffic-lights" aria-label="Semáforo de viabilidad">
-          <div class="traffic-dot green"  id="dot-green"  title="Alta viabilidad"></div>
-          <div class="traffic-dot yellow" id="dot-yellow" title="Viabilidad media"></div>
-          <div class="traffic-dot red"    id="dot-red"    title="Baja viabilidad"></div>
-        </div>
+      <div class="debate-feed" id="verdict-feed"></div>
 
-        <div class="verdict-info">
-          <div class="verdict-label"     id="verdict-label"></div>
-          <div class="verdict-confidence" id="verdict-confidence">Confianza: …</div>
-          <div class="confidence-bar">
-            <div class="confidence-fill" id="confidence-fill" style="width:0%"></div>
-          </div>
-          <div class="reasons-list" id="reasons-list"></div>
-        </div>
-      </div>
-
-      <div class="verdict-extras">
-        <div class="verdict-tokens hidden" id="verdict-tokens"></div>
-        <div class="verdict-missing-wrap hidden" id="verdict-missing-wrap">
-          <h4>Datos no disponibles</h4>
-          <ul id="verdict-missing-list"></ul>
-        </div>
-        <div class="verdict-warnings-wrap hidden" id="verdict-warnings-wrap">
-          <h4>Avisos de fuentes</h4>
-          <ul id="verdict-warnings-list"></ul>
-        </div>
-      </div>
-      <div class="debate-actions" id="verdict-actions">
-        <button class="btn btn-primary" id="btn-verdict-continue">Continuar a la aprobación</button>
+      <div class="debate-actions">
+        <button class="btn btn-primary hidden" id="btn-verdict-continue">Continuar a la aprobación</button>
       </div>
     </section>
 
