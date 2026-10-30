@@ -88,10 +88,10 @@ def human_approval_node(state: AgentState) -> dict:
     discarded = state.get("discarded_competitors", [])
     if discarded:
         print(f"[NODO] Aprobacion humana: {len(discarded)} competidores descartados.")
-        for name in discarded:
+        for i, name in enumerate(discarded):
             new_traces.append(
                 TraceEntry(
-                    id=f"trc-{len(existing_traces) + len(new_traces) + 1:03d}",
+                    id=f"trc-{len(existing_traces) + i + 2:03d}",
                     timestamp=datetime.now(timezone.utc),
                     actor="human",
                     tool="ui.discard_competitor",

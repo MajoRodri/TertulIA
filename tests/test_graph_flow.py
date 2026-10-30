@@ -96,3 +96,31 @@ def test_graph_pauses_twice_and_applies_chat_context():
     # 5. Fin
     assert app.get_state(config).next == ()
     assert final["human_approved"] is True
+
+def test_hybrid_flow_keeps_real_data_and_draft():
+    """
+    Verifica que el grafo respeta los datos inyectados por la API (solución híbrida)
+    y que el writer no los sobrescribe con mocks.
+    """
+    from tertulia.schemas import Finding, Source, SourceType
+    from datetime import datetime, UTC
+
+    config = _config("test-hybrid-flow")
+    # Simulamos el estado que inyectaría Majo desde main.py
+    real_state = {
+        **INITIAL_STATE,
+        "draft_report": "Borrador real desde la API",
+        "mcp_research_summary": "2 coworkings confirmados",
+        "discarded_competitors": ["CompetidorMalo"],
+        "sources": [Source(id="src-001", source_type=SourceType.OPEN_DATA, title="OSM", url="https://osm.org", retrieved_at=datetime.now(UTC), retrieved_by="mcp")],
+        "findings": [Finding(id="fnd-001", claim="Test", agent="researcher", source_ids=["src-001"])],
+    }
+
+    app.invoke(real_state, config)
+    
+    # El grafo debe haber pausado y mantenido el draft real
+    state = app.get_state(config)
+    assert state.next == ("human_approval",)
+    assert state.values["draft_report"] == "Borrador real desde la API"
+    assert state.values["mcp_research_summary"] == "2 coworkings confirmados"
+    assert len(state.values["findings"]) == 1

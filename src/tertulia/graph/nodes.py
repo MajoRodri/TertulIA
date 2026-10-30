@@ -109,7 +109,7 @@ def writer_node(state: AgentState) -> dict:
 
     try:
         print("[NODO] Redactor: procesando redacción...")
-        patch = {}
+        patch = {"draft_report": state.get("draft_report", "")}
         # Si estamos en la segunda pasada con el chat, marcamos el flag para no repetir
         if state.get("chat_context"):
             patch["chat_context_applied"] = True
