@@ -22,6 +22,8 @@ htmlcov/
 # Bases de datos locales (SqliteSaver, etc.)
 *.sqlite
 *.db
+*.db-shm
+*.db-wal
 
 # Datos automáticos (no versionar)
 data/cache/
