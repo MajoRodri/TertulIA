@@ -36,6 +36,9 @@ trazas/**
 # Archivo temporal del generador de PDF (Playwright)
 ui/_report_tmp.html
 
+# Python version manager (local)
+.python-version
+
 # IDEs
 .vscode/
 .idea/
