@@ -38,7 +38,10 @@ SUSPICIOUS_PATTERNS: dict[str, str] = {
         r"\b(envia|manda|aprueba|ejecuta|borra|send|approve|execute|delete)\b"
         r".{0,30}\b(correo|email|informe|report|comando|command|archivo|file)\b"
     ),
-    "fake_delimiter": r"(<\|im_start\|>|\[/?inst\]|\[system\]|</?external_data)",
+    "fake_delimiter": (
+        r"(<\|im_start\|>|<\|im_end\|>|\[/?inst\]|\[system\]|</?external_data>"
+        r"|<</?SYS>>|<\|begin_of_text\|>|<\|start_header_id\|>)"
+    ),
 }
 
 _DANGEROUS_BLOCKS = re.compile(

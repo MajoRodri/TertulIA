@@ -675,7 +675,7 @@ body {
   <div class="legal-notice">
     <p><strong>Aviso legal.</strong> Este informe ha sido generado de forma automática por un sistema de agentes de inteligencia artificial (TertulIA) con fines exclusivamente informativos. Su contenido no constituye asesoramiento profesional, financiero, legal ni comercial, y no reemplaza en ningún caso el criterio de un consultor o analista cualificado. Los datos, estimaciones y proyecciones incluidos se basan en fuentes públicas y modelos estadísticos; pueden contener inexactitudes y deben verificarse de forma independiente antes de tomar cualquier decisión de negocio.</p>
     {% if data.debate | selectattr('agent', 'equalto', 'vision') | list %}
-    <p><strong>Proyecto académico.</strong> Las imágenes aportadas por el usuario se envían al proveedor del modelo de IA (Google Gemini) para su análisis; TertulIA no las almacena ni las comparte con terceros. Cualquier semejanza con establecimientos reales es meramente orientativa.</p>
+    <p><strong>Proyecto académico.</strong> Las imágenes aportadas por el usuario se almacenan temporalmente en el servidor para el análisis y se envían al proveedor del modelo de IA (Google Gemini); no se comparten con terceros. Cualquier semejanza con establecimientos reales es meramente orientativa.</p>
     {% endif %}
   </div>
 
