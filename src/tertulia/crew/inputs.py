@@ -35,6 +35,7 @@ TASK_INPUT_KEYS: frozenset[str] = frozenset(
         "review_feedback",
         # De la interfaz (main.py, Majo): lo que la persona usuaria contó en el chat
         "chat_context",
+        "mcp_research_summary",
     }
 )
 
@@ -70,6 +71,7 @@ def build_inputs(
     draft_report: str | None = None,
     review_feedback: list[str] | None = None,
     chat_context: str | None = None,
+    mcp_research_summary: str | None = None,
 ) -> dict[str, str]:
     """Devuelve las variables de TASK_INPUT_KEYS, todas como texto y ninguna vacía.
 
@@ -98,4 +100,5 @@ def build_inputs(
         "draft_report": _text(draft_report, NO_RESULT),
         "review_feedback": _bullets(review_feedback) if review_feedback else FIRST_DRAFT,
         "chat_context": _text(chat_context, NO_CONTEXT),
+        "mcp_research_summary": _text(mcp_research_summary, NO_CONTEXT),
     }

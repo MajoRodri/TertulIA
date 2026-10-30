@@ -16,7 +16,7 @@ crew registers listeners with ``crewai_event_bus.scoped_handlers()``, collects
 the errors and adds them to ``state["errors"]``.
 """
 
-from crewai.events.types.mcp_events import MCPToolExecutionFailedEvent
+from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent, MCPToolExecutionFailedEvent
 from crewai.events.types.tool_usage_events import (
     ToolUsageErrorEvent,
     ToolValidateInputErrorEvent,
@@ -190,7 +190,6 @@ class capture_mcp_responses:
 
     def __enter__(self) -> "capture_mcp_responses":
         from crewai.events import crewai_event_bus
-        from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
 
         self._scope = crewai_event_bus.scoped_handlers()
         self._scope.__enter__()
