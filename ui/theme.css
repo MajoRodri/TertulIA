@@ -435,6 +435,7 @@ h3 { font-size: var(--text-xl); }
 .agent-avatar.vision     { background: #00B894; }
 .agent-avatar.writer     { background: #6C5CE7; }
 .agent-avatar.reviewer   { background: var(--naranja); }
+.agent-avatar.berta      { background: var(--primario); }
 
 .message-bubble {
   background: var(--card);
@@ -467,6 +468,8 @@ h3 { font-size: var(--text-xl); }
   color: var(--ink);
   line-height: 1.6;
   margin: 0;
+  text-align: justify;
+  hyphens: auto;
 }
 
 .message-text p          { margin: 0 0 0.5em; }
@@ -539,7 +542,7 @@ h3 { font-size: var(--text-xl); }
 
 .verdict-label {
   font-family: var(--font-body);
-  font-size: var(--text-xl);
+  font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink);
   margin-bottom: var(--s2);
@@ -619,6 +622,54 @@ h3 { font-size: var(--text-xl); }
 }
 
 .verdict-warnings-wrap h4 { color: var(--amarillo); }
+
+/* ─── Verdict inside chat bubble ──────────────────────────────── */
+.verdict-chat-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.verdict-chat-semaforo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s5);
+}
+
+.verdict-chat-info {
+  flex: 1;
+}
+
+.verdict-reasons-list {
+  margin: 0;
+  padding-left: var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  font-size: var(--text-sm);
+  color: var(--body-text);
+}
+
+.verdict-missing-wrap,
+.verdict-warnings-wrap {
+  font-size: var(--text-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.verdict-missing-wrap strong { color: var(--body-text); }
+.verdict-warnings-wrap strong { color: var(--amarillo); }
+
+.verdict-missing-wrap ul,
+.verdict-warnings-wrap ul {
+  margin: 0;
+  padding-left: var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  color: var(--muted);
+}
 
 /* ─── File inputs ─────────────────────────────────────────────── */
 .form-hint {

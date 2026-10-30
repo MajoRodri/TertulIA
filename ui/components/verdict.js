@@ -1,90 +1,134 @@
 import { fetchVerdict } from "../api.js";
+import { avatarHtml } from "../utils/agents.js";
+import { renderMd } from "../utils/markdown.js";
 
-const LIGHT_COLORS = { green: "var(--verde)", amber: "var(--amarillo)", red: "var(--rojo)" };
-// amber maps to dot-yellow in HTML (dot IDs are green/yellow/red)
+const LIGHT_COLOR = { green: "var(--verde)", amber: "var(--amarillo)", red: "var(--rojo)" };
 const LIGHT_TO_DOT = { green: "green", amber: "yellow", red: "red" };
+const LIGHT_EMOJI  = { green: "🟢", amber: "🟡", red: "🔴" };
+const LIGHT_LABEL  = { green: "Alta viabilidad", amber: "Viabilidad media", red: "Baja viabilidad" };
+
+function _esc(str) {
+  return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function _feed() {
+  return document.getElementById("verdict-feed");
+}
+
+function _showTyping() {
+  const feed = _feed();
+  const el = document.createElement("div");
+  el.id = "verdict-typing";
+  el.className = "debate-message";
+  el.innerHTML = `
+    ${avatarHtml("berta", "Berta")}
+    <div class="message-bubble">
+      <div class="agent-thinking-label">Berta está preparando el veredicto…</div>
+      <div class="typing-indicator">
+        <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+      </div>
+    </div>`;
+  feed.appendChild(el);
+  el.scrollIntoView({ behavior: "smooth", block: "end" });
+}
+
+function _removeTyping() {
+  document.getElementById("verdict-typing")?.remove();
+}
+
+function _buildMessage(data) {
+  const light      = data.final_light ?? data.light ?? "amber";
+  const confidence = data.final_confidence != null
+    ? Math.round(data.final_confidence * 100)
+    : (data.confidence ?? 0);
+  const summary    = data.summary ?? data.label ?? "";
+  const reasons    = data.reasons ?? [];
+  const color      = LIGHT_COLOR[light] ?? "var(--azul)";
+  const dotClass   = LIGHT_TO_DOT[light] ?? "yellow";
+  const emoji      = LIGHT_EMOJI[light] ?? "🟡";
+  const lightLabel = LIGHT_LABEL[light] ?? "Viabilidad media";
+
+  const reasonsHtml = reasons.length
+    ? `<ul class="verdict-reasons-list">${reasons.map(r => `<li>${_esc(r)}</li>`).join("")}</ul>`
+    : "";
+
+  const missingHtml = data.missing_data?.length
+    ? `<div class="verdict-missing-wrap"><strong>Datos no disponibles</strong><ul>${data.missing_data.map(m => `<li>${_esc(m)}</li>`).join("")}</ul></div>`
+    : "";
+
+  const warningsHtml = data.warnings?.length
+    ? `<div class="verdict-warnings-wrap"><strong>Avisos de fuentes</strong><ul>${data.warnings.map(w => `<li>${_esc(w)}</li>`).join("")}</ul></div>`
+    : "";
+
+  return `
+    <div class="verdict-chat-card">
+      <div class="verdict-chat-semaforo">
+        <div class="traffic-lights" aria-label="Semáforo de viabilidad">
+          <div class="traffic-dot green  ${dotClass === "green"  ? "active" : ""}" title="Alta viabilidad"></div>
+          <div class="traffic-dot yellow ${dotClass === "yellow" ? "active" : ""}" title="Viabilidad media"></div>
+          <div class="traffic-dot red    ${dotClass === "red"    ? "active" : ""}" title="Baja viabilidad"></div>
+        </div>
+        <div class="verdict-chat-info">
+          <div class="verdict-label">${_esc(summary)}</div>
+          <div class="verdict-confidence">Confianza: ${confidence}%</div>
+          <div class="confidence-bar">
+            <div class="confidence-fill" style="width:${confidence}%;background:${color}"></div>
+          </div>
+        </div>
+      </div>
+      ${reasonsHtml}
+      ${missingHtml}
+      ${warningsHtml}
+    </div>`;
+}
 
 export async function showVerdict(jobId) {
+  const feed = _feed();
+  feed.innerHTML = "";
+
+  _showTyping();
+
   let data;
   try {
     data = await fetchVerdict(jobId);
   } catch (err) {
-    const label = document.getElementById("verdict-label");
-    if (label) label.textContent = "No se pudo cargar el veredicto. Comprueba la conexión.";
+    _removeTyping();
+    const el = document.createElement("div");
+    el.className = "debate-message";
+    el.innerHTML = `
+      ${avatarHtml("berta", "Berta")}
+      <div class="message-bubble">
+        <div class="message-meta"><span class="agent-name">Berta</span></div>
+        <div class="message-text">No se pudo cargar el veredicto. Comprueba la conexión.</div>
+      </div>`;
+    feed.appendChild(el);
     throw err;
   }
+
+  _removeTyping();
 
   if (data.simulated) {
     const warn = document.getElementById("verdict-simulated-warning");
     if (warn) warn.classList.remove("hidden");
   }
 
-  // Support both real schema (final_light / final_confidence) and mock fallback
-  const light      = data.final_light ?? data.light ?? "amber";
-  const confidence = data.final_confidence != null
-    ? Math.round(data.final_confidence * 100)
-    : (data.confidence ?? 0);
+  const el = document.createElement("div");
+  el.className = "debate-message";
+  el.innerHTML = `
+    ${avatarHtml("berta", "Berta")}
+    <div class="message-bubble">
+      <div class="message-meta">
+        <span class="agent-name">Berta</span>
+        <span class="agent-role">Coordinadora del análisis</span>
+        ${data.simulated ? `<span class="simulated-badge">ejemplo</span>` : ""}
+      </div>
+      <div class="message-text">${_buildMessage(data)}</div>
+    </div>`;
+  feed.appendChild(el);
+  el.scrollIntoView({ behavior: "smooth", block: "end" });
 
-  ["green", "yellow", "red"].forEach((s) =>
-    document.getElementById(`dot-${s}`)?.classList.remove("active")
-  );
-  document.getElementById(`dot-${LIGHT_TO_DOT[light] ?? light}`)?.classList.add("active");
+  document.getElementById("btn-verdict-continue").classList.remove("hidden");
 
-  const labelEl = document.getElementById("verdict-label");
-  if (labelEl) labelEl.textContent = data.summary ?? data.label ?? "";
-
-  const confEl = document.getElementById("verdict-confidence");
-  if (confEl) confEl.textContent = `Confianza: ${confidence}%`;
-
-  const fill = document.getElementById("confidence-fill");
-  if (fill) {
-    fill.style.width      = `${confidence}%`;
-    fill.style.background = LIGHT_COLORS[light] ?? "var(--azul)";
-  }
-
-  const reasons = data.reasons ?? [];
-  const reasonsEl = document.getElementById("reasons-list");
-  if (reasonsEl) {
-    reasonsEl.textContent = "";
-    for (const r of reasons) {
-      const d = document.createElement("div");
-      d.className = "reason-item";
-      d.textContent = r;
-      reasonsEl.appendChild(d);
-    }
-  }
-
-  const tokensEl = document.getElementById("verdict-tokens");
-  if (tokensEl && data.tokens_used) {
-    tokensEl.textContent = `Tokens utilizados: ${data.tokens_used.toLocaleString("es-ES")}`;
-    tokensEl.classList.remove("hidden");
-  }
-
-  const missingWrap = document.getElementById("verdict-missing-wrap");
-  const missingList = document.getElementById("verdict-missing-list");
-  if (missingWrap && missingList && data.missing_data?.length) {
-    missingList.textContent = "";
-    for (const m of data.missing_data) {
-      const li = document.createElement("li");
-      li.textContent = m;
-      missingList.appendChild(li);
-    }
-    missingWrap.classList.remove("hidden");
-  }
-
-  const warningsWrap = document.getElementById("verdict-warnings-wrap");
-  const warningsList = document.getElementById("verdict-warnings-list");
-  if (warningsWrap && warningsList && data.warnings?.length) {
-    warningsList.textContent = "";
-    for (const w of data.warnings) {
-      const li = document.createElement("li");
-      li.textContent = w;
-      warningsList.appendChild(li);
-    }
-    warningsWrap.classList.remove("hidden");
-  }
-
-  // Wait for the user to read the verdict and click continue
   await new Promise((resolve) =>
     document.getElementById("btn-verdict-continue").addEventListener("click", resolve, { once: true })
   );

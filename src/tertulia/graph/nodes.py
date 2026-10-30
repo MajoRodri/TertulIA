@@ -1,19 +1,18 @@
 """Graph nodes for TertulIA.
 
-Issue #14 adds the error policy to the nodes:
+Architecture (hybrid, Issue #12):
+  - research_node and analyst_node are pass-through: the crew already ran in
+    main.py and its output is pre-loaded into graph state before invoke().
+  - writer_node preserves the debate draft on round 0; on rounds 1+ it calls
+    the real WriterAgent via run_step("writing") with reviewer feedback.
+  - reviewer_node always calls the real ReviewerAgent via run_step("review").
+  - vision_charts_node runs analyse_image() on any chart paths in findings.
 
-- Every node is wrapped in ``try/except``: an unexpected exception becomes an
-  ``ERR-008`` entry in ``state["errors"]`` and the node returns a safe partial
-  result instead of crashing the graph.
-- Before calling the LLM, each node checks the token budget. If it is already
-  exhausted, the node does not call the model and records ``ERR-006`` (fatal:
-  the graph goes to ``human_approval`` with no verdict).
-- Nodes add errors through ``_record_error()``, which returns the state patch
-  LangGraph expects (``{"errors": existing + [error]}``).
-
-The nodes are still mocks: the real crew integration is Issue #12. When that
-lands, the LLM calls will go inside the same ``try/except`` blocks and the
-research node will also use ``capture_tool_events()`` from ``tool_events.py``.
+Error policy (Issue #14):
+  - Every node is wrapped in try/except: an unexpected exception becomes ERR-008
+    and the node returns a safe partial result instead of crashing the graph.
+  - Before calling the LLM each node checks the token budget; exhausted budget
+    records ERR-006 (fatal: graph goes to human_approval without verdict).
 """
 
 from datetime import datetime, timezone
@@ -73,11 +72,7 @@ def _internal_error(node: str, exc: BaseException) -> ErrorEntry:
 
 
 def research_node(state: AgentState) -> dict:
-    """
-    MOCK: Simulates the Researcher agent.
-    In the future, this will call the CrewAI agent (Issue #12) with
-    ``capture_tool_events()`` around the call.
-    """
+    """Pass-through: el crew ya corrió en main.py y sus datos están en state."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("research"))
 
@@ -90,7 +85,7 @@ def research_node(state: AgentState) -> dict:
 
 
 def analyst_node(state: AgentState) -> dict:
-    """MOCK: Simulates the Analyst agent (Issue #12 will call the real tools)."""
+    """Pass-through: el crew ya corrió en main.py y sus datos están en state."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("analyst"))
 
@@ -103,38 +98,77 @@ def analyst_node(state: AgentState) -> dict:
 
 
 def writer_node(state: AgentState) -> dict:
-    """MOCK: Simulates the Writer agent."""
+    """Redactor: ronda 0 preserva el borrador del debate; rondas 1+ reescribe con feedback."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("writer"))
 
     try:
-        print("[NODO] Redactor: procesando redacción...")
-        patch = {"draft_report": state.get("draft_report", "")}
-        # Si estamos en la segunda pasada con el chat, marcamos el flag para no repetir
+        patch: dict = {}
         if state.get("chat_context"):
             patch["chat_context_applied"] = True
+
+        if state.get("review_round", 0) == 0:
+            print("[NODO] Redactor: usando borrador del debate...")
+            patch["draft_report"] = state.get("draft_report", "")
+            return patch
+
+        print("[NODO] Redactor: reescribiendo con feedback del revisor...")
+        from tertulia.crew.crew import llm_from_settings, run_step
+        from tertulia.crew.inputs import build_inputs
+        from tertulia.crew.sector import load_sector
+
+        brief = state["request"]
+        profile = load_sector(brief.business_type)
+        inputs = build_inputs(
+            brief, profile,
+            research_result=state.get("research_result"),
+            vision_result=state.get("vision_result"),
+            analysis_result=state.get("analysis_result"),
+            draft_report=state.get("draft_report"),
+            review_feedback=state.get("reviewer_comments"),
+            chat_context=state.get("chat_context"),
+            mcp_research_summary=state.get("mcp_research_summary"),
+        )
+        result = run_step("writing", inputs, llm_from_settings())
+        patch["draft_report"] = result.get("writing_task") or state.get("draft_report", "")
         return patch
     except Exception as exc:  # noqa: BLE001
         print(f"[NODO] Redactor: error interno ({exc}).")
-        return _record_error(state, _internal_error("writer", exc))
+        error_patch = _record_error(state, _internal_error("writer", exc))
+        if state.get("chat_context"):
+            error_patch["chat_context_applied"] = True
+        return error_patch
 
 
 def reviewer_node(state: AgentState) -> dict:
-    """MOCK: Simulates the Reviewer agent. Always rejects, to test the loop."""
+    """Revisora: llama al crew real y parsea su veredicto."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("reviewer"))
 
     try:
-        print("[NODO] Revisor: comprobando el informe...")
+        from tertulia.crew.crew import llm_from_settings, review_comments, run_step
+        from tertulia.crew.inputs import build_inputs
+        from tertulia.crew.sector import load_sector
+
+        brief = state["request"]
+        profile = load_sector(brief.business_type)
+        inputs = build_inputs(
+            brief, profile,
+            draft_report=state.get("draft_report"),
+            review_feedback=state.get("reviewer_comments"),
+            mcp_research_summary=state.get("mcp_research_summary"),
+        )
+        result = run_step("review", inputs, llm_from_settings())
+        comments = review_comments(result.get("review_task", ""))
+        print(f"[NODO] Revisora: {'aprobado' if not comments else f'{len(comments)} comentario(s)'}.")
         return {
-            "reviewer_comments": ["Rechazo simulado: faltan fuentes."],
+            "reviewer_comments": comments,
             "review_round": state.get("review_round", 0) + 1,
         }
     except Exception as exc:  # noqa: BLE001
-        print(f"[NODO] Revisor: error interno ({exc}).")
-        # A broken reviewer is treated as a rejection, not as an approval.
+        print(f"[NODO] Revisora: error interno ({exc}).")
         patch = _record_error(state, _internal_error("reviewer", exc))
-        patch["reviewer_comments"] = [f"Revisor no disponible: {exc}"]
+        patch["reviewer_comments"] = [f"Revisora no disponible: {exc}"]
         patch["review_round"] = state.get("review_round", 0) + 1
         return patch
 

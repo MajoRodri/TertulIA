@@ -4,6 +4,7 @@ export const AGENT_DISPLAY_NAMES = {
   writer:     "El Pregonero",
   reviewer:   "La Revisora",
   vision:     "Berto",
+  berta:      "Berta",
 };
 
 const AGENT_ICONS = {
@@ -12,6 +13,7 @@ const AGENT_ICONS = {
   writer:     "pregonero",
   reviewer:   "revisora",
   vision:     "berto",
+  berta:      "berta",
 };
 
 function _esc(str) {

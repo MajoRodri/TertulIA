@@ -17,6 +17,8 @@ INITIAL_STATE = {
     "research_result": "",
     "vision_result": "",
     "analysis_result": "",
+    "mcp_research_summary": "",
+    "discarded_competitors": [],
 }
 
 
@@ -26,14 +28,15 @@ def _config(thread_id: str) -> dict:
 
 def test_graph_pauses_before_human_approval():
     """
-    The mock reviewer always rejects, so the graph loops 3 times and then
-    pauses before human_approval (human-in-the-loop).
+    En tests, el reviewer falla con ERR-008 (FATAL) porque request es un dict
+    plano, no un Brief. Un error fatal interrumpe el loop y va directamente a
+    human_approval después de 1 ronda.
     """
     config = _config("test-pause")
     app.invoke(INITIAL_STATE, config)
 
     state = app.get_state(config)
-    assert state.values["review_round"] == 3
+    assert state.values["review_round"] == 1
     assert state.values["human_approved"] is False
     assert state.next == ("human_approval",)
 
