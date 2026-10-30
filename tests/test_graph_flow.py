@@ -102,8 +102,9 @@ def test_hybrid_flow_keeps_real_data_and_draft():
     Verifica que el grafo respeta los datos inyectados por la API (solución híbrida)
     y que el writer no los sobrescribe con mocks.
     """
+    from datetime import UTC, datetime
+
     from tertulia.schemas import Finding, Source, SourceType
-    from datetime import datetime, UTC
 
     config = _config("test-hybrid-flow")
     # Simulamos el estado que inyectaría Majo desde main.py
@@ -112,7 +113,16 @@ def test_hybrid_flow_keeps_real_data_and_draft():
         "draft_report": "Borrador real desde la API",
         "mcp_research_summary": "2 coworkings confirmados",
         "discarded_competitors": ["CompetidorMalo"],
-        "sources": [Source(id="src-001", source_type=SourceType.OPEN_DATA, title="OSM", url="https://osm.org", retrieved_at=datetime.now(UTC), retrieved_by="mcp")],
+        "sources": [
+            Source(
+                id="src-001",
+                source_type=SourceType.OPEN_DATA,
+                title="OSM",
+                url="https://osm.org",
+                retrieved_at=datetime.now(UTC),
+                retrieved_by="mcp",
+            )
+        ],
         "findings": [Finding(id="fnd-001", claim="Test", agent="researcher", source_ids=["src-001"])],
     }
 
