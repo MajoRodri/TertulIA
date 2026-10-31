@@ -484,7 +484,7 @@ def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     elif step == "writing":
         acc["draft_report"]    = result.get("writing_task", "")
     elif step == "review":
-        acc["review_result"]   = result.get("review_task", "")
+        pass
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────

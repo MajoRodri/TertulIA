@@ -566,7 +566,7 @@ const formDocPicker = attachDocPicker("form-docs", "form-doc-type", "form-docs-h
 const chatDocPicker = attachDocPicker("chat-docs", "chat-doc-type", "chat-docs-hint", "chat-docs-preview", { startHidden: false });
 
 // ── Brief summary (panel 1 read-only view) ────────────────────
-const RADIUS_LABELS = { 400: "400 m · 5 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
+const RADIUS_LABELS = { 300: "300 m · 4 min andando", 500: "500 m · 6 min andando", 800: "800 m · 10 min andando (recomendado)", 1200: "1.200 m · 15 min andando", 2000: "2.000 m · 25 min andando" };
 
 function _briefEsc(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
