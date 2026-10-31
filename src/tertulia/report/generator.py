@@ -39,7 +39,7 @@ _ROJO_BG   = HexColor("#FEE2E2")
 
 _SIGNAL_COLOR = {"green": _VERDE,     "yellow": _AMARILLO,  "red": _ROJO}
 _SIGNAL_BG    = {"green": _VERDE_BG,  "yellow": _AMARILLO_BG, "red": _ROJO_BG}
-_SIGNAL_LABEL = {"green": "VIABLE",   "yellow": "VIABLE CON RIESGO", "red": "NO VIABLE"}
+_SIGNAL_LABEL = {"green": "VIABLE",   "yellow": "REVISAR: DATOS O RIESGO", "red": "NO VIABLE"}
 _NARANJA      = HexColor("#7c3500")
 _NARANJA_BG   = HexColor("#fde3cf")
 
@@ -355,7 +355,7 @@ _AGENT_IMAGES = {
 
 _SIGNAL_LABELS = {
     "green":  "VIABLE",
-    "yellow": "VIABLE CON RIESGO",
+    "yellow": "REVISAR: DATOS O RIESGO",
     "red":    "NO VIABLE",
 }
 

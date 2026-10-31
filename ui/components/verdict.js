@@ -7,7 +7,7 @@ const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)
 const LIGHT_COLOR = { green: "var(--verde)", amber: "var(--amarillo)", red: "var(--rojo)" };
 const LIGHT_TO_DOT = { green: "green", amber: "yellow", red: "red" };
 const LIGHT_EMOJI  = { green: "🟢", amber: "🟡", red: "🔴" };
-const LIGHT_LABEL  = { green: "Alta viabilidad", amber: "Viabilidad media", red: "Baja viabilidad" };
+const LIGHT_LABEL  = { green: "Alta viabilidad", amber: "Datos insuficientes o riesgo", red: "Baja viabilidad" };
 
 function _esc(str) {
   return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -84,7 +84,7 @@ function _buildMessage(data) {
       <div class="verdict-chat-semaforo">
         <div class="traffic-lights" aria-label="Semáforo de viabilidad">
           <div class="traffic-dot green  ${dotClass === "green"  ? "active" : ""}" title="Alta viabilidad"></div>
-          <div class="traffic-dot yellow ${dotClass === "yellow" ? "active" : ""}" title="Viabilidad media"></div>
+          <div class="traffic-dot yellow ${dotClass === "yellow" ? "active" : ""}" title="Datos insuficientes o riesgo"></div>
           <div class="traffic-dot red    ${dotClass === "red"    ? "active" : ""}" title="Baja viabilidad"></div>
         </div>
         <div class="verdict-chat-info">
