@@ -227,7 +227,7 @@ def _verdict_from_draft(
     # Accept optional bullet prefix (- SEMAFORO: AMBAR) since some writers add it.
     # Fall back to keyword search in the semáforo block for drafts without the marker.
     structured = re.search(
-        r"^(?:[-*+]\s+)?SEMAF[OÓ]RO:\s*(VERDE|[AÁ]MBAR|ROJO)\s*$",
+        r"^\s*\**(?:[-*+]\s+)?\**SEMAF[OÓ]RO:\s*[^\w]*(VERDE|[AÁ]MBAR|ROJO)",
         draft,
         re.IGNORECASE | re.MULTILINE,
     )
