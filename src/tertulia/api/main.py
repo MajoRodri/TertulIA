@@ -1014,6 +1014,11 @@ async def vision_analysis(job_id: str):
     )
 
 
+def _strip_path_lines(text: str) -> str:
+    lines = [l for l in text.splitlines() if not (l.strip().lstrip("[").startswith("job-") and "/uploads/" in l)]
+    return "\n".join(lines)
+
+
 async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
     """Runs only the vision task with the latest image paths stored in the job."""
     brief: BusinessBrief = _jobs[job_id]["brief"]
@@ -1046,7 +1051,7 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
             {"vision": vision_tools, "researcher": [], "analyst": [], "writer": [], "reviewer": []},
         )
 
-        text = result.get("vision_task", "").strip()
+        text = _strip_path_lines(result.get("vision_task", "")).strip()
         if text:
             payload = {
                 "agent": "vision", "name": "Berto",
