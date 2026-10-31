@@ -181,6 +181,7 @@ def _build_crew(
         tasks=tasks,
         process=Process.sequential,
         tracing=False,
+        verbose=True,
     )
 
 
