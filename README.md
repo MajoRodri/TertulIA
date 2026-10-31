@@ -1,71 +1,337 @@
-# TertulIA
+<div align="center">
+  <img src="assets/logo.png" alt="TertulIA logo" height="80"/><br/>
+  <img src="assets/tertulia.png" alt="TertulIA" height="60"/>
+  <h3>Tu guía, tu vía.</h3>
+  <p><em>Inteligencia colectiva para negocios locales</em></p>
 
---
-
-# README-HELEN · Aportaciones de Helen para el README de TertulIA
-
-> Para Majo: aquí está todo lo de mi parte que debería aparecer en el `README.md` global, en español y en inglés. Coge lo que necesites y adáptalo al formato del README. Ya está completo: todo lo de esta lista está fusionado.
->
-> _For Majo: everything from my part that should go into the global `README.md`, in Spanish and English. Take what you need and adapt it to the README format. It is now complete: everything listed here is merged._
-
-**Última actualización / Last update:** 29 oct 2026 · ✅ **Completo / Complete**: toda mi parte está fusionada en `dev` / all my work is merged into `dev`.
-
-| Módulo / Module                                                             | Ruta / Path                                                                        | Estado / Status                                                            |
-| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Filtro anti prompt injection / Prompt injection guard                       | `src/tertulia/guardrails/injection.py`                                             | ✅ Fusionado / Merged                                                      |
-| Contratos de datos (propuesta como PO) / Data contracts (proposed as PO)    | `src/tertulia/schemas/`                                                            | ✅ Fusionado / Merged                                                      |
-| Servidor MCP / MCP server `neighbourhood_data`                              | `src/tertulia/mcp/servers/neighbourhood_data/`                                     | ✅ Fusionado / Merged (PR #49)                                             |
-| Foursquare como segunda fuente / Foursquare as second source                | `src/tertulia/mcp/servers/neighbourhood_data/server.py`                            | ✅ Fusionado / Merged (PR #64)                                             |
-| `BusinessBrief.image_paths`                                                 | `src/tertulia/schemas/models.py`                                                   | ✅ Fusionado / Merged (PR #60)                                             |
-| Cliente MCP y servidor fetch / MCP client and fetch server                  | `src/tertulia/mcp/client.py`, `src/tertulia/mcp/html_text.py`                      | ✅ Fusionado / Merged (PR #58)                                             |
-| Agente de visión / Vision agent                                             | `src/tertulia/vision/`                                                             | ✅ Fusionado / Merged (PR #66, #67, tabla de precios / price table 29 oct) |
-| Informe completo y Overpass más rápido / Full report and faster Overpass    | `src/tertulia/mcp/servers/neighbourhood_data/server.py`                            | ✅ Fusionado / Merged (PR #69)                                             |
-| Indicadores de público / Audience indicators (`search_audience_indicators`) | `src/tertulia/mcp/servers/neighbourhood_data/server.py`, `data/demo_osm/audience/` | ✅ Fusionado / Merged                                                      |
-| Fuentes de datos / Data sources (#34)                                       | `docs/fuentes-de-datos.md`                                                         | ✅ Fusionado / Merged                                                      |
-| Ética y gobernanza / Ethics and governance (#35)                            | `docs/etica-y-gobernanza.md`                                                       | ✅ Fusionado / Merged                                                      |
+  <!-- Sustituir # por la URL cuando esté disponible -->
+  <a href="#"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
+  &nbsp;
+  <a href="#instalación-y-arranque"><img alt="Ejecutar en local" src="https://img.shields.io/badge/Ejecutar%20en%20local-0F1730?style=for-the-badge&logo=python&logoColor=white"/></a>
+</div>
 
 ---
 
-# 🇪🇸 Español
+<!-- Demo en vídeo — sustituir el bloque por el embed cuando esté disponible -->
+> 📹 **Vídeo demo** — *próximamente*
 
-## 1. Filtro anti prompt injection
+---
 
-**Qué hace.** Todo texto que llega de fuera (webs, reseñas, descripciones de locales) pasa por `process()` antes de llegar a un agente. El filtro:
+## El problema
 
-1. **Limpia** el texto: quita scripts, etiquetas HTML y caracteres invisibles, traduce las entidades HTML, junta los espacios y recorta a 8.000 caracteres.
-2. **Detecta** frases típicas de inyección en español e inglés (ignorar instrucciones, cambiar de rol, pedir el prompt del sistema, ordenar acciones, delimitadores falsos), sobre una copia normalizada (minúsculas, sin tildes ni letras disfrazadas).
-3. **Envuelve** el texto en `<external_data id=…>` con un id aleatorio y un aviso de que son datos, no instrucciones. Escapa `<` y `>` para que nada de dentro parezca una etiqueta.
+**El 50 % de los negocios locales cierran en los primeros dos años.** La principal causa no es la falta de esfuerzo, sino la falta de información: un estudio de viabilidad profesional cuesta miles de euros y semanas de espera, fuera del alcance de la mayoría de emprendedores.
 
-**Uso:**
+Los datos existen — en OpenStreetMap, registros del Ayuntamiento de Madrid y portales inmobiliarios — pero están dispersos y requieren horas de cruce manual para convertirse en una decisión útil. **TertulIA automatiza ese proceso de principio a fin en 3-4+ minutos.**
+
+---
+
+## Quiénes somos
+
+| Nombre | GitHub | Papel |
+| --- | --- | --- |
+| Majo Rodríguez | [@MajoRodri](https://github.com/MajoRodri) | Scrum Master |
+| Elena Díaz | [@HelenDiMo](https://github.com/HelenDiMo) | Product Owner |
+| David Rojas | [@drojas-7u7](https://github.com/drojas-7u7) | Developer |
+| María Isabel Durango | [@MariaIsaDurango](https://github.com/MariaIsaDurango) | Developer |
+| Yohanna Pérez | [@yohperez](https://github.com/yohperez) | Developer |
+
+---
+
+Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio de Madrid: investiga la competencia, analiza la economía y genera un informe en PDF con semáforo de viabilidad.
+
+---
+
+## Contenido
+
+- [Instalación y arranque](#instalación-y-arranque)
+- [Arquitectura](#arquitectura)
+- [Agentes (CrewAI)](#agentes-crewai)
+- [Investigación y datos (MCP)](#investigación-y-datos-mcp)
+- [Seguridad](#seguridad)
+- [API](#api)
+- [Tests](#tests)
+- [Añadir un sector](#añadir-un-sector)
+- [Equipo](#equipo)
+
+---
+
+## Instalación y arranque
+
+```bash
+pip install -e .
+cp .env.example .env   # rellena las claves
+
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
+uvicorn src.tertulia.api.main:app --reload --port 8000
+```
+
+Abre `http://localhost:8000` en el navegador.
+
+---
+
+## Arquitectura
+
+<!-- Diagrama pendiente -->
+
+El flujo principal:
+
+1. La persona rellena un formulario (sector, barrio, presupuesto, fotos opcionales).
+2. **5 agentes CrewAI** trabajan en orden orquestados por **LangGraph**: Investigador → Visión → Analista → Redactor → Revisor.
+3. La persona revisa el debate, añade contexto por chat y aprueba o rechaza el análisis.
+4. Al aprobar se genera un **informe PDF** con semáforo de viabilidad.
+
+---
+
+## Agentes (CrewAI)
+
+El equipo de 5 agentes que hace la investigación. LangGraph decide el orden; CrewAI ejecuta **solo el paso** que le pide cada nodo del grafo. Justificación completa: [`docs/decisiones/0002-proceso-crewai.md`](docs/decisiones/0002-proceso-crewai.md).
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora</td>
+    <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista</td>
+    <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual</td>
+    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor</td>
+    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora</td>
+    <td align="center"><img src="assets/berta.png" width="80"/><br/><b>Berta</b><br/>Asistente de chat</td>
+  </tr>
+  <tr>
+    <td align="center"><code>researcher</code></td>
+    <td align="center"><code>analyst</code></td>
+    <td align="center"><code>vision</code></td>
+    <td align="center"><code>writer</code></td>
+    <td align="center"><code>reviewer</code></td>
+    <td align="center"><code>berta</code></td>
+  </tr>
+</table>
+
+| Agente | Rol | Herramientas |
+| --- | --- | --- |
+| La Portera (`researcher`) | Competencia y público del barrio, con fuente | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
+| Berto (`vision`) | Analiza las fotos aportadas | `analyse_image` |
+| El Chulapo (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
+| El Pregonero (`writer`) | Informe en Markdown y semáforo propuesto | — |
+| La Revisora (`reviewer`) | Comprueba cifras y fuentes del borrador | — |
+| Berta | Asistente de chat para aclaraciones | — |
+
+**Cómo llamar al crew:**
+
+```python
+from tertulia.crew.crew import llm_from_settings, run_step
+from tertulia.crew.inputs import build_inputs
+from tertulia.crew.sector import load_sector
+
+llm  = llm_from_settings()
+data = build_inputs(brief, load_sector(brief.business_type))
+result, tokens = run_step("research", data, llm)
+# result → {"research_task": "...", "vision_task": "..."}
+```
+
+Pasos: `research` (Investigador y Visión en paralelo), `analysis`, `writing`, `review`. `review_comments()` convierte la respuesta del Revisor en `reviewer_comments` (lista vacía = aprobado).
+
+<details>
+<summary>Fiabilidad y configuración del crew</summary>
+
+- Los agentes no pueden delegar trabajo (`allow_delegation: false`) y tienen pasos limitados (`max_iter`).
+- Un agente sin herramientas recibe un aviso para responder «sin dato» en vez de inventar (aprendido en la primera prueba real).
+- Con Gemini: 5 reintentos ante error 429 y 90 s de tiempo límite por intento.
+- `tracing=False`: CrewAI no sube prompts ni respuestas a sus servidores.
+
+**Tests:** `test_sector.py`, `test_crew_config.py`, `test_crew.py` y `test_agent_tools.py`, con un modelo falso: sin claves, sin internet y sin coste.
+
+</details>
+
+---
+
+## Investigación y datos (MCP)
+
+### Servidor MCP `neighbourhood_data`
+
+Nuestro servidor MCP propio. Ofrece a los agentes herramientas de **solo lectura** con datos de barrios de Madrid. Primera fuente: **OpenStreetMap** (vía Overpass API).
+
+| Herramienta | Qué hace | Estado |
+| --- | --- | --- |
+| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Busca locales de una categoría (`cafe`, `coworking`) en un radio de 100 a 2.000 m alrededor del centro de un barrio de Madrid. Devuelve nombre, dirección, coordenadas, horario, enlace OSM y fecha de consulta. | ✅ Funciona en directo y en modo demo (Atocha y Delicias) |
+| `search_audience_indicators(neighbourhood, radius_m=800)` | Cuenta los lugares de OSM que atraen a cada tipo de público: viajeros, trabajadores, estudiantes, residentes y ocio/restauración. Por grupo: `count` sin duplicados y `highlights` (hasta 5 nombres). | ✅ Funciona en directo y en modo demo |
+
+**Probar a mano:**
+
+```bash
+python scripts/try_mcp_server.py
+```
+
+<details>
+<summary>Decisiones de diseño</summary>
+
+- **Solo lectura (mínimo privilegio):** el servidor no tiene herramientas que envíen, publiquen o borren nada. Si un texto malicioso engaña al modelo, lo peor que puede pasar es una búsqueda de más.
+- Todo texto externo pasa por el filtro anti prompt injection antes de devolverse: cada local lleva `suspicious` e `injection_patterns`.
+- Transporte **stdio**: el servidor corre en local y las claves de API se leen del `.env`, nunca viajan en los mensajes.
+- **El nombre del barrio se valida antes de usarlo en la consulta** (solo letras, espacios y guiones): un nombre con comillas o corchetes podría reescribir la consulta a Overpass (como una inyección SQL).
+- **Busca por radio** (800 m por defecto) alrededor del centro del barrio, no dentro de sus límites: en Atocha, OSM tiene 2 cafeterías dentro del barrio y 41 en el radio.
+
+</details>
+
+<details>
+<summary>Tolerancia a fallos y modo demo</summary>
+
+- Si el servidor público de Overpass falla, lo reintenta una vez tras 5 s. Las consultas de una llamada comparten un **presupuesto de 110 s** para contestar siempre antes del corte de 150 s del cliente.
+- Si falla, cae a los **datos guardados** del barrio (marcados con `from_cache: true` y su fecha de captura); si no los hay, el dato queda como «sin dato». Un fallo nunca se convierte en «0 resultados».
+- Con `DEMO_MODE=true` en `.env`, usa siempre los datos guardados de `data/demo_osm/` (Atocha y Delicias): respuesta al instante y sin depender de Overpass. Lo activa una persona antes de arrancar, nunca el modelo.
+- **Centro del barrio:** si hay captura guardada, el centro se lee de ella (~35 s menos por llamada).
+
+</details>
+
+<details>
+<summary>Códigos de error</summary>
+
+Acordados con el grafo. Cada error del servidor lleva un código:
+
+| Código | Cuándo |
+| --- | --- |
+| `[invalid_input]` | Barrio, categoría o radio no válidos |
+| `[not_found]` | Barrio que no existe en nuestros datos |
+| `[source_unavailable]` | OpenStreetMap no responde y no hay datos guardados |
+
+Llegan al grafo a través de los eventos MCP de CrewAI (`MCPToolExecutionFailedEvent`). Se leen con `error_code()` del cliente.
+
+</details>
+
+<details>
+<summary>Segunda fuente para coworkings: Foursquare</summary>
+
+OpenStreetMap se queda corto en coworkings. En una prueba el 27 oct, a 800 m de Atocha, OSM tenía 2 y Foursquare 9.
+
+- Para coworkings, en directo, el servidor combina OSM y Foursquare **sin repetir locales** (nombre que coincide y a ≤ 75 m).
+- Los locales encontrados **solo en Foursquare** llevan `needs_review: true`: el sistema no descarta nada, **decide el analista** (_human-in-the-loop_).
+- La respuesta incluye `confirmed_count`, `needs_review_count`, `foursquare_status` (`used`, `failed`, `no_key` o `not_used`) y `foursquare_limit_reached`.
+- Si Foursquare falla o responde algo roto, la búsqueda sigue solo con OSM (`foursquare_status: "failed"`). Las categorías de Foursquare también pasan por el filtro anti prompt injection.
+- **Términos de Foursquare:** no permiten guardar sus datos y exigen «Powered by Foursquare». Por eso solo se usa en directo, no en modo demo.
+- La clave (`FOURSQUARE_API_KEY`) se lee del `.env` como `SecretStr`. Sin clave, todo funciona solo con OSM.
+- ⚠️ `total` incluye los locales por revisar: hasta que el analista los revise, no deben contarse como competidores confirmados.
+- **`coverage_note`**: en coworkings sin Foursquare avisa de que puede haber más. Va en la respuesta, no solo en el docstring.
+
+**Tests:** 34 en `tests/test_foursquare.py`, con una copia de una respuesta real.
+
+</details>
+
+<details>
+<summary>Indicadores de público (`search_audience_indicators`)</summary>
+
+El informe dejaba «tipo de público» sin dato y en una prueba el agente se lo inventó. Ahora tiene datos reales.
+
+- Una sola consulta a Overpass, generada desde la tabla `AUDIENCE_RULES` (añadir un tipo de lugar = una línea).
+- Duplicados: mismo nombre o misma web a ≤ 200 m cuentan una vez.
+- Los nombres pasan por el filtro anti prompt injection. `indicator_note`, escrita por el servidor, recuerda que son lugares, no personas contadas.
+- Mismo flujo que `search_competitors`: presupuesto de tiempo, caída a datos guardados (`data/demo_osm/audience/`) y modo demo.
+
+**Tests:** 15 en `tests/test_audience_indicators.py`, con lugares reales de Atocha.
+
+</details>
+
+### Cliente MCP (`src/tertulia/mcp/client.py`)
+
+El único sitio donde se dice qué servidores MCP existen, cómo se arrancan y qué herramientas puede usar cada agente. Convierte las herramientas MCP en herramientas de CrewAI con su nombre original:
+
+```python
+from tertulia.mcp.client import researcher_tools
+
+Agent(..., tools=researcher_tools())
+```
+
+<details>
+<summary>Decisiones de diseño del cliente</summary>
+
+- **`tools=` y no `mcps=`:** con la integración nativa de CrewAI, el nombre de la herramienta se recorta a 64 caracteres y el modelo no vería `search_competitors`. `client.py` lee la carta una vez y entrega cada herramienta con su nombre original.
+- **Mínimo privilegio:** al servidor solo se le pasa `PYTHONPATH`, nunca nuestras claves de API, y una **lista blanca** decide qué herramientas llegan a cada agente.
+- **150 s de espera y una sola llamada:** CrewAI corta por defecto a los 30 s; una búsqueda en directo puede tardar 1-2 minutos.
+- **Errores clasificables:** `error_code(event.error)` devuelve el código semántico del servidor (`"invalid_input"`, `"not_found"`, `"source_unavailable"`) o `None` si el error no viene de nuestro servidor.
+- Los argumentos mal formados (p. ej. `radius_m="lejos"`) los rechaza CrewAI con su propio esquema antes de llamar a MCP.
+
+</details>
+
+<details>
+<summary>Servidor fetch (páginas web de la competencia)</summary>
+
+El servidor oficial `mcp-server-fetch` (Anthropic, MIT) descarga páginas web respetando el `robots.txt`. Sirve para leer las webs de la competencia (carta, precios, horarios).
+
+- **Versión fijada** (`2026.10.24`): la que rechaza direcciones privadas e internas (protección SSRF).
+- Esa versión necesita la librería MCP 2.x y CrewAI exige la 1.28, así que se ejecuta con **`uvx`** en su propio entorno aislado. Requiere `uv` (en `requirements.txt`).
+- **El texto lo sacamos nosotros** (`src/tertulia/mcp/html_text.py`): su conversor de HTML a texto falla dentro de MCP en Windows, así que pedimos el HTML en bruto (`raw=True`) y lo convertimos con la librería estándar. Funciona igual en Windows, Mac y Linux.
+- **Su resultado pasa por nuestro filtro anti prompt injection** en el cliente: el agente lo recibe envuelto en `<external_data>`.
+
+**Tests:** 21 en `tests/test_mcp_client.py`, 7 en `tests/test_html_text.py`, 1 de integración en `tests/test_mcp_integration.py`.
+
+</details>
+
+### Agente de visión (`src/tertulia/vision/`)
+
+Analiza las fotos de locales de la competencia aportadas por la persona usuaria y devuelve observaciones en texto, cada una con la imagen de origen.
+
+- La persona sube las fotos desde la interfaz (jpg/png, máx. 10 MB).
+- La herramienta `analyse_image` carga la imagen de forma segura, la reduce a 1.600 px y borra los metadatos GPS.
+- **El texto visible dentro de una foto pasa por el filtro anti prompt injection**, igual que el de las webs.
+- El modelo nunca describe a las personas: solo indica que aparecen.
+- Si el análisis falla (timeout, cuota, respuesta no válida), esa foto falla y las demás continúan.
+- El modelo también rellena una **tabla de precios** cuando los ve (Producto / Tamaño / Precio), útil para el ticket medio de la cafetería.
+- Modelo: `gemini-3.5-flash-lite` (acepta imágenes). En el nivel gratuito de Google los datos se usan para mejorar sus productos; con fotos de clientes reales habría que usar el nivel de pago.
+
+<details>
+<summary>Piezas del agente de visión</summary>
+
+| Pieza | Archivo | Qué hace |
+| --- | --- | --- |
+| Prueba manual | `scripts/try_vision.py` | Manda una foto al modelo real y muestra lo que ve |
+| Formato de respuesta | `vision_schemas.py` | `ImageAnswer`: el formulario que rellena el modelo (tipo, hasta 8 observaciones con categoría y confianza, texto visible, si aparecen personas). `ImageAnalysis`: añade la ruta y la revisión de seguridad |
+| Carga segura | `loader.py` | Resuelve la ruta real, exige que esté dentro de `outputs/`, máx. 10 MB, comprueba que es JPEG o PNG de verdad, reduce a 1.600 px y borra metadatos GPS |
+| Herramienta | `tool.py` | Une carga, modelo y filtro anti inyección. `to_text()` da el resultado en español para el crew. `AnalyseImageTool` es la herramienta de CrewAI |
+
+Probado con 9 fotos reales, incluyendo una mala hecha a través de una cristalera: el modelo bajó la confianza a «media» sin rechazar la foto.
+
+</details>
+
+**Tests:** 51 (15 del formato, 11 de la carga y 25 de la herramienta), con modelo falso.
+
+**Dependencias:** `mcp~=1.28.1` y `httpx>=0.27`. La versión 2.x de la librería MCP no es compatible con CrewAI: los tutoriales que usen `MCPServer` no sirven tal cual.
+
+---
+
+## Seguridad
+
+Todo texto externo pasa por `process()` antes de llegar a un agente: limpia el HTML, detecta patrones de inyección (español e inglés) y envuelve el contenido en `<external_data id=…>`.
 
 ```python
 from tertulia.guardrails.injection import process
 
 result = process(text, source="https://example.com")
-result.suspicious      # True si se detectó algún patrón
-result.patterns        # p. ej. ["ignore_instructions"]
-result.wrapped_text    # texto limpio y envuelto, para el agente
+result.suspicious   # True si se detectó algún patrón
+result.patterns     # p. ej. ["ignore_instructions"]
+result.wrapped_text # texto limpio y envuelto, listo para el agente
 ```
 
-**Decisiones de diseño:**
+El texto sospechoso **no se borra, se marca**: el grafo lo registra en el log y lo muestra como aviso en el veredicto (trazabilidad). Los delimitadores falsos se buscan en el texto original, antes de limpiar.
 
-- El texto sospechoso **no se borra, se marca**: el grafo no lo usa para ningún hallazgo, lo registra en el log y lo muestra como aviso en el veredicto (trazabilidad).
-- Los delimitadores falsos se buscan en el texto original, antes de limpiarlo, para que el intento quede registrado.
-- **Limitaciones conocidas:** es una detección por reglas; no detecta frases nuevas que no estén en la lista ni letras de otros alfabetos que imitan a las latinas (homoglifos). Por eso es **una capa más**, no la única: la otra defensa es que ninguna acción con impacto se ejecute sin aprobación humana.
+Defensa en capas: filtro por reglas + herramientas de solo lectura + aprobación humana antes de cualquier acción con impacto.
 
-**Tests:** 30 en `tests/test_injection.py`.
+**Limitaciones conocidas:** es detección por reglas; no detecta frases nuevas ni homoglifos. Por eso es una capa más, no la única.
 
-## 2. Contratos de datos compartidos (`schemas/`)
+**Tests:** 38 en `tests/test_injection.py`.
 
-Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Modelos Pydantic que usan todos los módulos:
+<details>
+<summary>Contratos de datos compartidos (`schemas/`)</summary>
 
-| Modelo          | Qué representa                                                                          | Nombre en la interfaz |
-| --------------- | --------------------------------------------------------------------------------------- | --------------------- |
-| `BusinessBrief` | El encargo (sector, barrio, presupuesto, perfil de usuario)                             | Km. 0                 |
-| `Source`        | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché)    | La Portera            |
-| `Finding`       | Cada dato o cifra del informe, con su fuente o el código que lo calculó                 | Chulapo Analytics     |
-| `Verdict`       | El semáforo, con confianza, motivos, datos que faltan, avisos y corrección del analista | ¿Mola?                |
-| `TraceEntry`    | Una línea del log de auditoría                                                          | —                     |
+Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Modelos Pydantic usados por todos los módulos:
+
+| Modelo | Qué representa | Nombre en la interfaz |
+| --- | --- | --- |
+| `BusinessBrief` | El encargo (sector, barrio, presupuesto, perfil de usuario) | Km. 0 |
+| `Source` | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché) | La Portera |
+| `Finding` | Cada dato o cifra del informe, con su fuente o el código que lo calculó | Chulapo Analytics |
+| `Verdict` | El semáforo, con confianza, motivos, datos que faltan y corrección del analista | ¿Mola? |
+| `TraceEntry` | Una línea del log de auditoría | — |
 
 **Reglas que imponen (Pydantic da error si no se cumplen):**
 
@@ -74,379 +340,63 @@ Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Mod
 3. **La decisión final es humana:** el veredicto nace sin aprobar.
 4. **Corregir al sistema deja rastro:** el analista puede cambiar el semáforo o la confianza, pero con motivo obligatorio; se guardan las dos versiones.
 
-La confianza la calcula el grafo con una fórmula fija (`compute_confidence()`), cuyos pesos se ajustan en `config/settings.py`.
+</details>
 
-## 3. Servidor MCP `neighbourhood_data`
+<details>
+<summary>Gobernanza y roadmap</summary>
 
-**Qué es.** Nuestro servidor MCP propio. Ofrece a los agentes herramientas de **solo lectura** con datos de barrios de Madrid. Primera fuente: **OpenStreetMap** (vía Overpass API).
+Detalle completo: [`docs/etica-y-gobernanza.md`](docs/etica-y-gobernanza.md) · [`docs/fuentes-de-datos.md`](docs/fuentes-de-datos.md)
 
-**Herramientas:**
+**Roadmap (datos):** en producción, cargar el extracto de OpenStreetMap de Madrid en una base de datos propia con búsqueda geográfica (PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos sin depender del servidor público de Overpass.
 
-| Herramienta                                                        | Qué hace                                                                                                                                                                                                                                                                                                                                                                                        | Estado                                                                                                                                                        |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Busca locales de una categoría (`cafe`, `coworking`) en un radio de 100 a 2.000 m alrededor del centro de un barrio o distrito de Madrid. Devuelve nombre, marca, dirección, coordenadas, horario, fecha de comprobación y enlace a OSM de cada local, más el total, la atribución y la fecha de consulta                                                                                       | ✅ Funciona con OpenStreetMap en directo (22 cafeterías en 800 m alrededor de Atocha, 22 oct). ✅ Reserva con datos guardados y modo demo (Atocha y Delicias) |
-| `search_audience_indicators(neighbourhood, radius_m=800)`          | Cuenta los lugares de OSM que atraen a cada tipo de público: `travellers` (estaciones, hoteles, museos), `workers` (oficinas sin coworkings, polígonos), `students` (universidades, bibliotecas), `residents` (supermercados, colegios, centros de salud, farmacias) y `food_leisure` (restaurantes, bares, cines, teatros). Por grupo: `count` sin duplicados y `highlights` (hasta 5 nombres) | ✅ Funciona en directo y en modo demo (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 oct)                                                                           |
+**Roadmap (detección):** añadir un clasificador con IA (p. ej. Model Armor de Google Cloud) como segunda capa. No incluido en la entrega porque envía los textos a un tercero y requiere cuenta con facturación.
 
-**Probarlo a mano:**
+**Roadmap (reseñas de la competencia):** hoy el informe las deja en «sin dato». Dos vías: campo opcional para pegar reseñas (con el filtro anti inyección) o Google Places API (revisar coste y condiciones de almacenamiento).
 
-```bash
-python scripts/try_mcp_server.py
-```
-
-El script arranca el servidor, pide su lista de herramientas (`tools/list`), llama a `search_competitors` (`tools/call`) y muestra cómo se rechaza una llamada mal formada.
-
-**Decisiones de diseño:**
-
-- **Solo lectura (mínimo privilegio):** el servidor no tiene herramientas que envíen, publiquen o borren nada. Si un texto malicioso engaña al modelo, lo peor que puede pasar es una búsqueda de más (evita la _excessive agency_).
-- Todo texto externo pasa por el filtro anti prompt injection antes de devolverse: cada local lleva `suspicious` e `injection_patterns` (los mismos campos que el schema `Source`). Los locales sospechosos se marcan, no se borran.
-- Transporte **stdio**: el servidor corre en local y las claves de API se leen del `.env`, nunca viajan en los mensajes.
-- **El nombre del barrio se valida antes de usarlo en la consulta** (solo letras, espacios y guiones): lo escribe el modelo, y un nombre con comillas o corchetes podría reescribir la consulta a Overpass (como una inyección SQL).
-- **Busca por radio** (800 m por defecto) alrededor del centro del barrio, no dentro de sus límites: en Atocha, OpenStreetMap tiene 2 cafeterías dentro del barrio y 41 en el radio.
-- **Tolerancia a fallos:** si el servidor público de Overpass falla (por ejemplo, un 502 puntual), lo reintenta una vez tras 5 s y deja un aviso en el log. Las consultas de una llamada comparten un **presupuesto de 110 s**, para contestar siempre antes del corte de 150 s del cliente; si no queda tiempo, se pasa a los datos guardados. Si vuelve a fallar, usa los **datos guardados** del barrio (marcados con `from_cache=True` y su fecha de captura); si no los hay, el dato queda como «sin dato». Un fallo nunca se convierte en «0 resultados».
-- **Modo demo:** con `DEMO_MODE=true` en el `.env`, la herramienta usa siempre los datos guardados de `data/demo_osm/` (Atocha y Delicias, capturados con 2.000 m y filtrados por distancia al radio pedido): respuesta al instante y sin depender de Overpass. Lo activa una persona antes de arrancar, nunca el modelo; cada resultado sigue indicando `from_cache: true` y la fecha de captura.
-
-**Códigos de error** (acordados con el grafo): cada error del servidor lleva un código, `[invalid_input]` (barrio, categoría o radio no válidos), `[not_found]` (barrio que no existe) o `[source_unavailable]` (OpenStreetMap no responde y no hay datos guardados). Llegan al grafo a través de los eventos MCP de CrewAI (`MCPToolExecutionFailedEvent`). MCP antepone «Error executing tool search_competitors: », así que el código no va al principio: se lee con `error_code()` del cliente (sección 4).
-
-**Dependencias:** `mcp~=1.28.1` y `httpx>=0.27` en `requirements.txt`. `mcp~=1.28.1` es la versión que exige CrewAI. La versión 2.x de la librería cambia la API (`FastMCP` pasa a llamarse `MCPServer`) y no es compatible con CrewAI: los tutoriales que usen `MCPServer` no sirven tal cual.
-
-**Fuente de datos:** © OpenStreetMap contributors, licencia ODbL (permite guardar los datos para la demo sin internet, citando la fuente).
-
-**Segunda fuente para coworkings: Foursquare (solo en directo).** OpenStreetMap se queda corto en coworkings: en una prueba el 27 oct, a 800 m de Atocha, OSM tenía 2 y Foursquare 9, pero varios de Foursquare eran sedes de empresas, porque allí las categorías las ponen sus usuarios.
-
-- Para coworkings, en directo, el servidor combina OSM y Foursquare **sin repetir locales** (nombre que coincide y a ≤ 75 m).
-- Lo que aparece **solo en Foursquare** lleva `needs_review: true` y un `review_reason`: el sistema no descarta nada, **decide el analista** (_human-in-the-loop_).
-- Cada local indica sus fuentes (`sources`). La respuesta incluye `confirmed_count` y `needs_review_count` (`total` = confirmados + por revisar), `foursquare_status` (`used`, `failed`, `no_key` o `not_used`) y `foursquare_limit_reached` (Foursquare devolvió su máximo de 50: puede haber más).
-- Si Foursquare falla o responde algo roto (no JSON, sin resultados, campos raros o coordenadas incompletas), la búsqueda sigue solo con OSM (`foursquare_status: "failed"`). Cada campo se valida y las categorías de Foursquare también pasan por el filtro anti prompt injection.
-- **Términos de Foursquare:** no permiten guardar sus datos (solo el identificador) y exigen «Powered by Foursquare». Por eso solo se usa en directo, no se guarda nada y en modo demo, con datos guardados o si falla, se usa solo OSM.
-- La clave (`FOURSQUARE_API_KEY`) la lee el propio servidor del `.env`, como `SecretStr` (nunca sale en logs). Sin clave, todo funciona solo con OSM.
-- ⚠️ `total` incluye los locales por revisar: hasta que el analista revise, no deben contarse como competidores confirmados. El docstring pide al agente informar siempre de los dos grupos por separado.
-- **`coverage_note`**, escrita por el servidor: en coworkings sin Foursquare (modo demo, sin clave o con fallo) avisa de que puede haber más. Va en la respuesta y no solo en el docstring, porque el modelo no siempre seguía esa regla.
-- **Tests:** 34 en `tests/test_foursquare.py`, con una copia de una respuesta real (sin llamadas a la API).
-
-**Centro del barrio:** si hay captura guardada, el centro se lee de ella (~35 s menos por llamada). Una caché en memoria no sirve: CrewAI arranca el servidor de nuevo en cada llamada.
-
-**Indicadores de público (`search_audience_indicators`).** El informe dejaba «tipo de público» sin dato y en una prueba el agente se lo inventó. Ahora tiene datos reales:
-
-- Una sola consulta a Overpass, generada desde la tabla `AUDIENCE_RULES` (añadir un tipo de lugar = una línea).
-- Duplicados: mismo nombre o misma web a ≤ 200 m cuentan una vez (en Atocha había 3 registros del mismo hotel). Los lugares sin nombre cuentan uno a uno.
-- Los nombres pasan por el filtro anti prompt injection; `indicator_note`, escrita por el servidor, recuerda que son lugares, no personas contadas.
-- Mismo flujo que `search_competitors`: presupuesto de tiempo, caída a datos guardados (`data/demo_osm/audience/`, capturados con `scripts/capture_audience_demo.py`) y modo demo.
-- Está en la lista de herramientas permitidas de `client.py`. Tests: 15 en `tests/test_audience_indicators.py`, con lugares reales de Atocha.
-
-## 4. Cliente MCP (`src/tertulia/mcp/client.py`)
-
-**Qué es.** El único sitio donde se dice qué servidores MCP existen, cómo se arrancan y qué herramientas puede usar cada agente. Convierte las herramientas MCP en herramientas de CrewAI listas para usar:
-
-```python
-from tertulia.mcp.client import researcher_tools
-
-Agent(..., tools=researcher_tools())
-```
-
-**Decisiones de diseño:**
-
-- **`tools=` y no `mcps=`:** con la integración nativa de CrewAI (`mcps=`), el nombre de la herramienta se forma con la ruta del servidor y se recorta a 64 caracteres (el modelo no vería `search_competitors`), y las herramientas se añaden al ejecutar la tarea, no al crear el agente. `client.py` lee la carta una vez y entrega cada herramienta con su nombre original.
-- **Mínimo privilegio:** al servidor solo se le pasa `PYTHONPATH`, nunca nuestras claves de API, y una **lista blanca** decide qué herramientas llegan a cada agente.
-- **150 s de espera y una sola llamada:** CrewAI corta por defecto a los 30 s y repite hasta 3 veces; una búsqueda en directo en OpenStreetMap tarda 1–2 minutos y el servidor ya reintenta y usa sus datos guardados.
-- **Errores clasificables:** el grafo escucha los eventos MCP de CrewAI (`MCPToolExecutionCompletedEvent` y `MCPToolExecutionFailedEvent`) y saca el código con `error_code(event.error)`, que devuelve el código semántico del servidor (`"invalid_input"`, `"not_found"`, `"source_unavailable"`) o `None` si el error no viene de nuestro servidor (timeout, conexión, fetch). No son los códigos ERR-XXX del grafo: el grafo los traduce a los suyos.
-- **Ojo:** los argumentos mal formados (p. ej. `radius_m="lejos"`) los rechaza CrewAI con su propio esquema antes de llamar a MCP, así que no generan `MCPToolExecutionFailedEvent`. El agente recibe el error como texto y puede corregirse.
-
-**Servidor existente: fetch.** El servidor oficial `mcp-server-fetch` (Anthropic, MIT) descarga páginas web respetando el `robots.txt`. Sirve para leer las webs de la competencia (carta, precios, horarios).
-
-- **Versión fijada** (`2026.10.24`): la que rechaza direcciones privadas e internas (protección SSRF).
-- Esa versión necesita la librería MCP 2.x y CrewAI exige la 1.28, así que se ejecuta con **`uvx`** en su propio entorno aislado. Requiere `uv` (en `requirements.txt`).
-- **El texto lo sacamos nosotros** (`src/tertulia/mcp/html_text.py`): su conversor de HTML a texto (readabilipy) falla dentro de MCP en Windows, así que le pedimos el HTML en bruto (`raw=True`) y lo convertimos con la librería estándar de Python (`html.parser`). Funciona igual en Windows, Mac y Linux, sin dependencias nuevas. El agente solo puede pedir `url` y `max_length` (100–20.000 caracteres).
-- **Su resultado pasa por nuestro filtro anti prompt injection** en el cliente: el agente lo recibe envuelto en `<external_data>` y marcado si parece sospechoso. Nuestro servidor ya filtra por dentro; uno de terceros, no.
-
-**Tests:** 21 en `tests/test_mcp_client.py`, sin arrancar ningún servidor; 7 del conversor en `tests/test_html_text.py`, y 1 de integración en `tests/test_mcp_integration.py`, que arranca el servidor real y comprueba el error tal como le llega al grafo (sin internet).
-
-## 5. Agente de visión (`src/tertulia/vision/`) (#32)
-
-**Qué hace.** Analiza las fotos de locales de la competencia y los gráficos del análisis, y devuelve una lista de observaciones en texto, cada una con la imagen de la que sale.
-
-**Decidido hasta ahora (27 oct):**
-
-- **De dónde salen las fotos:** las sube la consultora desde la interfaz (pueden ser fotos que haga ella en el barrio). Solo imágenes (jpg/png); los PDF quedan para más adelante.
-- **Cómo viajan:** dentro de la petición, en un campo nuevo `BusinessBrief.image_paths` (opcional), así que no cambia el contrato del grafo.
-- **Uso de las fotos:** en el producto, solo interno: el analista abre cada foto para comprobar lo que dice el informe. En la demo de clase sí se muestran, con su fuente citada.
-- **Herramienta propia `analyse_image`** en vez de la opción multimodal de CrewAI: así controlamos qué archivos se aceptan y el formato de la respuesta, y **el texto que aparezca dentro de una foto pasa por el filtro anti prompt injection**, igual que el de las webs.
-- **Modelo:** `gemini-3.5-flash-lite` (acepta imágenes). En el nivel gratuito de Google los datos se usan para mejorar sus productos, así que con fotos de clientes reales habría que usar el nivel de pago.
-
-**Hecho (27-28 oct, PR #66 y #67):**
-
-| Pieza                | Archivo                 | Qué hace                                                                                                                                                                                                                                                                                                               |
-| -------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prueba manual        | `scripts/try_vision.py` | Manda una foto al modelo real (una llamada) y muestra lo que ve                                                                                                                                                                                                                                                        |
-| Formato de respuesta | `vision_schemas.py`     | `ImageAnswer`: el formulario que rellena el modelo (tipo, hasta 8 observaciones con categoría y confianza alta/media/baja, texto visible, si aparecen personas, motivo si no se puede analizar). `ImageAnalysis`: añade lo que pone nuestro código (la ruta y la revisión de seguridad), que el modelo no puede elegir |
-| Carga segura         | `loader.py`             | Resuelve la ruta real (enlaces incluidos) y exige que esté dentro de `outputs/`; máximo 10 MB; comprueba que el contenido es JPEG o PNG de verdad; la reduce a 1.600 px y la guarda sin metadatos (se borra la posición GPS)                                                                                           |
-| Herramienta          | `tool.py`               | `analyse_image()` une todo: carga, modelo con formulario fijo y **filtro anti prompt injection sobre el texto visible y las observaciones**. `to_text()` lo da en español para el crew. `AnalyseImageTool` es la herramienta de CrewAI para el agente `vision` (texto envuelto en `<external_data>`)                   |
-
-Probado en directo con Gemini: leyó la pizarra de un bar (la oferta del competidor) y no inventó precios que no se veían. **Nunca describe a las personas**: solo indica que aparecen. Si la respuesta del modelo no encaja con el formulario, **o el modelo no contesta** (timeout, conexión, cuota), se lanza `AnalysisFailed`: esa foto falla, las demás siguen y la herramienta lo explica en texto, sin usar nunca un análisis a medias.
-
-**Probado con 9 fotos reales** (bar, cafetería y coworkings), incluida una mala hecha a través de una cristalera: el modelo bajó la confianza a «media» sin rechazar la foto. El prompt explica qué significa cada categoría (por ejemplo, «espacio de trabajo» es para los clientes; la barra de un café no cuenta), cuándo bajar la confianza y que la calidad de la foto no es una observación. `vision/` no importa nada de `crew/`: la herramienta recibe siempre el modelo, así que las dependencias van en una sola dirección.
-
-**Tabla de precios (29 oct).** El modelo rellena `prices` (producto, tamaño opcional y precio en euros como número; máximo 40, una carta larga no hace fallar el análisis) y `to_text()` dibuja una **tabla en markdown escrita por nuestro código** (Producto / Tamaño / Precio, euros a la española). Los nombres también pasan por el filtro anti prompt injection. El Analista recibe los precios como datos para el ticket medio de café (el café-cowork tiene dos fuentes de ingresos: café y cuotas). Probado en la app con una carta real.
-
-**Tests:** 51 (15 del formato, 11 de la carga y 25 de la herramienta), con un modelo falso y sin gastar llamadas.
-
-## 6. Seguridad y gobernanza (aportaciones)
-
-Detalle completo en `docs/etica-y-gobernanza.md` (qué no delegamos en la IA, riesgos y límites) y `docs/fuentes-de-datos.md` (cada fuente con sus términos de uso y límites).
-
-- Defensa en capas contra prompt injection: filtro por reglas + envoltorio de datos + herramientas de solo lectura + aprobación humana antes de cualquier acción con impacto.
-- **Roadmap (datos):** en producción, cargar el extracto de OpenStreetMap de Madrid en una base de datos propia con búsqueda geográfica (por ejemplo, PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos y sin depender del servidor público de Overpass. Opcionalmente, un servidor MCP siempre encendido por HTTP y los informes como tareas en segundo plano.
-- **Roadmap:** añadir un clasificador con IA (por ejemplo, Model Armor de Google Cloud) como segunda capa de detección. No se incluye en la entrega porque envía los textos a un tercero y requiere una cuenta con facturación.
-- **Roadmap (reseñas de la competencia):** hoy el informe las deja en «sin dato», sin inventarlas. Dos vías: un campo opcional en el formulario para pegar reseñas (con el filtro anti prompt injection, registradas como fuente `user_input` y sin nombres de clientes) o Google Places API (revisar coste y condiciones de almacenamiento).
+</details>
 
 ---
 
-# 🇬🇧 English
+## API
 
-## 1. Prompt injection guard
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `POST` | `/api/analyze` | Inicia un análisis → `{ job_id }` |
+| `POST` | `/api/upload/{job_id}` | Sube imágenes → `{ paths }` |
+| `GET` | `/api/debate/{job_id}` | SSE con mensajes de los agentes |
+| `POST` | `/api/chat/{job_id}` | SSE con respuestas del chat |
+| `GET` | `/api/verdict/{job_id}` | Veredicto JSON (incluye `tokens_used`) |
+| `POST` | `/api/approve/{job_id}` | Aprueba (devuelve PDF) o rechaza el análisis |
 
-**What it does.** Every external text (web pages, reviews, venue descriptions) goes through `process()` before it reaches an agent. The guard:
-
-1. **Cleans** the text: strips scripts, HTML tags and invisible characters, decodes HTML entities, collapses whitespace and truncates to 8,000 characters.
-2. **Detects** typical injection phrases in Spanish and English (ignore instructions, role change, system prompt leak, action commands, fake delimiters) on a normalised copy (lowercase, no accents, no look-alike characters).
-3. **Wraps** the text in `<external_data id=…>` with a random id and a note saying it is data, not instructions. It escapes `<` and `>` so nothing inside can look like a tag.
-
-**Usage:**
-
-```python
-from tertulia.guardrails.injection import process
-
-result = process(text, source="https://example.com")
-result.suspicious      # True if any pattern was found
-result.patterns        # e.g. ["ignore_instructions"]
-result.wrapped_text    # cleaned and wrapped text, for the agent
-```
-
-**Design decisions:**
-
-- Suspicious text is **flagged, not deleted**: the graph does not use it for any finding, records it in the log and shows it as a warning in the verdict (traceability).
-- Fake delimiters are searched in the original text, before cleaning, so the attempt is logged.
-- **Known limitations:** it is rule-based detection; it misses new phrases that are not in the list and letters from other alphabets that imitate Latin ones (homoglyphs). That is why it is **one layer**, not the only one: the other defence is that no high-impact action runs without human approval.
-
-**Tests:** 30 in `tests/test_injection.py`.
-
-## 2. Shared data contracts (`schemas/`)
-
-Proposed by Helen as Product Owner and agreed by the team on 21 Oct. Pydantic models used by every module:
-
-| Model           | What it represents                                                                       | UI name           |
-| --------------- | ---------------------------------------------------------------------------------------- | ----------------- |
-| `BusinessBrief` | The request (sector, neighbourhood, budget, user profile)                                | Km. 0             |
-| `Source`        | Where a piece of data comes from (URL, date, tool, suspicious flag, cache flag)          | La Portera        |
-| `Finding`       | Each fact or figure in the report, with its source or the code that computed it          | Chulapo Analytics |
-| `Verdict`       | The traffic light, with confidence, reasons, missing data, warnings and analyst override | ¿Mola?            |
-| `TraceEntry`    | One line of the audit log                                                                | —                 |
-
-**Rules they enforce (Pydantic raises an error otherwise):**
-
-1. **Every figure is traceable:** a `Finding` needs a source or a reference to the code that computed it.
-2. **Data is never invented:** if a value is missing, the `Finding` is `missing` and has no value.
-3. **The final decision is human:** the verdict starts unapproved.
-4. **Overriding the system leaves a trace:** the analyst can change the traffic light or the confidence, but must give a reason; both versions are kept.
-
-Confidence is computed by the graph with a fixed formula (`compute_confidence()`), whose weights are set in `config/settings.py`.
-
-## 3. MCP server `neighbourhood_data`
-
-**What it is.** Our own MCP server. It gives the agents **read-only** tools with data about Madrid neighbourhoods. First source: **OpenStreetMap** (via the Overpass API).
-
-**Tools:**
-
-| Tool                                                               | What it does                                                                                                                                                                                                                                                                                                                                                                                     | Status                                                                                                                                      |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search_competitors(neighbourhood, category="cafe", radius_m=800)` | Finds venues of a category (`cafe`, `coworking`) within 100 to 2,000 m of the centre of a Madrid barrio or district. Returns each venue's name, brand, address, coordinates, opening hours, check date and OSM link, plus the total, the attribution and the retrieval date                                                                                                                      | ✅ Works with live OpenStreetMap data (22 cafés within 800 m of Atocha, 22 Oct). ✅ Saved-data fallback and demo mode (Atocha and Delicias) |
-| `search_audience_indicators(neighbourhood, radius_m=800)`          | Counts the OSM places that bring each kind of public: `travellers` (stations, hotels, museums), `workers` (offices except coworkings, industrial areas), `students` (universities, libraries), `residents` (supermarkets, schools, health centres, pharmacies) and `food_leisure` (restaurants, bars, cinemas, theatres). Per group: `count` without duplicates and `highlights` (up to 5 names) | ✅ Works live and in demo mode (Atocha 800 m: 19 / 31 / 3 / 49 / 81, 28 Oct)                                                                |
-
-**Try it by hand:**
-
-```bash
-python scripts/try_mcp_server.py
-```
-
-The script starts the server, asks for its tool list (`tools/list`), calls `search_competitors` (`tools/call`) and shows how a malformed call is rejected.
-
-**Design decisions:**
-
-- **Read-only (least privilege):** the server has no tools that send, publish or delete anything. If malicious text tricks the model, the worst outcome is an extra search (it avoids _excessive agency_).
-- All external text goes through the prompt injection guard before being returned: each venue carries `suspicious` and `injection_patterns` (the same fields as the `Source` schema). Suspicious venues are flagged, not deleted.
-- **stdio** transport: the server runs locally and API keys are read from `.env`; they never travel in the messages.
-- **The neighbourhood name is validated before it goes into the query** (letters, spaces and hyphens only): the model writes it, and a name with quotes or brackets could rewrite the Overpass query (like an SQL injection).
-- **Radius search** (800 m by default) around the neighbourhood centre, not inside its boundary: in Atocha, OpenStreetMap has 2 cafés inside the barrio and 41 within the radius.
-- **Fault tolerance:** if the public Overpass server fails (for example, a one-off 502), it retries once after 5 s and logs a warning. The queries of one call share a **110 s time budget**, so the server always answers before the client's 150 s timeout; if time runs out, it falls back to saved data. If it fails again, it uses the neighbourhood's **saved data** (marked `from_cache=True`, with its capture date); if there is none, the value is reported as missing. A failure never becomes "0 results".
-- **Demo mode:** with `DEMO_MODE=true` in `.env`, the tool always uses the saved data in `data/demo_osm/` (Atocha and Delicias, captured within 2,000 m and filtered by distance to the requested radius): instant answers that do not depend on Overpass. A person turns it on before starting, never the model; every result still says `from_cache: true` and gives the capture date.
-
-**Error codes** (agreed with the graph): every server error carries a code, `[invalid_input]` (invalid neighbourhood, category or radius), `[not_found]` (neighbourhood does not exist) or `[source_unavailable]` (OpenStreetMap does not respond and there is no saved data). They reach the graph through CrewAI's MCP events (`MCPToolExecutionFailedEvent`). MCP puts "Error executing tool search_competitors: " in front, so the code is not at the start: it is read with the client's `error_code()` (section 4).
-
-**Dependencies:** `mcp~=1.28.1` and `httpx>=0.27` in `requirements.txt`. `mcp~=1.28.1` is the version CrewAI requires. Version 2.x of the library changes the API (`FastMCP` becomes `MCPServer`) and is not compatible with CrewAI: tutorials using `MCPServer` will not work as they are.
-
-**Data source:** © OpenStreetMap contributors, ODbL licence (it allows storing the data for the offline demo, as long as the source is credited).
-
-**Second source for coworkings: Foursquare (live only).** OpenStreetMap falls short on coworkings: in a test on 27 Oct, within 800 m of Atocha, OSM had 2 and Foursquare 9, but several of the Foursquare ones were company offices, because its categories are set by its users.
-
-- For coworkings, live, the server combines OSM and Foursquare **without repeating venues** (matching name, at most 75 m apart).
-- Venues found **only in Foursquare** get `needs_review: true` and a `review_reason`: the system discards nothing, **the analyst decides** (_human-in-the-loop_).
-- Each venue lists its sources (`sources`). The answer includes `confirmed_count` and `needs_review_count` (`total` = confirmed + to review), `foursquare_status` (`used`, `failed`, `no_key` or `not_used`) and `foursquare_limit_reached` (Foursquare returned its maximum of 50: there may be more).
-- If Foursquare fails or answers with something broken (not JSON, no results, odd fields or incomplete coordinates), the search carries on with OSM alone (`foursquare_status: "failed"`). Every field is validated and Foursquare's categories also go through the prompt injection guard.
-- **Foursquare's terms:** its data cannot be stored (only the id) and "Powered by Foursquare" is required. So it is used live only, nothing is stored, and in demo mode, with saved data or if it fails, OpenStreetMap alone is used.
-- The key (`FOURSQUARE_API_KEY`) is read by the server itself from `.env`, as a `SecretStr` (never shown in logs). Without a key, everything works with OSM alone.
-- ⚠️ `total` includes venues pending review: until the analyst reviews them, they must not count as confirmed competitors. The docstring tells the agent to always report both groups separately.
-- **`coverage_note`**, written by the server: for coworkings without Foursquare (demo mode, no key or failure) it warns there may be more. It is in the answer, not only in the docstring, because the model did not always follow that rule.
-- **Tests:** 34 in `tests/test_foursquare.py`, with a copy of a real answer (no API calls).
-
-**Neighbourhood centre:** when there is a saved capture, the centre is read from it (~35 s less per call). An in-memory cache does not help: CrewAI starts the server again on every call.
-
-**Audience indicators (`search_audience_indicators`).** The report left "type of public" empty, and in one test the agent made it up. Now it has real data:
-
-- One Overpass query, built from the `AUDIENCE_RULES` table (adding a kind of place = one line).
-- Duplicates: same name or same website within 200 m count once (Atocha had 3 records of the same hotel). Unnamed places count one by one.
-- Names go through the prompt injection guard; `indicator_note`, written by the server, says these are places, not people counted.
-- Same flow as `search_competitors`: time budget, fallback to saved data (`data/demo_osm/audience/`, captured with `scripts/capture_audience_demo.py`) and demo mode.
-- It is on the client's allow list (`client.py`). Tests: 15 in `tests/test_audience_indicators.py`, with real Atocha places.
-
-## 4. MCP client (`src/tertulia/mcp/client.py`)
-
-**What it is.** The only place that says which MCP servers exist, how to start them and which tools each agent may use. It turns MCP tools into ready-to-use CrewAI tools:
-
-```python
-from tertulia.mcp.client import researcher_tools
-
-Agent(..., tools=researcher_tools())
-```
-
-**Design decisions:**
-
-- **`tools=`, not `mcps=`:** with CrewAI's native integration (`mcps=`), the tool name is built from the server path and cut to 64 characters (the model would not see `search_competitors`), and tools are added when the task runs, not when the agent is created. `client.py` reads the tool list once and returns each tool with its original name.
-- **Least privilege:** the server only gets `PYTHONPATH`, never our API keys, and an **allow list** decides which tools reach each agent.
-- **150 s timeout and a single call:** by default CrewAI stops after 30 s and repeats up to 3 times; a live OpenStreetMap search takes 1–2 minutes and the server already retries and falls back to its saved data.
-- **Classifiable errors:** the graph listens to CrewAI's MCP events (`MCPToolExecutionCompletedEvent` and `MCPToolExecutionFailedEvent`) and gets the code with `error_code(event.error)`, which returns the server's semantic code (`"invalid_input"`, `"not_found"`, `"source_unavailable"`) or `None` when the error does not come from our server (timeout, connection, fetch). These are not the graph's ERR-XXX codes: the graph maps them to its own.
-- **Note:** malformed arguments (e.g. `radius_m="lejos"`) are rejected by CrewAI's own schema before MCP is called, so they produce no `MCPToolExecutionFailedEvent`. The agent gets the error as text and can correct itself.
-
-**Existing server: fetch.** The official `mcp-server-fetch` server (Anthropic, MIT) downloads web pages, respecting `robots.txt`. It is used to read competitors' websites (menus, prices, opening hours).
-
-- **Pinned version** (`2026.10.24`): the one that refuses private and internal addresses (SSRF protection).
-- That version needs the MCP library 2.x while CrewAI requires 1.28, so it runs with **`uvx`** in its own isolated environment. It requires `uv` (in `requirements.txt`).
-- **We extract the text ourselves** (`src/tertulia/mcp/html_text.py`): its HTML-to-text converter (readabilipy) breaks inside MCP on Windows, so we ask for the raw HTML (`raw=True`) and convert it with Python's standard library (`html.parser`). It works the same on Windows, Mac and Linux, with no new dependency. The agent can only ask for `url` and `max_length` (100–20,000 characters).
-- **Its output goes through our prompt injection guard** in the client: the agent receives it wrapped in `<external_data>` and flagged if it looks suspicious. Our own server already filters inside; a third-party one does not.
-
-**Tests:** 21 in `tests/test_mcp_client.py`, without starting any server; 7 for the converter in `tests/test_html_text.py`; and 1 integration test in `tests/test_mcp_integration.py`, which starts the real server and checks the error exactly as the graph receives it (no internet needed).
-
-## 5. Vision agent (`src/tertulia/vision/`) (#32)
-
-**What it does.** Analyses photos of competitors' venues and the analysis charts, and returns a list of text observations, each with the image it comes from.
-
-**Decided so far (27 Oct):**
-
-- **Where the photos come from:** the consultancy uploads them from the UI (they can take them in the neighbourhood). Images only (jpg/png); PDFs are left for later.
-- **How they travel:** inside the request, in a new optional field `BusinessBrief.image_paths`, so the graph contract does not change.
-- **Use of the photos:** in the product, internal only: the analyst opens each photo to check what the report says. In the class demo they are shown, with their source credited.
-- **Our own `analyse_image` tool** instead of CrewAI's multimodal option: we control which files are accepted and the answer format, and **any text that appears inside a photo goes through the prompt injection guard**, like web text.
-- **Model:** `gemini-3.5-flash-lite` (accepts images). On Google's free tier the data is used to improve their products, so with real client photos the paid tier would be needed.
-
-**Done (27-28 Oct, PR #66 and #67):**
-
-| Piece         | File                    | What it does                                                                                                                                                                                                                                                                                        |
-| ------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Manual test   | `scripts/try_vision.py` | Sends one photo to the real model (one call) and prints what it sees                                                                                                                                                                                                                                |
-| Answer format | `vision_schemas.py`     | `ImageAnswer`: the form the model fills in (kind, up to 8 observations with category and high/medium/low confidence, visible text, whether people appear, reason if it cannot be analysed). `ImageAnalysis`: adds what our code sets (the path and the safety check), which the model cannot choose |
-| Safe loading  | `loader.py`             | Resolves the real path (links included) and requires it to be inside `outputs/`; 10 MB max; checks the content really is JPEG or PNG; reduces it to 1,600 px and saves it without metadata (the GPS position is removed)                                                                            |
-| Tool          | `tool.py`               | `analyse_image()` joins it all: loading, the model with a fixed form and **the prompt injection guard on the visible text and the observations**. `to_text()` gives it in Spanish for the crew. `AnalyseImageTool` is the CrewAI tool for the `vision` agent (text wrapped in `<external_data>`)    |
-
-Tested live with Gemini: it read a bar's chalkboard (the competitor's offer) and did not invent prices that could not be seen. **It never describes people**: it only says they appear. If the model's answer does not fit the form, **or the model does not answer** (timeout, connection, quota), `AnalysisFailed` is raised: that photo fails, the others carry on, and the tool explains it as text, never using a half-filled analysis.
-
-**Tested with 9 real photos** (bar, café and coworkings), including a poor one taken through a window: the model lowered its confidence to "medium" without rejecting the photo. The prompt explains what each category means (e.g. "workspace" is for customers; a coffee bar counter does not count), when to lower the confidence, and that the photo's quality is not an observation. `vision/` imports nothing from `crew/`: the tool always receives the model, so dependencies go one way only.
-
-**Price table (29 Oct).** The model fills in `prices` (product, optional size and price in euros as a number; at most 40, so a long menu never makes the analysis fail) and `to_text()` draws a **markdown table written by our code** (Product / Size / Price, euros in Spanish format). Product names also go through the prompt injection guard. The Analyst gets the prices as data for the average coffee ticket (the café-cowork has two income streams: coffee and memberships). Tested in the app with a real menu.
-
-**Tests:** 51 (15 for the format, 11 for loading and 25 for the tool), with a fake model and no API calls.
-
-## 6. Security and governance (contributions)
-
-Full detail in `docs/etica-y-gobernanza.md` (what we do not delegate to AI, risks and limits) and `docs/fuentes-de-datos.md` (each source with its terms of use and limits).
-
-- Defence in layers against prompt injection: rule-based guard + data wrapping + read-only tools + human approval before any high-impact action.
-- **Roadmap (data):** in production, load the Madrid OpenStreetMap extract into our own database with geographic search (for example, PostgreSQL + PostGIS), refreshed every night: millisecond queries without depending on the public Overpass server. Optionally, an always-on MCP server over HTTP and reports as background jobs.
-- **Roadmap:** add an AI-based classifier (for example, Google Cloud Model Armor) as a second detection layer. Not included in this delivery because it sends the texts to a third party and needs a billing account.
-- **Roadmap (competitor reviews):** today the report leaves them as "no data", without making them up. Two options: an optional form field to paste reviews (through the prompt injection guard, recorded as a `user_input` source and without customer names) or the Google Places API (check cost and storage terms).
+El debate termina con `{ paused: true }` y espera la decisión humana. Al aprobar se genera el PDF con el mismo veredicto que la persona vio en el paso 4.
 
 ---
 
-# README-MARÍA ISABEL · Agentes (CrewAI) y perfiles de sector
+## Tests
 
-> Para Majo: mi parte para el `README.md` global, en español y en inglés. Coge lo que necesites.
->
-> _For Majo: my part for the global `README.md`, in Spanish and English. Take what you need._
-
-**Última actualización / Last update:** 30 oct 2026
-
-| Módulo / Module | Ruta / Path | Estado / Status |
-| --- | --- | --- |
-| Perfiles de sector / Sector profiles | `config/sectores/`, `src/tertulia/crew/sector.py` | ✅ Fusionado / Merged (PR #46) |
-| Agentes y tareas / Agents and tasks | `src/tertulia/crew/config/agents.yaml`, `tasks.yaml` | ✅ Fusionado / Merged (PR #48) |
-| Crew por pasos / Step-based crew | `src/tertulia/crew/crew.py`, `inputs.py` | ✅ Fusionado / Merged (PR #50, #53, #65, #73, #75) |
-| Herramientas por agente / Tools per agent | `src/tertulia/crew/agent_tools.py` | ✅ Fusionado / Merged (PR #62) |
-| Decisión del proceso / Process decision (#23) | `docs/decisiones/0002-proceso-crewai.md` | ✅ |
-
-## 🇪🇸 Español
-
-**Qué es.** El equipo de 5 agentes que hace la investigación. LangGraph decide el orden y CrewAI ejecuta **solo el paso** que le pide cada nodo del grafo. La justificación completa está en `docs/decisiones/0002-proceso-crewai.md`.
-
-| Agente | Qué hace | Herramientas |
-| --- | --- | --- |
-| Investigador (`researcher`) | Competencia y público del barrio, con fuente | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
-| Visión (`vision`) | Lee las fotos del encargo | `analyse_image` |
-| Analista (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
-| Redactor (`writer`) | Informe y semáforo propuesto | Ninguna: solo usa lo que le pasa el grafo |
-| Revisor (`reviewer`) | Comprueba cifras y fuentes del borrador | Ninguna |
-
-**Cómo lo llama el grafo:**
-
-```python
-from tertulia.crew.crew import llm_from_settings, review_comments, run_step
-from tertulia.crew.inputs import build_inputs
-from tertulia.crew.sector import load_sector
-
-llm = llm_from_settings()  # modelo de config/settings.py y .env
-data = build_inputs(brief, load_sector(brief.business_type), chat_context="...")
-out = run_step("research", data, llm)  # {"research_task": "...", "vision_task": "..."}
+```bash
+pytest
 ```
 
-Pasos: `research` (Investigador y Visión en paralelo), `analysis`, `writing` y `review`. `review_comments()` convierte la respuesta del Revisor en `reviewer_comments` (lista vacía = aprobado).
+430+ tests. Sin claves, sin internet: usan modelos falsos y datos guardados.
 
-**Añadir un sector nuevo** (sin tocar código):
+---
+
+## Añadir un sector
 
 1. Copia `config/sectores/_plantilla.yaml` como `config/sectores/<sector>.yaml` (minúsculas y guiones bajos).
-2. Rellena qué buscar y qué costes pedir. **Sin cifras:** los importes salen de fuentes o de la persona usuaria.
+2. Rellena qué buscar y qué costes pedir. **Sin cifras:** los importes los aporta la persona usuaria o salen de las fuentes.
 3. Ejecuta `pytest`: los tests comprueban que el perfil carga y es válido (campos conocidos, sin repetidos, nombre de archivo igual a `business_type`).
 
-**Fiabilidad:**
+---
 
-- Los agentes no pueden delegar trabajo (`allow_delegation: false`) y tienen un número de pasos limitado (`max_iter`).
-- Un agente sin herramientas recibe un aviso para que responda «sin dato» en vez de inventar (lo aprendimos en la primera prueba real).
-- Con Gemini: 5 reintentos ante el error 429 y 90 s de tiempo límite por intento.
-- `tracing=False`: CrewAI no sube prompts ni respuestas a sus servidores.
+## Equipo
 
-**Tests:** `test_sector.py`, `test_crew_config.py`, `test_crew.py` y `test_agent_tools.py`, con un modelo falso: sin claves, sin internet y sin coste.
-
-## 🇬🇧 English
-
-**What it is.** The 5-agent team that runs the research. LangGraph decides the order; CrewAI runs **only the step** each graph node asks for. Full rationale in `docs/decisiones/0002-proceso-crewai.md`.
-
-| Agent | What it does | Tools |
-| --- | --- | --- |
-| Researcher (`researcher`) | Competitors and audience of the area, with sources | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
-| Vision (`vision`) | Reads the photos in the brief | `analyse_image` |
-| Analyst (`analyst`) | Break-even point and charts | `break_even`, `run_python` |
-| Writer (`writer`) | Report and proposed traffic light | None: only uses what the graph passes |
-| Reviewer (`reviewer`) | Checks the draft's figures and sources | None |
-
-**How the graph calls it:** `run_step(step, build_inputs(...), llm)` with steps `research` (Researcher and Vision in parallel), `analysis`, `writing` and `review`. `review_comments()` turns the Reviewer's answer into `reviewer_comments` (empty list = approved).
-
-**Adding a sector** (no code changes): copy `config/sectores/_plantilla.yaml` to `config/sectores/<sector>.yaml`, fill in what to search for and which costs to ask for (**no figures**), and run `pytest` to check the profile loads and is valid.
-
-**Reliability:** no delegation between agents and a limited number of steps; agents without tools are told to answer "no data" instead of inventing (learnt in the first real run); with Gemini, 5 retries on error 429 and a 90 s timeout per attempt; `tracing=False`, so CrewAI uploads nothing to its servers.
-
-**Tests:** `test_sector.py`, `test_crew_config.py`, `test_crew.py` and `test_agent_tools.py`, with a fake model: no keys, no internet, no cost.
+| Módulo | Responsable |
+| --- | --- |
+| UI + API (`api/main.py`, `ui/`) | Majo (MajoRodri) |
+| Grafo LangGraph + HITL (`graph/`) | David (drojas-7u7) |
+| Agentes y tareas CrewAI (`crew/`) | María Isabel (MariaIsaDurango) |
+| Herramientas (`tools/`) | Yohanna (yohperez) |
+| MCP servidor + cliente (`mcp/`) | Helen (HelenDiMo) |
+| Ética, gobernanza y seguridad | Helen (HelenDiMo) |
