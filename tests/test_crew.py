@@ -153,7 +153,7 @@ def test_other_providers_get_no_gemini_options():
 
 def test_build_llm_does_not_call_the_api():
     llm = build_llm("gemini", "gemini-3.8-flash", api_key="clave-falsa")
-    assert llm.model == "gemini-3.8-flash"
+    assert llm.model == "gemini/gemini-3.8-flash"
 
 
 # --- Ejecución con el modelo falso ----------------------------------------------

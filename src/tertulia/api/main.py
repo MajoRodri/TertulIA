@@ -588,6 +588,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["simulated"]         = debate_simulated
     _jobs[job_id]["verdict_ready"]     = False
     _jobs[job_id]["paused_at"]         = datetime.now(timezone.utc)
+    _jobs[job_id]["tokens_used"]          = _tracking.get("tokens_used", 0) if crew else 0
     _jobs[job_id]["foursquare_used"]      = _tracking.get("foursquare_used", False) if crew else False
     _jobs[job_id]["mcp_sources"]          = _tracking.get("mcp_sources", []) if crew else []
     _jobs[job_id]["mcp_findings"]         = _tracking.get("mcp_findings", []) if crew else []
