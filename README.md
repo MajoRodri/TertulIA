@@ -3,17 +3,28 @@
   <img src="assets/tertulia.png" alt="TertulIA" height="60"/>
   <h3>Tu guía, tu vía.</h3>
   <p><em>Inteligencia colectiva para negocios locales</em></p>
+  <p>Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio de Madrid: investiga la competencia, analiza la economía y genera un informe en PDF con semáforo de viabilidad.</p>
 
   <!-- Sustituir # por la URL cuando esté disponible -->
   <a href="#"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
   &nbsp;
-  <a href="#instalación-y-arranque"><img alt="Ejecutar en local" src="https://img.shields.io/badge/Ejecutar%20en%20local-0F1730?style=for-the-badge&logo=python&logoColor=white"/></a>
+  <a href="#instalación-y-arranque"><img alt="Ejecutar en local" src="https://img.shields.io/badge/Ejecutar%20en%20local-1a1a2e?style=for-the-badge&logo=python&logoColor=white"/></a>
 </div>
 
 ---
 
 <!-- Demo en vídeo — sustituir el bloque por el embed cuando esté disponible -->
 > 📹 **Vídeo demo** — *próximamente*
+
+---
+
+## ¿Qué es TertulIA?
+
+TertulIA es una herramienta de análisis de viabilidad para negocios locales en Madrid. A partir de información básica sobre tu idea de negocio, un equipo de cinco agentes de inteligencia artificial investiga la competencia real del barrio, analiza los números y genera un informe completo en PDF con un veredicto de viabilidad.
+
+El proceso completo tiene cinco pasos: rellenar el encargo, esperar el debate de los agentes, añadir contexto si lo deseas, revisar el veredicto y aprobar el informe final. La herramienta no garantiza el éxito de ningún negocio.
+
+> El informe es una ayuda para tomar decisiones, no un sustituto del asesoramiento profesional.
 
 ---
 
@@ -25,25 +36,9 @@ Los datos existen — en OpenStreetMap, registros del Ayuntamiento de Madrid y p
 
 ---
 
-## Quiénes somos
-
-| Nombre | GitHub | Papel |
-| --- | --- | --- |
-| Majo Rodríguez | [@MajoRodri](https://github.com/MajoRodri) | Scrum Master |
-| Elena Díaz | [@HelenDiMo](https://github.com/HelenDiMo) | Product Owner |
-| David Rojas | [@drojas-7u7](https://github.com/drojas-7u7) | Developer |
-| María Isabel Durango | [@MariaIsaDurango](https://github.com/MariaIsaDurango) | Developer |
-| Yohanna Pérez | [@yohperez](https://github.com/yohperez) | Developer |
-
----
-
-Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio de Madrid: investiga la competencia, analiza la economía y genera un informe en PDF con semáforo de viabilidad.
-
----
-
 ## Contenido
 
-- [Instalación y arranque](#instalación-y-arranque)
+- [¿Qué es TertulIA?](#qué-es-tertulia)
 - [Arquitectura](#arquitectura)
 - [Agentes (CrewAI)](#agentes-crewai)
 - [Investigación y datos (MCP)](#investigación-y-datos-mcp)
@@ -51,25 +46,8 @@ Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio d
 - [API](#api)
 - [Tests](#tests)
 - [Añadir un sector](#añadir-un-sector)
+- [Instalación y arranque](#instalación-y-arranque)
 - [Equipo](#equipo)
-
----
-
-## Instalación y arranque
-
-```bash
-pip install -e .
-cp .env.example .env   # rellena las claves
-
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-uvicorn src.tertulia.api.main:app --reload --port 8000
-```
-
-Abre `http://localhost:8000` en el navegador.
 
 ---
 
@@ -390,13 +368,30 @@ pytest
 
 ---
 
+## Instalación y arranque
+
+```bash
+pip install -e .
+cp .env.example .env   # rellena las claves
+
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
+uvicorn src.tertulia.api.main:app --reload --port 8000
+```
+
+Abre `http://localhost:8000` en el navegador.
+
+---
+
 ## Equipo
 
-| Módulo | Responsable |
-| --- | --- |
-| UI + API (`api/main.py`, `ui/`) | Majo (MajoRodri) |
-| Grafo LangGraph + HITL (`graph/`) | David (drojas-7u7) |
-| Agentes y tareas CrewAI (`crew/`) | María Isabel (MariaIsaDurango) |
-| Herramientas (`tools/`) | Yohanna (yohperez) |
-| MCP servidor + cliente (`mcp/`) | Helen (HelenDiMo) |
-| Ética, gobernanza y seguridad | Helen (HelenDiMo) |
+| Nombre | GitHub | Papel |
+| --- | --- | --- |
+| Majo Rodríguez | [@MajoRodri](https://github.com/MajoRodri) | Scrum Master |
+| Elena Díaz | [@HelenDiMo](https://github.com/HelenDiMo) | Product Owner |
+| David Rojas | [@drojas-7u7](https://github.com/drojas-7u7) | Developer |
+| María Isabel Durango | [@MariaIsaDurango](https://github.com/MariaIsaDurango) | Developer |
+| Yohanna Pérez | [@yohperez](https://github.com/yohperez) | Developer |
