@@ -207,9 +207,11 @@ def _verdict_from_draft(
     """
     import re
 
-    from tertulia.schemas.models import compute_confidence
-
-    confidence = compute_confidence(findings, sources)
+    # Confidence: 1 minus 10% per "sin dato" in the draft and 5% per suspicious source.
+    # MCP findings are always FOUND so the old compute_confidence() always returned 1.0.
+    sin_dato_count = len(re.findall(r"\bsin\s+dato\b", draft, re.IGNORECASE))
+    suspicious_count = sum(getattr(s, "suspicious", False) for s in sources)
+    confidence = round(max(0.0, min(1.0, 1.0 - sin_dato_count * 0.1 - suspicious_count * 0.05)), 2)
 
     # Locate the semáforo / veredicto / resultado section (last ## heading that matches).
     semaforo_block = ""
@@ -222,9 +224,10 @@ def _verdict_from_draft(
         semaforo_block = match.group(1)
 
     # Determine traffic light: structured marker added to tasks.yaml takes precedence.
+    # Accept optional bullet prefix (- SEMAFORO: AMBAR) since some writers add it.
     # Fall back to keyword search in the semáforo block for drafts without the marker.
     structured = re.search(
-        r"^SEMAF[OÓ]RO:\s*(VERDE|[AÁ]MBAR|ROJO)\s*$",
+        r"^(?:[-*+]\s+)?SEMAF[OÓ]RO:\s*(VERDE|[AÁ]MBAR|ROJO)\s*$",
         draft,
         re.IGNORECASE | re.MULTILINE,
     )
@@ -246,9 +249,11 @@ def _verdict_from_draft(
             light = TrafficLight.AMBER
 
     # Extract bullet-point reasons: accept -, *, + and numbered lists (1. 2. etc.)
+    # Exclude the SEMAFORO: marker line itself — it is a machine token, not a human reason.
     reasons: list[str] = [
         m.group(1).strip()
         for m in re.finditer(r"^(?:[-*+]|\d+\.)\s+(.+)", semaforo_block, re.MULTILINE)
+        if not re.match(r"SEMAF[OÓ]RO:\s*", m.group(1), re.IGNORECASE)
     ]
     if not reasons:
         # Fall back: any non-empty, non-heading line in the semáforo block
@@ -256,6 +261,7 @@ def _verdict_from_draft(
             line.strip()
             for line in semaforo_block.splitlines()
             if line.strip() and not line.strip().startswith("#")
+            and not re.match(r"(?:[-*+]\s+)?SEMAF[OÓ]RO:\s*", line.strip(), re.IGNORECASE)
         ] or ["Ver informe completo para los motivos del semáforo."]
 
     # Build summary: first non-bullet, non-heading, non-empty line in the semáforo block.
@@ -1099,10 +1105,8 @@ async def get_verdict(job_id: str):
     result["tokens_used"] = job.get("tokens_used", 0)
     result["simulated"] = job.get("simulated", False)
     result["foursquare_used"] = job.get("foursquare_used", False)
-    # H-60: confidence is only reliable when there are real findings to penalise.
-    # An empty findings list produces 1.0 by formula, which is misleading.
-    findings = job.get("mcp_findings") or job.get("findings") or []
-    result["confidence_reliable"] = len(findings) > 0
+    # Confidence is only meaningful for real debates (not demo/skeleton).
+    result["confidence_reliable"] = not job.get("debate_simulated", True)
     return result
 
 
