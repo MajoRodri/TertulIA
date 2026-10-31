@@ -386,50 +386,54 @@ async def _prepare_crew(brief: BusinessBrief):
         _tracking: dict = {"foursquare_used": False}
 
         def _run(step: str, inp: dict) -> dict:
+            usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
             if step != "research":
-                return run_step(step, inp, llm, _tools_map)
-            # For the research step, listen for Foursquare usage via MCP events.
-            # Import errors mean tracking is unavailable — run without it.
-            try:
-                import json as _json
-
-                from crewai.events import crewai_event_bus
-                from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
-            except Exception:
-                return run_step(step, inp, llm, _tools_map)
-
-            detected = [False]
-
-            def _check(source, event):
-                if event.tool_name != "search_competitors":
-                    return
-                try:
-                    r = _json.loads(event.result) if isinstance(event.result, str) else event.result
-                    if not isinstance(r, dict):
-                        return
-                    if r.get("foursquare_status") == "used":
-                        detected[0] = True
-                    from tertulia.tools.adapters import mcp_response_to_sources_and_findings
-                    start_src = 1 + len(_tracking.get("mcp_sources", []))
-                    start_fnd = 1 + len(_tracking.get("mcp_findings", []))
-                    srcs, fnds, summary = mcp_response_to_sources_and_findings(
-                        r,
-                        start_source_index=start_src,
-                        start_finding_index=start_fnd,
-                    )
-                    _tracking.setdefault("mcp_sources", []).extend(srcs)
-                    _tracking.setdefault("mcp_findings", []).extend(fnds)
-                    _tracking.setdefault("mcp_research_summary", []).append(summary)
-                except Exception:
-                    pass
-
-            # _research_lock serializes scoped_handlers() across concurrent requests —
-            # crewai event bus is process-global and would cross-contaminate listeners.
-            with _research_lock, crewai_event_bus.scoped_handlers():
-                crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
                 result = run_step(step, inp, llm, _tools_map)
-            if detected[0]:
-                _tracking["foursquare_used"] = True
+            else:
+                # For the research step, listen for Foursquare usage via MCP events.
+                # Import errors mean tracking is unavailable — run without it.
+                try:
+                    import json as _json
+
+                    from crewai.events import crewai_event_bus
+                    from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
+                except Exception:
+                    result = run_step(step, inp, llm, _tools_map)
+                else:
+                    detected = [False]
+
+                    def _check(source, event):
+                        if event.tool_name != "search_competitors":
+                            return
+                        try:
+                            r = _json.loads(event.result) if isinstance(event.result, str) else event.result
+                            if not isinstance(r, dict):
+                                return
+                            if r.get("foursquare_status") == "used":
+                                detected[0] = True
+                            from tertulia.tools.adapters import mcp_response_to_sources_and_findings
+                            start_src = 1 + len(_tracking.get("mcp_sources", []))
+                            start_fnd = 1 + len(_tracking.get("mcp_findings", []))
+                            srcs, fnds, summary = mcp_response_to_sources_and_findings(
+                                r,
+                                start_source_index=start_src,
+                                start_finding_index=start_fnd,
+                            )
+                            _tracking.setdefault("mcp_sources", []).extend(srcs)
+                            _tracking.setdefault("mcp_findings", []).extend(fnds)
+                            _tracking.setdefault("mcp_research_summary", []).append(summary)
+                        except Exception:
+                            pass
+
+                    # _research_lock serializes scoped_handlers() across concurrent requests —
+                    # crewai event bus is process-global and would cross-contaminate listeners.
+                    with _research_lock, crewai_event_bus.scoped_handlers():
+                        crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
+                        result = run_step(step, inp, llm, _tools_map)
+                    if detected[0]:
+                        _tracking["foursquare_used"] = True
+            usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+            _tracking["tokens_used"] = _tracking.get("tokens_used", 0) + max(0, usage_after - usage_before)
             return result
 
         def _rebuild(acc: dict) -> dict:
@@ -580,7 +584,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
         "mcp_research_summary": "\n".join(_jobs[job_id].get("mcp_research_summary", [])),
         "review_round": 0, "reviewer_comments": [],
         "verdict": _jobs[job_id]["verdict"],
-        "traces": [], "tokens_used": 0,
+        "traces": [], "tokens_used": _tracking.get("tokens_used", 0) if crew else 0,
         "human_approved": False, "expired": False, "errors": [],
         "chat_context": "", "chat_context_applied": False,
         "discarded_competitors": [],

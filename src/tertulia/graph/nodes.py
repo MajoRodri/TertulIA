@@ -136,8 +136,14 @@ def writer_node(state: AgentState) -> dict:
             chat_context=state.get("chat_context"),
             mcp_research_summary=state.get("mcp_research_summary"),
         )
-        result = _run_step_timeout(run_step, "writing", inputs, llm_from_settings())
+        llm = llm_from_settings()
+        usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+        result = _run_step_timeout(run_step, "writing", inputs, llm)
+        usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
         patch["draft_report"] = result.get("writing_task") or state.get("draft_report", "")
+        tokens_spent = max(0, usage_after - usage_before)
+        if tokens_spent > 0:
+            patch["tokens_used"] = state.get("tokens_used", 0) + tokens_spent
         return patch
     except Exception as exc:  # noqa: BLE001
         log.warning("writer_node: error interno", exc_info=True)
@@ -167,13 +173,20 @@ def reviewer_node(state: AgentState) -> dict:
             review_feedback=state.get("reviewer_comments"),
             mcp_research_summary=state.get("mcp_research_summary"),
         )
-        result = _run_step_timeout(run_step, "review", inputs, llm_from_settings())
+        llm = llm_from_settings()
+        usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+        result = _run_step_timeout(run_step, "review", inputs, llm)
+        usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+        tokens_spent = max(0, usage_after - usage_before)
         comments = review_comments(result.get("review_task", ""))
         log.debug("reviewer_node: %s", "aprobado" if not comments else f"{len(comments)} comentario(s)")
-        return {
+        patch = {
             "reviewer_comments": comments,
             "review_round": state.get("review_round", 0) + 1,
         }
+        if tokens_spent > 0:
+            patch["tokens_used"] = state.get("tokens_used", 0) + tokens_spent
+        return patch
     except Exception as exc:  # noqa: BLE001
         log.warning("reviewer_node: error interno", exc_info=True)
         patch = _record_error(state, _internal_error("reviewer", exc))

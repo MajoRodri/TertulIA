@@ -75,6 +75,10 @@ function _buildMessage(data) {
        </div>`
     : "";
 
+  const tokensHtml = data.tokens_used > 0
+    ? `<div class="verdict-tokens">${data.tokens_used.toLocaleString("es-ES")} tokens analizados</div>`
+    : "";
+
   return `
     <div class="verdict-chat-card">
       <div class="verdict-chat-semaforo">
@@ -92,6 +96,7 @@ function _buildMessage(data) {
       ${missingHtml}
       ${warningsHtml}
       ${foursquareBadge}
+      ${tokensHtml}
     </div>`;
 }
 
