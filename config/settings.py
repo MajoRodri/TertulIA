@@ -1,5 +1,7 @@
+from typing import Annotated
+
 from pydantic import SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -21,7 +23,14 @@ class Settings(BaseSettings):
     
     # CORS — comma-separated origins, e.g. "https://tertulia.com,https://www.tertulia.com"
     # Keep "*" only for local dev; set real domain(s) before any public deployment.
-    ALLOWED_ORIGINS: list[str] = ["http://localhost:8000", "http://127.0.0.1:8000"]
+    ALLOWED_ORIGINS: Annotated[list[str], NoDecode] = ["http://localhost:8000", "http://127.0.0.1:8000"]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def split_origins(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # External APIs
     FOURSQUARE_API_KEY: SecretStr = SecretStr("")
@@ -40,9 +49,7 @@ class Settings(BaseSettings):
     MISSING_PENALTY: float = 0.1
     SUSPICIOUS_PENALTY: float = 0.05
 
-    # Load variables from .env file
-    # env_list_separator: lets ALLOWED_ORIGINS be a comma-separated string in .env
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_list_separator=",")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 # Singleton instance to be imported across the app
 settings = Settings()
