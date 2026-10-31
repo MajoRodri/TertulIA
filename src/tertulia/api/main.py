@@ -1015,7 +1015,7 @@ async def vision_analysis(job_id: str):
 
 
 def _strip_path_lines(text: str) -> str:
-    lines = [l for l in text.splitlines() if not (l.strip().lstrip("[").startswith("job-") and "/uploads/" in l)]
+    lines = [line for line in text.splitlines() if not (line.strip().lstrip("[").startswith("job-") and "/uploads/" in line)]
     return "\n".join(lines)
 
 
