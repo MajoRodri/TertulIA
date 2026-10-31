@@ -181,12 +181,13 @@ def _build_crew(
         tasks=tasks,
         process=Process.sequential,
         tracing=False,
-        verbose=True,
     )
 
 
-def run_step(step: str, inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | None = None) -> dict[str, str]:
-    """Ejecuta un paso y devuelve el texto de cada tarea: {"research_task": "...", ...}.
+def run_step(
+    step: str, inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | None = None
+) -> tuple[dict[str, str], int]:
+    """Ejecuta un paso y devuelve (textos, tokens): textos es {"research_task": "...", ...}.
 
     ``inputs`` debe venir de ``build_inputs()`` para que no falte ninguna variable.
     """
@@ -203,9 +204,11 @@ def _kickoff(
     llm: BaseLLM,
     tools: ToolsByAgent | None,
     max_iter: int | None = None,
-) -> dict[str, str]:
+) -> tuple[dict[str, str], int]:
     result = _build_crew(task_names, llm, tools, min_max_iter=max_iter).kickoff(inputs=inputs)
-    return {task_name: output.raw for task_name, output in zip(task_names, result.tasks_output, strict=True)}
+    texts = {task_name: output.raw for task_name, output in zip(task_names, result.tasks_output, strict=True)}
+    tokens = getattr(result.token_usage, "total_tokens", 0) or 0
+    return texts, tokens
 
 
 def _image_count(images: str) -> int:
@@ -215,7 +218,7 @@ def _image_count(images: str) -> int:
     return sum(1 for line in images.splitlines() if line.strip().startswith("- "))
 
 
-def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | None) -> dict[str, str]:
+def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | None) -> tuple[dict[str, str], int]:
     """Paso research: Investigador y Visión son independientes.
 
     - Sin fotos: la visión no llama al modelo (una llamada menos y menos riesgo de 429).
@@ -225,22 +228,23 @@ def _run_research(inputs: dict[str, str], llm: BaseLLM, tools: ToolsByAgent | No
     """
     photos = _image_count(inputs.get("images", NO_IMAGES))
     if photos == 0:
-        result = _kickoff(("research_task",), inputs, llm, tools)
-        return {**result, "vision_task": NO_IMAGES_ANSWER}
+        texts, tokens = _kickoff(("research_task",), inputs, llm, tools)
+        return {**texts, "vision_task": NO_IMAGES_ANSWER}, tokens
 
     with ThreadPoolExecutor(max_workers=2, thread_name_prefix="crew-research") as pool:
-        research = pool.submit(_kickoff, ("research_task",), inputs, llm, tools)
-        vision = pool.submit(_kickoff, ("vision_task",), inputs, llm, tools, photos + VISION_EXTRA_STEPS)
+        research_fut = pool.submit(_kickoff, ("research_task",), inputs, llm, tools)
+        vision_fut = pool.submit(_kickoff, ("vision_task",), inputs, llm, tools, photos + VISION_EXTRA_STEPS)
         # La investigación es imprescindible: si falla, el error sube como antes.
-        research_result = research.result()
+        research_texts, research_tokens = research_fut.result()
         # La visión no: si falla, se conserva la investigación y el fallo queda a la vista.
         try:
-            vision_result = vision.result()
+            vision_texts, vision_tokens = vision_fut.result()
         except Exception as exc:  # noqa: BLE001 - cualquier fallo de la visión
             logger.warning("Vision task failed, research kept: %s", exc)
             # El detalle técnico solo va al log: la persona usuaria ve un mensaje claro
-            vision_result = {"vision_task": VISION_FAILED_ANSWER}
-        return {**research_result, **vision_result}
+            vision_texts = {"vision_task": VISION_FAILED_ANSWER}
+            vision_tokens = 0
+        return {**research_texts, **vision_texts}, research_tokens + vision_tokens
 
 
 def review_comments(review_text: str) -> list[str]:

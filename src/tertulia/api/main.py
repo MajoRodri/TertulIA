@@ -40,6 +40,10 @@ from tertulia.trazas import save_traces
 
 # Project root: src/tertulia/api/main.py → 3 levels up
 _ROOT = Path(__file__).resolve().parents[3]
+
+# No-op when uvicorn has already set up handlers; ensures messages are visible
+# when the module runs outside uvicorn (scripts, tests, direct invocation).
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger(__name__)
 
 # MCP tools loaded once at startup and reused across debates (~9 s saved per debate).
@@ -207,26 +211,39 @@ def _verdict_from_draft(
 
     confidence = compute_confidence(findings, sources)
 
-    # Locate the semáforo / veredicto section (last ## heading that matches).
+    # Locate the semáforo / veredicto / resultado section (last ## heading that matches).
     semaforo_block = ""
     match = re.search(
-        r"#{1,3}[^#\n]*[Ss]em[aá]foro[^#\n]*\n(.*?)(?=\n#{1,3}|\Z)",
+        r"#{1,3}[^#\n]*(?:[Ss]em[aá]foro|[Vv]eredicto|[Rr]esultado)[^#\n]*\n(.*?)(?=\n#{1,3}|\Z)",
         draft,
         re.DOTALL,
     )
     if match:
         semaforo_block = match.group(1)
 
-    # Determine traffic light from color keywords — case-insensitive so ROJO/rojo/Rojo all match.
-    # Search only inside the semáforo block to avoid false positives from phrases like
-    # "números rojos" or "zona verde" in the analysis body.
-    search_in = semaforo_block or draft
-    if re.search(r"\bverde\b", search_in, re.IGNORECASE):
-        light = TrafficLight.GREEN
-    elif re.search(r"\brojo\b", search_in, re.IGNORECASE):
-        light = TrafficLight.RED
+    # Determine traffic light: structured marker added to tasks.yaml takes precedence.
+    # Fall back to keyword search in the semáforo block for drafts without the marker.
+    structured = re.search(
+        r"^SEMAF[OÓ]RO:\s*(VERDE|[AÁ]MBAR|ROJO)\s*$",
+        draft,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if structured:
+        token = structured.group(1).upper()
+        if "VERDE" in token:
+            light = TrafficLight.GREEN
+        elif "ROJO" in token:
+            light = TrafficLight.RED
+        else:
+            light = TrafficLight.AMBER
     else:
-        light = TrafficLight.AMBER
+        search_in = semaforo_block or draft
+        if re.search(r"\bverde\b", search_in, re.IGNORECASE):
+            light = TrafficLight.GREEN
+        elif re.search(r"\brojo\b", search_in, re.IGNORECASE):
+            light = TrafficLight.RED
+        else:
+            light = TrafficLight.AMBER
 
     # Extract bullet-point reasons: accept -, *, + and numbered lists (1. 2. etc.)
     reasons: list[str] = [
@@ -279,10 +296,10 @@ async def _compute_and_cache_verdict(job_id: str) -> None:
         context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
     if chat_history:
         history_text = "\n".join(
-            f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
-            for h in chat_history
+            f"Usuario: {h['text']}" for h in chat_history if h["role"] == "user"
         )
-        context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+        if history_text:
+            context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
 
     from tertulia.guardrails.anonimizacion import _scrub
     chat_context = _scrub("\n\n".join(context_parts)) if context_parts else ""
@@ -308,7 +325,7 @@ async def _compute_and_cache_verdict(job_id: str) -> None:
                 chat_context=chat_context,
                 mcp_research_summary="\n".join(job.get("mcp_research_summary", [])),
             )
-            result = await asyncio.to_thread(run_step, "writing", inputs, llm_from_settings())
+            result, _tokens = await asyncio.to_thread(run_step, "writing", inputs, llm_from_settings())
             draft = result.get("writing_task") or draft
             _jobs[job_id]["draft_report"]           = draft
             _jobs[job_id]["chat_context_precomputed"] = True
@@ -386,9 +403,8 @@ async def _prepare_crew(brief: BusinessBrief):
         _tracking: dict = {"foursquare_used": False}
 
         def _run(step: str, inp: dict) -> dict:
-            usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
             if step != "research":
-                result = run_step(step, inp, llm, _tools_map)
+                result, tokens = run_step(step, inp, llm, _tools_map)
             else:
                 # For the research step, listen for Foursquare usage via MCP events.
                 # Import errors mean tracking is unavailable — run without it.
@@ -398,7 +414,7 @@ async def _prepare_crew(brief: BusinessBrief):
                     from crewai.events import crewai_event_bus
                     from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
                 except Exception:
-                    result = run_step(step, inp, llm, _tools_map)
+                    result, tokens = run_step(step, inp, llm, _tools_map)
                 else:
                     detected = [False]
 
@@ -429,11 +445,10 @@ async def _prepare_crew(brief: BusinessBrief):
                     # crewai event bus is process-global and would cross-contaminate listeners.
                     with _research_lock, crewai_event_bus.scoped_handlers():
                         crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
-                        result = run_step(step, inp, llm, _tools_map)
+                        result, tokens = run_step(step, inp, llm, _tools_map)
                     if detected[0]:
                         _tracking["foursquare_used"] = True
-            usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
-            _tracking["tokens_used"] = _tracking.get("tokens_used", 0) + max(0, usage_after - usage_before)
+            _tracking["tokens_used"] = _tracking.get("tokens_used", 0) + tokens
             return result
 
         def _rebuild(acc: dict) -> dict:
@@ -1049,7 +1064,7 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
         # "research" runs both the researcher and vision tasks in the same crew step.
         # Passing [] for "researcher" leaves it with no tools so only the vision task
         # executes; the researcher completes immediately with nothing to call.
-        result = await asyncio.to_thread(
+        result, _tokens = await asyncio.to_thread(
             run_step, "research", inputs, llm,
             {"vision": vision_tools, "researcher": [], "analyst": [], "writer": [], "reviewer": []},
         )
@@ -1135,10 +1150,10 @@ async def approve(job_id: str, req: ApproveRequest):
             context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
         if chat_history:
             history_text = "\n".join(
-                f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
-                for h in chat_history
+                f"Usuario: {h['text']}" for h in chat_history if h["role"] == "user"
             )
-            context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+            if history_text:
+                context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
         if context_parts:
             from tertulia.guardrails.anonimizacion import _scrub
             state_update["chat_context"] = _scrub("\n\n".join(context_parts))
@@ -1162,19 +1177,9 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
-        # H-82: if the graph's writer_node rewrote the draft (review loop or chat_context),
-        # update the cached draft and recompute the verdict so the PDF reflects the real output.
         new_draft = final.get("draft_report", "")
         if new_draft and new_draft != _jobs[job_id].get("draft_report", ""):
             _jobs[job_id]["draft_report"] = new_draft
-            try:
-                _jobs[job_id]["verdict"] = _verdict_from_draft(
-                    new_draft,
-                    _jobs[job_id].get("mcp_findings", []),
-                    _jobs[job_id].get("mcp_sources", []),
-                )
-            except Exception:
-                log.warning("verdict recompute from revised draft failed job=%s", job_id, exc_info=True)
         try:
             await asyncio.to_thread(save_traces, final.get("traces", []), job_id)
         except Exception:

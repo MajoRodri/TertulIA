@@ -39,8 +39,8 @@ SUSPICIOUS_PATTERNS: dict[str, str] = {
         r".{0,30}\b(correo|email|informe|report|comando|command|archivo|file)\b"
     ),
     "fake_delimiter": (
-        r"(<\|im_start\|>|<\|im_end\|>|\[/?inst\]|\[system\]|</?external_data>"
-        r"|<</?SYS>>|<\|begin_of_text\|>|<\|start_header_id\|>)"
+        r"(<\|im_start\|>|<\|im_end\|>|\[/?inst\]|\[system\]|</?external_data"
+        r"|<</?sys>>|<\|begin_of_text\|>|<\|start_header_id\|>)"
     ),
 }
 

@@ -118,12 +118,17 @@ writing_task:
     que no estén en los hallazgos. Incluye una sección con los datos que faltan
     y otra con las advertencias.
 
+    La última línea del informe debe ser exactamente "SEMAFORO: VERDE",
+    "SEMAFORO: AMBAR" o "SEMAFORO: ROJO" (en mayúsculas, sin acento, sin
+    ningún otro texto en esa línea).
+
     El punto de equilibrio se calcula solo con una unidad de venta
     ({unit_label}). Indícalo en el semáforo con una nota aclaratoria: qué
     ingresos cuenta el cálculo y cuáles deja fuera.
   expected_output: >-
     Un informe en Markdown con: resumen, competencia, análisis económico,
     datos que faltan, advertencias y semáforo propuesto con sus motivos.
+    Última línea: "SEMAFORO: VERDE", "SEMAFORO: AMBAR" o "SEMAFORO: ROJO".
   agent: writer
 
 review_task:

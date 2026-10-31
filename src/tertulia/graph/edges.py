@@ -34,10 +34,10 @@ def should_continue(state: AgentState) -> str:
     reviewer_comments = state.get("reviewer_comments", [])
 
     if reviewer_comments and review_round < max_iterations:
-        log.debug("should_continue: ronda %d/%d — volviendo al writer", review_round, max_iterations)
+        log.info("should_continue: ronda %d/%d — volviendo al writer", review_round, max_iterations)
         return "writer"
 
-    log.debug("should_continue: aprobado o límite alcanzado — pasando a human_approval")
+    log.info("should_continue: aprobado o límite alcanzado — pasando a human_approval")
     return "human_approval"
 
 
@@ -47,8 +47,8 @@ def route_after_approval(state: AgentState) -> str:
     already_applied = state.get("chat_context_applied", False)
 
     if chat_context and not already_applied:
-        log.debug("route_after_approval: aplicando chat_context — volviendo al writer")
+        log.info("route_after_approval: aplicando chat_context — volviendo al writer")
         return "writer"
 
-    log.debug("route_after_approval: aprobación final")
+    log.info("route_after_approval: aprobación final")
     return "human_approval_end"

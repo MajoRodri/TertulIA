@@ -37,7 +37,7 @@ _STEP_TIMEOUT_S = 180
 _pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="run_step")
 
 
-def _run_step_timeout(run_step, step: str, inputs: dict, llm) -> dict:
+def _run_step_timeout(run_step, step: str, inputs: dict, llm) -> tuple[dict, int]:
     try:
         return _pool.submit(run_step, step, inputs, llm).result(timeout=_STEP_TIMEOUT_S)
     except _FuturesTimeout:
@@ -90,7 +90,7 @@ def research_node(state: AgentState) -> dict:
     """Pass-through: el crew ya corrió en main.py y sus datos están en state."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("research"))
-    log.debug("research_node: datos recibidos")
+    log.info("research_node: datos recibidos")
     return {}
 
 
@@ -98,7 +98,7 @@ def analyst_node(state: AgentState) -> dict:
     """Pass-through: el crew ya corrió en main.py y sus datos están en state."""
     if _tokens_exhausted(state):
         return _record_error(state, _budget_error("analyst"))
-    log.debug("analyst_node: datos recibidos")
+    log.info("analyst_node: datos recibidos")
     return {}
 
 
@@ -113,11 +113,11 @@ def writer_node(state: AgentState) -> dict:
             patch["chat_context_applied"] = True
 
         if state.get("review_round", 0) == 0:
-            log.debug("writer_node: preservando borrador del debate")
+            log.info("writer_node: preservando borrador del debate")
             patch["draft_report"] = state.get("draft_report", "")
             return patch
 
-        log.debug("writer_node: reescribiendo con feedback del revisor")
+        log.info("writer_node: reescribiendo con feedback del revisor")
         from tertulia.crew.crew import llm_from_settings, run_step
         from tertulia.crew.inputs import build_inputs
         from tertulia.crew.sector import load_sector
@@ -137,11 +137,8 @@ def writer_node(state: AgentState) -> dict:
             mcp_research_summary=state.get("mcp_research_summary"),
         )
         llm = llm_from_settings()
-        usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
-        result = _run_step_timeout(run_step, "writing", inputs, llm)
-        usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
+        result, tokens_spent = _run_step_timeout(run_step, "writing", inputs, llm)
         patch["draft_report"] = result.get("writing_task") or state.get("draft_report", "")
-        tokens_spent = max(0, usage_after - usage_before)
         if tokens_spent > 0:
             patch["tokens_used"] = state.get("tokens_used", 0) + tokens_spent
         return patch
@@ -174,12 +171,9 @@ def reviewer_node(state: AgentState) -> dict:
             mcp_research_summary=state.get("mcp_research_summary"),
         )
         llm = llm_from_settings()
-        usage_before = getattr(llm, "token_usage", {}).get("total_tokens", 0)
-        result = _run_step_timeout(run_step, "review", inputs, llm)
-        usage_after = getattr(llm, "token_usage", {}).get("total_tokens", 0)
-        tokens_spent = max(0, usage_after - usage_before)
+        result, tokens_spent = _run_step_timeout(run_step, "review", inputs, llm)
         comments = review_comments(result.get("review_task", ""))
-        log.debug("reviewer_node: %s", "aprobado" if not comments else f"{len(comments)} comentario(s)")
+        log.info("reviewer_node: %s", "aprobado" if not comments else f"{len(comments)} comentario(s)")
         patch = {
             "reviewer_comments": comments,
             "review_round": state.get("review_round", 0) + 1,
