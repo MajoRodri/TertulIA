@@ -30,7 +30,7 @@ export function initApproval(jobId) {
   });
 
   btnReject.addEventListener("click", async () => {
-    if (!confirm("¿Seguro que quieres rechazar el análisis? Volverás al debate para ajustar los datos.")) return;
+    if (!confirm("¿Seguro que quieres rechazar el análisis? Esta acción es definitiva y no se puede deshacer.")) return;
     await approveReport(jobId, false).catch(() => {});
     document.getElementById("panel-approval").classList.add("hidden");
     document.getElementById("panel-debate").classList.remove("hidden");
