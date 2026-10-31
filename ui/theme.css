@@ -187,6 +187,7 @@ h3 { font-size: var(--text-xl); }
 }
 
 .panel-header h2 { margin-top: var(--s1); }
+.panel-hint { font-size: 13px; color: var(--muted); margin-top: var(--s2); }
 
 .hidden { display: none !important; }
 
