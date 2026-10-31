@@ -27,7 +27,8 @@ print(f"Modelo: {settings.LLM_PROVIDER}/{settings.LLM_MODEL_NAME}")  # nunca se 
 
 brief = BusinessBrief(business_type="cafe_cowork", neighbourhood="Atocha")
 inputs = build_inputs(brief, load_sector(brief.business_type))
-result = run_step("research", inputs, llm_from_settings())
+result, tokens = run_step("research", inputs, llm_from_settings())
 
+print(f"\nTokens usados: {tokens}")
 for task_name, text in result.items():
     print(f"\n===== {task_name} =====\n{text}")

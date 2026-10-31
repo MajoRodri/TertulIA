@@ -162,7 +162,7 @@ def test_build_llm_does_not_call_the_api():
 def test_research_without_photos_skips_the_vision_call(inputs):
     # Sin fotos, la visión no llama al modelo: una llamada menos (y menos 429)
     llm = FakeLLM(model="fake", received=[])
-    result = run_step("research", inputs, llm, NO_TOOLS)
+    result, _ = run_step("research", inputs, llm, NO_TOOLS)
     assert result == {"research_task": "respuesta de prueba", "vision_task": NO_IMAGES_ANSWER}
     assert len(llm.received) == 1  # solo el Investigador
     assert "Atocha" in llm.received[0]  # las variables llegaron al agente
@@ -183,7 +183,7 @@ def test_research_with_photos_runs_both_tasks_in_parallel(brief):
             return super().call(messages, *args, **kwargs)
 
     llm = MeetingLLM(model="fake", received=[])
-    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
+    result, _ = run_step("research", _two_photos(brief), llm, NO_TOOLS)
     assert result == {"research_task": "respuesta de prueba", "vision_task": "respuesta de prueba"}
     assert not barrier.broken
 
@@ -201,7 +201,7 @@ class _FailsFor(FakeLLM):
 
 def test_vision_failure_keeps_the_research(brief):
     llm = _FailsFor(model="fake", received=[], role="Analista visual")
-    result = run_step("research", _two_photos(brief), llm, NO_TOOLS)
+    result, _ = run_step("research", _two_photos(brief), llm, NO_TOOLS)
     assert result["research_task"] == "respuesta de prueba"  # no se pierde
     assert result["vision_task"] == VISION_FAILED_ANSWER  # el fallo queda a la vista...
     assert "RuntimeError" not in result["vision_task"]  # ...sin detalles técnicos (Majo)

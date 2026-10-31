@@ -136,6 +136,7 @@ def test_number_format_is_spanish():
 
 
 def test_trace_from_execution_keeps_the_full_script(tmp_path):
+    pytest.importorskip("matplotlib")
     code = "print(21 * 2)"
     result = run_code(code, outputs_root=tmp_path)
     trace = trace_from_execution(result, trace_id="trc-003", finding_ids=["fnd-001"])

@@ -1,7 +1,11 @@
 """Conditional routing logic for the TertulIA graph."""
 
+import logging
+
 from .errors import ErrorSeverity
 from .state import AgentState
+
+log = logging.getLogger(__name__)
 
 
 def should_continue(state: AgentState) -> str:
@@ -13,7 +17,6 @@ def should_continue(state: AgentState) -> str:
     ``ERR-006``), the graph stops looping and goes straight to ``human_approval``:
     there is no point reviewing a report that cannot be finished.
     """
-    # Límite de iteraciones: viene de config/settings.py (MAX_ITERATIONS = 3).
     from config.settings import settings  # config/ is outside src/
 
     max_iterations = settings.MAX_ITERATIONS
@@ -24,37 +27,28 @@ def should_continue(state: AgentState) -> str:
         if error.severity == ErrorSeverity.FATAL
     ]
     if fatal_errors:
-        print(
-            f"[FLUJO] Error fatal en el estudio ({fatal_errors[0].code}). "
-            "Pasando a aprobación humana sin más revisiones."
-        )
+        log.warning("should_continue: error fatal %s — saltando a human_approval", fatal_errors[0].code)
         return "human_approval"
 
     review_round = state.get("review_round", 0)
     reviewer_comments = state.get("reviewer_comments", [])
 
-    # Si hay comentarios (rechazo) y no hemos superado el límite, volvemos al Writer
     if reviewer_comments and review_round < max_iterations:
-        print(
-            f"[FLUJO] Revisor ha rechazado (Ronda {review_round}/{max_iterations}). "
-            "Volviendo al Redactor."
-        )
+        log.info("should_continue: ronda %d/%d — volviendo al writer", review_round, max_iterations)
         return "writer"
 
-    # Si no hay comentarios o ya hemos llegado al límite, pasamos a la aprobación humana
-    print("[FLUJO] Aprobado o máximo de rondas alcanzado. Pasando a aprobación humana.")
+    log.info("should_continue: aprobado o límite alcanzado — pasando a human_approval")
     return "human_approval"
+
 
 def route_after_approval(state: AgentState) -> str:
     """Decide si ir a END o relanzar el writer para aplicar el chat_context."""
     chat_context = state.get("chat_context", "")
     already_applied = state.get("chat_context_applied", False)
 
-    # Si hay contexto nuevo y no se ha aplicado, vamos al writer
     if chat_context and not already_applied:
-        print("[FLUJO] Aplicando chat_context: volviendo al Redactor.")
+        log.info("route_after_approval: aplicando chat_context — volviendo al writer")
         return "writer"
 
-    # Si no hay contexto, o ya se aplicó, terminamos
-    print("[FLUJO] Aprobación final. Generando veredicto y terminando.")
+    log.info("route_after_approval: aprobación final")
     return "human_approval_end"

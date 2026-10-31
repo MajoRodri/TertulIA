@@ -18,3 +18,8 @@ export function renderMd(text) {
   if (!text) return "";
   return DOMPurify.sanitize(applyMath(marked.parse(String(text))));
 }
+
+export function renderMdInline(text) {
+  if (!text) return "";
+  return DOMPurify.sanitize(marked.parseInline(String(text)));
+}

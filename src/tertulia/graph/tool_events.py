@@ -137,7 +137,7 @@ class capture_tool_events:
     Usage in the research node (Issue #12)::
 
         with capture_tool_events() as captured:
-            result = run_step("research", inputs, llm)
+            result, tokens = run_step("research", inputs, llm)
         errors = convert_tool_events(captured.events)
 
     ``captured.events`` is a list of raw CrewAI events, in the order they were
@@ -173,7 +173,7 @@ class capture_mcp_responses:
     Uso en el nodo research:
 
         with capture_mcp_responses() as captured:
-            result = run_step("research", inputs, llm, tools)
+            result, tokens = run_step("research", inputs, llm, tools)
         sources, findings, summary = mcp_response_to_sources_and_findings(
             captured.responses[0], ...  # o bucle si hay varias
         )
