@@ -2,7 +2,7 @@ from .models import ReportData
 
 _SIGNAL_LABELS = {
     "green":  "✅ Alta viabilidad",
-    "yellow": "⚠️  Viabilidad media",
+    "yellow": "⚠️  Datos insuficientes o riesgo",
     "red":    "🔴 Baja viabilidad",
 }
 

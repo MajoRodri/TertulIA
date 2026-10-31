@@ -184,7 +184,7 @@ def _skeleton_verdict() -> SchemaVerdict:
     return SchemaVerdict(
         light=TrafficLight.AMBER,
         confidence=0.72,
-        summary="Viabilidad media, riesgo controlado",
+        summary="Datos insuficientes o riesgo presente",
         reasons=[
             "Demanda confirmada: 3 competidores directos con valoración media de 4,2 ★",
             "Punto de equilibrio alcanzable con 68 clientes/día en escenario base (45% ocupación)",
