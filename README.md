@@ -358,6 +358,10 @@ pytest
 
 430+ tests. Sin claves, sin internet: usan modelos falsos y datos guardados.
 
+### Métricas de rendimiento
+
+<!-- Pendiente (Yohanna) — resultados comparativos chat normal vs. TertulIA. Ver docs/metricas.md -->
+
 ---
 
 ## Añadir un sector
@@ -390,7 +394,7 @@ Abre `http://localhost:8000` en el navegador.
 
 | Nombre | GitHub | Papel |
 | --- | --- | --- |
-| Majo Rodríguez | [@MajoRodri](https://github.com/MajoRodri) | Scrum Master |
+| Mariajose Álvarez | [@MajoRodri](https://github.com/MajoRodri) | Scrum Master |
 | Elena Díaz | [@HelenDiMo](https://github.com/HelenDiMo) | Product Owner |
 | David Rojas | [@drojas-7u7](https://github.com/drojas-7u7) | Developer |
 | María Isabel Durango | [@MariaIsaDurango](https://github.com/MariaIsaDurango) | Developer |
