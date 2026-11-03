@@ -17,6 +17,22 @@
 
 ---
 
+## Contenido
+
+- [¿Qué es TertulIA?](#qué-es-tertulia)
+- [El problema](#el-problema)
+- [Arquitectura](#arquitectura)
+- [Agentes (CrewAI)](#agentes-crewai)
+- [Investigación y datos (MCP)](#investigación-y-datos-mcp)
+- [Seguridad](#seguridad)
+- [API](#api)
+- [Tests](#tests)
+- [Añadir un sector](#añadir-un-sector)
+- [Instalación y arranque](#instalación-y-arranque)
+- [Equipo](#equipo)
+
+---
+
 ## ¿Qué es TertulIA?
 
 TertulIA es una herramienta de análisis de viabilidad para negocios locales en Madrid. A partir de información básica sobre tu idea de negocio, un equipo de cinco agentes de inteligencia artificial investiga la competencia real del barrio, analiza los números y genera un informe completo en PDF con un veredicto de viabilidad.
@@ -32,21 +48,6 @@ El proceso completo tiene cinco pasos: rellenar el encargo, esperar el debate de
 Decidir si un negocio tiene sentido en un barrio exige mucha información: competencia, tipo de público, precios y costes. Un estudio de viabilidad profesional requiere tiempo y dinero, y queda fuera del alcance de muchos emprendedores.
 
 Parte de esa información es pública, pero está dispersa y cruzarla a mano lleva horas. **TertulIA reúne datos de OpenStreetMap, Foursquare, webs públicas y lo que aporta la propia persona, y genera el informe en unos 3-4+ minutos.**
-
----
-
-## Contenido
-
-- [¿Qué es TertulIA?](#qué-es-tertulia)
-- [Arquitectura](#arquitectura)
-- [Agentes (CrewAI)](#agentes-crewai)
-- [Investigación y datos (MCP)](#investigación-y-datos-mcp)
-- [Seguridad](#seguridad)
-- [API](#api)
-- [Tests](#tests)
-- [Añadir un sector](#añadir-un-sector)
-- [Instalación y arranque](#instalación-y-arranque)
-- [Equipo](#equipo)
 
 ---
 
@@ -420,7 +421,8 @@ pip install -e .
 
 # 3. Configurar las claves
 cp .env.example .env    # en Windows: copy .env.example .env
-#    LLM_API_KEY es obligatoria; FOURSQUARE_API_KEY es opcional
+#    Obligatoria: LLM_API_KEY
+#    Opcionales:  FOURSQUARE_API_KEY (enriquece resultados de competencia)
 
 # 4. Arrancar
 uvicorn tertulia.api.main:app --port 8000
