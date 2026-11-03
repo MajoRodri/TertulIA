@@ -30,9 +30,9 @@ El proceso completo tiene cinco pasos: rellenar el encargo, esperar el debate de
 
 ## El problema
 
-**El 50 % de los negocios locales cierran en los primeros dos años.** La principal causa no es la falta de esfuerzo, sino la falta de información: un estudio de viabilidad profesional cuesta miles de euros y semanas de espera, fuera del alcance de la mayoría de emprendedores.
+Decidir si un negocio tiene sentido en un barrio exige mucha información: competencia, tipo de público, precios y costes. Un estudio de viabilidad profesional requiere tiempo y dinero, y queda fuera del alcance de muchos emprendedores.
 
-Los datos existen — en OpenStreetMap, registros del Ayuntamiento de Madrid y portales inmobiliarios — pero están dispersos y requieren horas de cruce manual para convertirse en una decisión útil. **TertulIA automatiza ese proceso de principio a fin en 3-4+ minutos.**
+Parte de esa información es pública, pero está dispersa y cruzarla a mano lleva horas. **TertulIA reúne datos de OpenStreetMap, Foursquare, webs públicas y lo que aporta la propia persona, y genera el informe en unos 3-4+ minutos.**
 
 ---
 
@@ -53,20 +53,70 @@ Los datos existen — en OpenStreetMap, registros del Ayuntamiento de Madrid y p
 
 ## Arquitectura
 
-<!-- Diagrama pendiente -->
+```mermaid
+flowchart TB
+    U(["Persona usuaria<br/>analista o emprendedor"])
+
+    subgraph APP["Aplicación TertulIA"]
+        direction TB
+        UI["Interfaz web<br/>HTML + CSS + JS"]
+        API["API FastAPI<br/>coordina el estudio"]
+        GR["Guardarraíles<br/>anti prompt injection<br/>y anonimización"]
+        GRAPH["Grafo de control<br/>LangGraph"]
+        PDF["Generador<br/>del informe PDF"]
+        UI <--> API
+        API --> GR
+        API <--> GRAPH
+        API --> PDF
+    end
+
+    subgraph AG["Equipo de 5 agentes · CrewAI · herramientas de solo lectura"]
+        direction LR
+        A1["<b>La Portera</b> · Investigadora<br/>MCP neighbourhood_data<br/>MCP fetch"]
+        A2["<b>Berto</b> · Visión<br/>analyse_image"]
+        A3["<b>El Chulapo</b> · Analista<br/>break_even<br/>run_python"]
+        A4["<b>El Pregonero</b> · Redactor<br/>sin herramientas"]
+        A5["<b>La Revisora</b> · Revisión<br/>sin herramientas"]
+    end
+
+    subgraph EXT["Servicios externos"]
+        direction LR
+        LLM["Google Gemini<br/>razonamiento de los agentes"]
+        OSM["OpenStreetMap<br/>Overpass API"]
+        FSQ["Foursquare<br/>Places API"]
+    end
+
+    subgraph DISK["Disco local"]
+        direction LR
+        CACHE[("Capturas guardadas<br/>si OSM falla")]
+        CKP[("Estado del grafo<br/>checkpoints.db")]
+        TRZ[("Trazas de auditoría<br/>trazas/")]
+    end
+
+    U <--> APP
+    APP -- "lanza a los agentes" --> AG
+    AG -- "consultan" --> EXT
+    APP -- "guarda" --> DISK
+
+    classDef soft fill:#F5F6FA,stroke:#7580A0,color:#0F1730
+    class LLM,OSM,FSQ,CACHE,CKP,TRZ soft
+```
 
 El flujo principal:
 
-1. La persona rellena un formulario (sector, barrio, presupuesto, fotos opcionales).
-2. **5 agentes CrewAI** trabajan en orden orquestados por **LangGraph**: Investigador → Visión → Analista → Redactor → Revisor.
-3. La persona revisa el debate, añade contexto por chat y aprueba o rechaza el análisis.
-4. Al aprobar se genera un **informe PDF** con semáforo de viabilidad.
+1. La persona rellena el encargo (sector, barrio, presupuesto, fotos y documentos opcionales).
+2. **Debate:** la API ejecuta a los agentes de CrewAI. La Investigadora y Visión trabajan en paralelo; después el Analista, el Redactor y la Revisora.
+3. **Control con LangGraph:** el grafo lleva el bucle de revisión (máximo 3 rondas) y se detiene para esperar la decisión humana.
+4. La persona puede añadir contexto por chat, revisa el veredicto y aprueba o rechaza.
+5. Solo al aprobar se genera el **informe PDF** con el semáforo de viabilidad.
+
+**Arquitectura completa** (recorrido de un estudio paso a paso, grafo de LangGraph, decisiones y limitaciones conocidas): [`docs/arquitectura.md`](docs/arquitectura.md).
 
 ---
 
 ## Agentes (CrewAI)
 
-El equipo de 5 agentes que hace la investigación. LangGraph decide el orden; CrewAI ejecuta **solo el paso** que le pide cada nodo del grafo. Justificación completa: [`docs/decisiones/0002-proceso-crewai.md`](docs/decisiones/0002-proceso-crewai.md).
+El equipo de 5 agentes que hace el estudio. La API ejecuta la investigación, la visión y el análisis durante el debate; el grafo de LangGraph controla al Redactor y a la Revisora, el bucle de revisión y la aprobación humana. Justificación completa: [`docs/decisiones/0002-proceso-crewai.md`](docs/decisiones/0002-proceso-crewai.md).
 
 <table>
   <tr>
@@ -75,7 +125,6 @@ El equipo de 5 agentes que hace la investigación. LangGraph decide el orden; Cr
     <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual</td>
     <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor</td>
     <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora</td>
-    <td align="center"><img src="assets/berta.png" width="80"/><br/><b>Berta</b><br/>Asistente de chat</td>
   </tr>
   <tr>
     <td align="center"><code>researcher</code></td>
@@ -83,7 +132,6 @@ El equipo de 5 agentes que hace la investigación. LangGraph decide el orden; Cr
     <td align="center"><code>vision</code></td>
     <td align="center"><code>writer</code></td>
     <td align="center"><code>reviewer</code></td>
-    <td align="center"><code>berta</code></td>
   </tr>
 </table>
 
@@ -94,7 +142,8 @@ El equipo de 5 agentes que hace la investigación. LangGraph decide el orden; Cr
 | El Chulapo (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
 | El Pregonero (`writer`) | Informe en Markdown y semáforo propuesto | — |
 | La Revisora (`reviewer`) | Comprueba cifras y fuentes del borrador | — |
-| Berta | Asistente de chat para aclaraciones | — |
+
+> **Berta** presenta el veredicto en la interfaz; no es un agente de CrewAI.
 
 **Cómo llamar al crew:**
 
@@ -290,7 +339,7 @@ result.patterns     # p. ej. ["ignore_instructions"]
 result.wrapped_text # texto limpio y envuelto, listo para el agente
 ```
 
-El texto sospechoso **no se borra, se marca**: el grafo lo registra en el log y lo muestra como aviso en el veredicto (trazabilidad). Los delimitadores falsos se buscan en el texto original, antes de limpiar.
+El texto sospechoso **se marca y no se usa para ningún hallazgo**. Los delimitadores falsos se buscan en el texto original, antes de limpiar.
 
 Defensa en capas: filtro por reglas + herramientas de solo lectura + aprobación humana antes de cualquier acción con impacto.
 
@@ -316,7 +365,7 @@ Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Mod
 1. **Toda cifra es trazable:** un `Finding` necesita una fuente o una referencia al código que lo calculó.
 2. **Nunca se inventan datos:** si falta un dato, el `Finding` va como `missing` y sin valor.
 3. **La decisión final es humana:** el veredicto nace sin aprobar.
-4. **Corregir al sistema deja rastro:** el analista puede cambiar el semáforo o la confianza, pero con motivo obligatorio; se guardan las dos versiones.
+4. **Corregir al sistema deja rastro:** el modelo de datos permite que el analista cambie el semáforo o la confianza con motivo obligatorio y guarda las dos versiones. La interfaz aún no ofrece esta opción.
 
 </details>
 
@@ -374,16 +423,26 @@ pytest
 
 ## Instalación y arranque
 
+Requisitos: Python 3.11 o superior.
+
 ```bash
+# 1. Crear y activar un entorno (elige una opción)
+conda create -n tertulia python=3.11 && conda activate tertulia
+#    o con venv:
+#    python -m venv .venv
+#    source .venv/bin/activate      # macOS / Linux
+#    .venv\Scripts\activate         # Windows
+
+# 2. Instalar las dependencias y el propio proyecto
+pip install -r requirements.txt
 pip install -e .
-cp .env.example .env   # rellena las claves
 
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
+# 3. Configurar las claves
+cp .env.example .env    # en Windows: copy .env.example .env
+#    LLM_API_KEY es obligatoria; FOURSQUARE_API_KEY es opcional
 
-uvicorn src.tertulia.api.main:app --reload --port 8000
+# 4. Arrancar
+uvicorn tertulia.api.main:app --port 8000
 ```
 
 Abre `http://localhost:8000` en el navegador.
