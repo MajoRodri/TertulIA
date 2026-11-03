@@ -1,0 +1,29 @@
+# Plantilla para añadir un sector nuevo.
+#
+# 1. Copia este archivo como config/sectores/<business_type>.yaml
+#    (en minúsculas y con guiones bajos, por ejemplo: peluqueria.yaml).
+# 2. Cambia los valores. No añadas campos nuevos: SectorProfile los rechaza.
+# 3. NUNCA escribas cifras (precios, alquileres): solo QUÉ buscar y QUÉ costes pedir.
+# 4. Ejecuta pytest: test_sector.py comprueba que el perfil es válido.
+#
+# Los archivos que empiezan por "_" (como este) no aparecen como sector disponible.
+
+business_type: nombre_del_sector  # igual que el nombre del archivo, sin .yaml
+display_name: Nombre visible del sector
+description: >-
+  Una o dos frases que describen el tipo de negocio.
+
+unit: ticket                      # qué se vende: ticket, member, service, customer...
+unit_label: ticket medio          # cómo se muestra la unidad en español
+
+competitor_categories:            # categorías para search_competitors() (MCP)
+  - categoria_principal
+
+fixed_cost_items:                 # costes fijos mensuales: solo concepto, sin importe
+  - key: rent
+    label: Alquiler del local
+  - key: staff
+    label: Personal
+
+research_questions:               # preguntas que guían al Investigador
+  - ¿Cuántos competidores hay en el barrio y qué precios tienen?

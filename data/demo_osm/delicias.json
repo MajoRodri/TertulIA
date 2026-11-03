@@ -1,0 +1,1897 @@
+{
+  "neighbourhood": "Delicias",
+  "centre": {
+    "lat": 40.3960991,
+    "lon": -3.6894745
+  },
+  "radius_m": 2000,
+  "venues": {
+    "cafe": [
+      {
+        "name": "Granier",
+        "brand": "Granier",
+        "address": "Calle de Embajadores, 55",
+        "lat": 40.4046885,
+        "lon": -3.7019897,
+        "opening_hours": "Mo-Su,PH 07:00-10:30+",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/170951624"
+      },
+      {
+        "name": "El encuentro",
+        "brand": null,
+        "address": null,
+        "lat": 40.4037836,
+        "lon": -3.7001622,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/170951758"
+      },
+      {
+        "name": "El Despertar",
+        "brand": null,
+        "address": null,
+        "lat": 40.4107804,
+        "lon": -3.6994987,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/244763863"
+      },
+      {
+        "name": "El Colmo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4115173,
+        "lon": -3.6996972,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/244766781"
+      },
+      {
+        "name": "Starbucks",
+        "brand": "Starbucks",
+        "address": null,
+        "lat": 40.4087536,
+        "lon": -3.6929385,
+        "opening_hours": null,
+        "check_date": "2024-07-16",
+        "osm_url": "https://www.openstreetmap.org/node/612920897"
+      },
+      {
+        "name": "San Ildefonso",
+        "brand": null,
+        "address": null,
+        "lat": 40.4069545,
+        "lon": -3.6878773,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/674161572"
+      },
+      {
+        "name": "Villa del Prado",
+        "brand": null,
+        "address": null,
+        "lat": 40.4001962,
+        "lon": -3.6869016,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/1005306899"
+      },
+      {
+        "name": "Casa de Las Tostas",
+        "brand": null,
+        "address": "Calle de Argumosa, 29",
+        "lat": 40.4080031,
+        "lon": -3.6973775,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/1619574635"
+      },
+      {
+        "name": "Plenti",
+        "brand": null,
+        "address": "Calle Moreto, 17",
+        "lat": 40.413068,
+        "lon": -3.6901971,
+        "opening_hours": "Mo-Th 09:00-17:00; Fr 09:00-19:30; Sa-Su 10:00-19:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/1625167433"
+      },
+      {
+        "name": "Caravan Cafe",
+        "brand": null,
+        "address": "Calle de Lavapiés, 32",
+        "lat": 40.4103222,
+        "lon": -3.7026112,
+        "opening_hours": "Mo-Su 09:30-18:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/1645108300"
+      },
+      {
+        "name": "Café de Barbieri",
+        "brand": null,
+        "address": null,
+        "lat": 40.4093171,
+        "lon": -3.7008642,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/1645108302"
+      },
+      {
+        "name": "Ferrocarril",
+        "brand": null,
+        "address": null,
+        "lat": 40.4007161,
+        "lon": -3.6960566,
+        "opening_hours": null,
+        "check_date": "2023-11-02",
+        "osm_url": "https://www.openstreetmap.org/node/1865399089"
+      },
+      {
+        "name": "Granier",
+        "brand": "Granier",
+        "address": "Calle de Marcelo Usera, 60",
+        "lat": 40.3861272,
+        "lon": -3.7040912,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2051167904"
+      },
+      {
+        "name": "Pando Cafetería",
+        "brand": null,
+        "address": null,
+        "lat": 40.4071993,
+        "lon": -3.6940134,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2078115441"
+      },
+      {
+        "name": "Cafetería D'Inés",
+        "brand": null,
+        "address": "Calle Bolívar, 7",
+        "lat": 40.3916577,
+        "lon": -3.6937682,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2135940556"
+      },
+      {
+        "name": "Fresh Bar",
+        "brand": null,
+        "address": "Calle de Moratín, 39",
+        "lat": 40.412658,
+        "lon": -3.6952304,
+        "opening_hours": null,
+        "check_date": "2025-02-13",
+        "osm_url": "https://www.openstreetmap.org/node/2357814102"
+      },
+      {
+        "name": "Chocolates Valor",
+        "brand": null,
+        "address": null,
+        "lat": 40.4035482,
+        "lon": -3.7072534,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2475045091"
+      },
+      {
+        "name": "Cafetería Niasca",
+        "brand": null,
+        "address": null,
+        "lat": 40.4046411,
+        "lon": -3.6713333,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2485212879"
+      },
+      {
+        "name": "Cafetería Los Gauchos",
+        "brand": null,
+        "address": null,
+        "lat": 40.4021886,
+        "lon": -3.6735365,
+        "opening_hours": "Mo-Th 07:00-00:00; Fr 07:00-00:30",
+        "check_date": "2026-06-30",
+        "osm_url": "https://www.openstreetmap.org/node/2498449132"
+      },
+      {
+        "name": "Cervecería Sagredo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4027513,
+        "lon": -3.6772638,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2529967007"
+      },
+      {
+        "name": "El Rincón de Extremadura",
+        "brand": null,
+        "address": null,
+        "lat": 40.4068674,
+        "lon": -3.6782255,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2529991294"
+      },
+      {
+        "name": "Santa Isabel",
+        "brand": null,
+        "address": "Calle de Zurita, 1",
+        "lat": 40.4104968,
+        "lon": -3.6979978,
+        "opening_hours": "Mo-Th 08:00-02:00; Fr-Sa 08:00-02:30",
+        "check_date": "2023-09-19",
+        "osm_url": "https://www.openstreetmap.org/node/2546771941"
+      },
+      {
+        "name": "Nomade Cafe",
+        "brand": null,
+        "address": "Calle de los Tres Peces, 22",
+        "lat": 40.4107052,
+        "lon": -3.6993496,
+        "opening_hours": "10:00-00:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2546777612"
+      },
+      {
+        "name": "Café Bar Lira III",
+        "brand": null,
+        "address": null,
+        "lat": 40.3862618,
+        "lon": -3.7028541,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2835645913"
+      },
+      {
+        "name": "Jose's",
+        "brand": null,
+        "address": null,
+        "lat": 40.3872588,
+        "lon": -3.7009819,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2835677780"
+      },
+      {
+        "name": "Cafetería Baralia",
+        "brand": null,
+        "address": null,
+        "lat": 40.3877253,
+        "lon": -3.6999935,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2835677784"
+      },
+      {
+        "name": "Buenos Aires",
+        "brand": null,
+        "address": null,
+        "lat": 40.3873536,
+        "lon": -3.7008404,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2835681704"
+      },
+      {
+        "name": "Café Troy",
+        "brand": null,
+        "address": null,
+        "lat": 40.4067671,
+        "lon": -3.6727199,
+        "opening_hours": "Mo-Su 07:00-00:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2836475122"
+      },
+      {
+        "name": "Bar El Candil",
+        "brand": null,
+        "address": null,
+        "lat": 40.4032042,
+        "lon": -3.6978482,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2959944693"
+      },
+      {
+        "name": "Santagloria",
+        "brand": "Santagloria",
+        "address": null,
+        "lat": 40.402977,
+        "lon": -3.6977066,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2959944694"
+      },
+      {
+        "name": "Panaria",
+        "brand": null,
+        "address": "Calle Batalla del Salado, 8",
+        "lat": 40.4033328,
+        "lon": -3.6960001,
+        "opening_hours": "Mo-Su 07:00-20:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3128166040"
+      },
+      {
+        "name": "Gau&Café",
+        "brand": null,
+        "address": "Calle de Tribulete, 14",
+        "lat": 40.4078367,
+        "lon": -3.7029863,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3186661577"
+      },
+      {
+        "name": "Cafelito",
+        "brand": null,
+        "address": "Calle de Sombrerete, 20",
+        "lat": 40.4083463,
+        "lon": -3.7027678,
+        "opening_hours": "Mo-Fr 08:00-21:00; Sa-Su 09:00-21:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3225103427"
+      },
+      {
+        "name": "Cafetería Priscila",
+        "brand": null,
+        "address": null,
+        "lat": 40.4029242,
+        "lon": -3.6754575,
+        "opening_hours": null,
+        "check_date": "2026-10-16",
+        "osm_url": "https://www.openstreetmap.org/node/3237226922"
+      },
+      {
+        "name": "El 73",
+        "brand": null,
+        "address": null,
+        "lat": 40.40164,
+        "lon": -3.6752385,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3250056457"
+      },
+      {
+        "name": "Natch",
+        "brand": null,
+        "address": null,
+        "lat": 40.4017133,
+        "lon": -3.6760565,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3250056861"
+      },
+      {
+        "name": "Los Pinchos de Juan",
+        "brand": null,
+        "address": null,
+        "lat": 40.4033017,
+        "lon": -3.6783461,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3250056862"
+      },
+      {
+        "name": "Bar Sahoima",
+        "brand": null,
+        "address": "Calle de Atocha, 125",
+        "lat": 40.4097192,
+        "lon": -3.6930722,
+        "opening_hours": null,
+        "check_date": "2024-07-05",
+        "osm_url": "https://www.openstreetmap.org/node/3255241665"
+      },
+      {
+        "name": "Granier",
+        "brand": "Granier",
+        "address": "Plaza de Mariano de Cavia, 2",
+        "lat": 40.4079907,
+        "lon": -3.6787286,
+        "opening_hours": "07:00-21:00",
+        "check_date": "2026-06-02",
+        "osm_url": "https://www.openstreetmap.org/node/3255937603"
+      },
+      {
+        "name": "Cafetería Monte Pinos",
+        "brand": null,
+        "address": null,
+        "lat": 40.4025311,
+        "lon": -3.6778258,
+        "opening_hours": null,
+        "check_date": "2025-08-08",
+        "osm_url": "https://www.openstreetmap.org/node/3265644377"
+      },
+      {
+        "name": "Peyma",
+        "brand": null,
+        "address": "Calle de Embajadores, 39",
+        "lat": 40.4079325,
+        "lon": -3.7041341,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3275120592"
+      },
+      {
+        "name": "Cervecería Bar Durán",
+        "brand": null,
+        "address": null,
+        "lat": 40.4007252,
+        "lon": -3.6968768,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3417781507"
+      },
+      {
+        "name": "Café de la Plata",
+        "brand": null,
+        "address": null,
+        "lat": 40.4070797,
+        "lon": -3.6930285,
+        "opening_hours": null,
+        "check_date": "2025-08-20",
+        "osm_url": "https://www.openstreetmap.org/node/3418035793"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.3989012,
+        "lon": -3.6842642,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/3495249639"
+      },
+      {
+        "name": "Chesscafé",
+        "brand": null,
+        "address": null,
+        "lat": 40.4037402,
+        "lon": -3.7066373,
+        "opening_hours": null,
+        "check_date": "2024-12-28",
+        "osm_url": "https://www.openstreetmap.org/node/3985459360"
+      },
+      {
+        "name": "Madrid 1883",
+        "brand": null,
+        "address": "Paseo de las Delicias, 44",
+        "lat": 40.4027577,
+        "lon": -3.693924,
+        "opening_hours": "Su-Fr 07:00-20:30; Sa 07:00-21:00",
+        "check_date": "2026-02-13",
+        "osm_url": "https://www.openstreetmap.org/node/4010369944"
+      },
+      {
+        "name": "Boduo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4052756,
+        "lon": -3.7011401,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4108856022"
+      },
+      {
+        "name": "Chocolat",
+        "brand": null,
+        "address": "Calle de Santa María, 30",
+        "lat": 40.4128433,
+        "lon": -3.6971623,
+        "opening_hours": "Mo-Su 07:30-21:30; Tu 07:30-16:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4191878279"
+      },
+      {
+        "name": "Cafetería Bar Serrano",
+        "brand": null,
+        "address": null,
+        "lat": 40.4053467,
+        "lon": -3.6733907,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4318908536"
+      },
+      {
+        "name": "Chapiteau",
+        "brand": null,
+        "address": null,
+        "lat": 40.4059339,
+        "lon": -3.6987538,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4434647992"
+      },
+      {
+        "name": "Paréntesis de olvido - Magia y Té",
+        "brand": null,
+        "address": "Calle de la Sombrerería, 24",
+        "lat": 40.4076425,
+        "lon": -3.6985095,
+        "opening_hours": "Mo-Sa 10:30-14:30, 17:30-21:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4448919991"
+      },
+      {
+        "name": "osom",
+        "brand": null,
+        "address": "Calle de Moratín, 38",
+        "lat": 40.4125534,
+        "lon": -3.6952469,
+        "opening_hours": null,
+        "check_date": "2024-09-13",
+        "osm_url": "https://www.openstreetmap.org/node/4460678596"
+      },
+      {
+        "name": "Café Murillo",
+        "brand": null,
+        "address": "Calle Ruiz de Alarcón, 27",
+        "lat": 40.413041,
+        "lon": -3.6913164,
+        "opening_hours": "Mo-Sa 12:00-24:00; Su 12:00-17:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4481242981"
+      },
+      {
+        "name": "Pum Pum café",
+        "brand": null,
+        "address": null,
+        "lat": 40.4080736,
+        "lon": -3.7019252,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4543601593"
+      },
+      {
+        "name": "Legazpi",
+        "brand": null,
+        "address": null,
+        "lat": 40.3912711,
+        "lon": -3.6943556,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4908672989"
+      },
+      {
+        "name": "Gallalcu",
+        "brand": null,
+        "address": "Paseo del Molino, 3",
+        "lat": 40.3908491,
+        "lon": -3.6942029,
+        "opening_hours": "Mo-Fr 05:00-19:00; Sa 05:00-12:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4908672990"
+      },
+      {
+        "name": "Nuevo Specialty Coffee",
+        "brand": null,
+        "address": "Calle de Cavanilles, 21",
+        "lat": 40.4062428,
+        "lon": -3.6759212,
+        "opening_hours": "08:30-20:00",
+        "check_date": "2026-04-18",
+        "osm_url": "https://www.openstreetmap.org/node/4953459817"
+      },
+      {
+        "name": "El Rincón Guay",
+        "brand": null,
+        "address": null,
+        "lat": 40.3983873,
+        "lon": -3.6944125,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4957328524"
+      },
+      {
+        "name": "Hita",
+        "brand": null,
+        "address": null,
+        "lat": 40.3987532,
+        "lon": -3.6943771,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4957336325"
+      },
+      {
+        "name": "Motteau bakery",
+        "brand": null,
+        "address": "Calle San Pedro, 9",
+        "lat": 40.4116896,
+        "lon": -3.6946906,
+        "opening_hours": null,
+        "check_date": "2024-02-28",
+        "osm_url": "https://www.openstreetmap.org/node/5085914027"
+      },
+      {
+        "name": "Museo del Jamón",
+        "brand": null,
+        "address": "Paseo del Prado, 44",
+        "lat": 40.4101748,
+        "lon": -3.692782,
+        "opening_hours": "Mo-Su 08:00-02:00",
+        "check_date": "2024-06-18",
+        "osm_url": "https://www.openstreetmap.org/node/5107193521"
+      },
+      {
+        "name": "El Patio Vertical",
+        "brand": null,
+        "address": "Calle Almadén, 26",
+        "lat": 40.4108156,
+        "lon": -3.6934091,
+        "opening_hours": null,
+        "check_date": "2025-02-14",
+        "osm_url": "https://www.openstreetmap.org/node/5359334924"
+      },
+      {
+        "name": "Cafetería El 108",
+        "brand": null,
+        "address": "Avenida de la Ciudad de Barcelona, 108",
+        "lat": 40.4049089,
+        "lon": -3.6832092,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5462538210"
+      },
+      {
+        "name": "Pesara Café",
+        "brand": null,
+        "address": "Avenida de la Ciudad de Barcelona, 110",
+        "lat": 40.4048029,
+        "lon": -3.6827983,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5462558030"
+      },
+      {
+        "name": "Da Enzo - Mercatino del Retiro",
+        "brand": null,
+        "address": "Plaza de Mariano de Cavia, 2",
+        "lat": 40.4079837,
+        "lon": -3.6788431,
+        "opening_hours": "Mo-Th 08:00-21:30; Fr 08:00-01:00; Sa 10:30-01:00; Su 10:30-21:00",
+        "check_date": "2026-06-02",
+        "osm_url": "https://www.openstreetmap.org/node/5591174107"
+      },
+      {
+        "name": "La Parisiena",
+        "brand": null,
+        "address": null,
+        "lat": 40.4079839,
+        "lon": -3.6787818,
+        "opening_hours": "Tu-Su 07:30-00:30",
+        "check_date": "2026-06-02",
+        "osm_url": "https://www.openstreetmap.org/node/5591174108"
+      },
+      {
+        "name": "Fans Coffee & Bakery",
+        "brand": null,
+        "address": null,
+        "lat": 40.4018409,
+        "lon": -3.6746014,
+        "opening_hours": "Mo-Fr 07:00-21:00; Sa 08:00-21:00; Su 08:30-21:00",
+        "check_date": "2026-03-06",
+        "osm_url": "https://www.openstreetmap.org/node/5591196510"
+      },
+      {
+        "name": "Cafe Belle Bombon",
+        "brand": null,
+        "address": null,
+        "lat": 40.4131212,
+        "lon": -3.6958967,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5745461791"
+      },
+      {
+        "name": "Pum Pum Café",
+        "brand": null,
+        "address": "Calle de Tribulete, 6",
+        "lat": 40.4081399,
+        "lon": -3.7019197,
+        "opening_hours": "Mo-Su 09:00-20:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5759016822"
+      },
+      {
+        "name": "Hola Coffee",
+        "brand": null,
+        "address": "Calle del Doctor Fourquet, 33",
+        "lat": 40.4069806,
+        "lon": -3.6990362,
+        "opening_hours": "Mo-Fr 08:00-20:00; Sa-Su 09:00-20:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5759051028"
+      },
+      {
+        "name": "Café Sitio",
+        "brand": null,
+        "address": "Avenida del Mediterráneo, 38",
+        "lat": 40.4066897,
+        "lon": -3.6720456,
+        "opening_hours": "Mo-Sa 08:00-20:00",
+        "check_date": "2026-09-19",
+        "osm_url": "https://www.openstreetmap.org/node/5781880573"
+      },
+      {
+        "name": "Yedra",
+        "brand": null,
+        "address": null,
+        "lat": 40.4070575,
+        "lon": -3.6715466,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/5781880580"
+      },
+      {
+        "name": "Alcázar",
+        "brand": null,
+        "address": null,
+        "lat": 40.4042914,
+        "lon": -3.7046069,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6022963360"
+      },
+      {
+        "name": "Café Ziryab (Tablao Flamenco)",
+        "brand": null,
+        "address": "Paseo de la Esperanza, 17",
+        "lat": 40.4021676,
+        "lon": -3.7050944,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6253362485"
+      },
+      {
+        "name": "Suyana Sánguches",
+        "brand": null,
+        "address": "Calle Hermenegildo Bielsa, 22",
+        "lat": 40.3885697,
+        "lon": -3.7010004,
+        "opening_hours": "Mo 11:00-00:30; Tu 23:59-00:30; We-Th 11:00-00:30; Fr 11:00-02:00; Sa 11:00-01:30; Su 11:00-00:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6357427385"
+      },
+      {
+        "name": "Café La Pausa",
+        "brand": null,
+        "address": null,
+        "lat": 40.4067779,
+        "lon": -3.6898546,
+        "opening_hours": null,
+        "check_date": "2022-12-26",
+        "osm_url": "https://www.openstreetmap.org/node/6407689674"
+      },
+      {
+        "name": "Luna Sandra",
+        "brand": null,
+        "address": null,
+        "lat": 40.4082211,
+        "lon": -3.6775601,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6426514257"
+      },
+      {
+        "name": "Bar Luvi",
+        "brand": null,
+        "address": null,
+        "lat": 40.4019783,
+        "lon": -3.6758691,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6760476769"
+      },
+      {
+        "name": "Filify",
+        "brand": null,
+        "address": null,
+        "lat": 40.4079225,
+        "lon": -3.696827,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6965525846"
+      },
+      {
+        "name": "Acebo",
+        "brand": null,
+        "address": null,
+        "lat": 40.404502,
+        "lon": -3.6754797,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/6970332060"
+      },
+      {
+        "name": "Chocolatería churrería Las farolas",
+        "brand": null,
+        "address": "Avenida de Peña Prieta, 7",
+        "lat": 40.3997787,
+        "lon": -3.66738,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/7204336613"
+      },
+      {
+        "name": "Bar Oliva",
+        "brand": null,
+        "address": "Calle de Antonio López, 139",
+        "lat": 40.3884587,
+        "lon": -3.6994388,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/7572638562"
+      },
+      {
+        "name": "Café - Bar Moratines",
+        "brand": null,
+        "address": "Calle de Moratines, 16",
+        "lat": 40.4029545,
+        "lon": -3.703389,
+        "opening_hours": "Mo-Su 18:30-00:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/7991453872"
+      },
+      {
+        "name": "Café Costura",
+        "brand": null,
+        "address": null,
+        "lat": 40.4119292,
+        "lon": -3.6947332,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/8094941766"
+      },
+      {
+        "name": "Nomade Cafe",
+        "brand": null,
+        "address": "Calle de los Tres Peces, 22",
+        "lat": 40.4106981,
+        "lon": -3.6993678,
+        "opening_hours": "Th-Tu 09:00-19:30",
+        "check_date": "2025-02-14",
+        "osm_url": "https://www.openstreetmap.org/node/8701379817"
+      },
+      {
+        "name": "Dot Café Bar",
+        "brand": null,
+        "address": "Calle de Eugenio Sellés, 4",
+        "lat": 40.3959862,
+        "lon": -3.6988751,
+        "opening_hours": "We-Mo 09:00-18:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/8869453017"
+      },
+      {
+        "name": "Churrería Zeljo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4040045,
+        "lon": -3.7047331,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/8912383903"
+      },
+      {
+        "name": "Pastelería América",
+        "brand": null,
+        "address": null,
+        "lat": 40.411989,
+        "lon": -3.6981674,
+        "opening_hours": "Mo-Su 08:00-22:00",
+        "check_date": "2025-02-13",
+        "osm_url": "https://www.openstreetmap.org/node/8962474417"
+      },
+      {
+        "name": "La Francachela Matadero",
+        "brand": null,
+        "address": "Paseo de la Chopera, 14",
+        "lat": 40.3920606,
+        "lon": -3.6978319,
+        "opening_hours": "Mo-Su 10:00-24:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9035726017"
+      },
+      {
+        "name": "La Antikaria",
+        "brand": null,
+        "address": null,
+        "lat": 40.4034194,
+        "lon": -3.6732152,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9410952268"
+      },
+      {
+        "name": "Raíces Café y Arte",
+        "brand": null,
+        "address": null,
+        "lat": 40.4062493,
+        "lon": -3.6726578,
+        "opening_hours": null,
+        "check_date": "2025-08-22",
+        "osm_url": "https://www.openstreetmap.org/node/9459250134"
+      },
+      {
+        "name": "Vivari",
+        "brand": "Vivari",
+        "address": null,
+        "lat": 40.3915892,
+        "lon": -3.6946404,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9488014448"
+      },
+      {
+        "name": "Loa",
+        "brand": null,
+        "address": null,
+        "lat": 40.3951935,
+        "lon": -3.6981545,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9520570784"
+      },
+      {
+        "name": "Café Acadia",
+        "brand": null,
+        "address": null,
+        "lat": 40.4027801,
+        "lon": -3.6755463,
+        "opening_hours": null,
+        "check_date": "2026-08-01",
+        "osm_url": "https://www.openstreetmap.org/node/9522365245"
+      },
+      {
+        "name": "Churrería La Mejor",
+        "brand": null,
+        "address": null,
+        "lat": 40.4002034,
+        "lon": -3.6732138,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9631990521"
+      },
+      {
+        "name": "Six board game café",
+        "brand": null,
+        "address": null,
+        "lat": 40.4016448,
+        "lon": -3.675932,
+        "opening_hours": "Tu-Th 17:00-24:00; Fr 17:00-24:00; Sa-Su 12:00-02:00; PH closed",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9655563185"
+      },
+      {
+        "name": "La Andaluza",
+        "brand": null,
+        "address": null,
+        "lat": 40.4008992,
+        "lon": -3.7003182,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9729353991"
+      },
+      {
+        "name": "La Moloa",
+        "brand": null,
+        "address": null,
+        "lat": 40.4005719,
+        "lon": -3.7000774,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9729381853"
+      },
+      {
+        "name": "Bite Me Café",
+        "brand": null,
+        "address": "Plaza de la Beata María Ana de Jesús, 2",
+        "lat": 40.3945727,
+        "lon": -3.6941532,
+        "opening_hours": "Mo-Fr 09:00-20:30; Sa-Su 10:00-20:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9788535217"
+      },
+      {
+        "name": "Starbucks",
+        "brand": "Starbucks",
+        "address": null,
+        "lat": 40.3911483,
+        "lon": -3.7012094,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9794960507"
+      },
+      {
+        "name": "Café de la Reina",
+        "brand": null,
+        "address": null,
+        "lat": 40.4088783,
+        "lon": -3.6932436,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9801281117"
+      },
+      {
+        "name": "Don Sediento",
+        "brand": null,
+        "address": "Calle Aguilón, 7",
+        "lat": 40.3973616,
+        "lon": -3.7014187,
+        "opening_hours": "Mo-Th,Sa 08:00-22:00; Fr 08:00-24:00; Su 08:00-16:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/9870758520"
+      },
+      {
+        "name": "Scarlett Café",
+        "brand": null,
+        "address": "Plaza del Emperador Carlos V, 10",
+        "lat": 40.4088414,
+        "lon": -3.6926917,
+        "opening_hours": "08:00-21:30",
+        "check_date": "2026-04-12",
+        "osm_url": "https://www.openstreetmap.org/node/9872308917"
+      },
+      {
+        "name": "Dabov",
+        "brand": null,
+        "address": "Calle de Santa Isabel, 42",
+        "lat": 40.4101609,
+        "lon": -3.6974978,
+        "opening_hours": "Su 10:00-19:00; Mo-Fr 08:00-19:00; Sa 09:30-19:00",
+        "check_date": "2025-02-14",
+        "osm_url": "https://www.openstreetmap.org/node/9982885619"
+      },
+      {
+        "name": "Pastelería América - dos",
+        "brand": null,
+        "address": null,
+        "lat": 40.406571,
+        "lon": -3.6791744,
+        "opening_hours": "Mo-Sa 08:00-21:00; Su 08:00-20:00",
+        "check_date": "2026-05-21",
+        "osm_url": "https://www.openstreetmap.org/node/10202508108"
+      },
+      {
+        "name": "Chocolate",
+        "brand": null,
+        "address": "Calle de las Huertas, 59",
+        "lat": 40.4131953,
+        "lon": -3.696303,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/10273264635"
+      },
+      {
+        "name": "Acid Café",
+        "brand": null,
+        "address": "Calle de la Verónica, 9",
+        "lat": 40.411878,
+        "lon": -3.6949618,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/10608895927"
+      },
+      {
+        "name": "Patuchurro",
+        "brand": null,
+        "address": null,
+        "lat": 40.3933244,
+        "lon": -3.678866,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/10937770884"
+      },
+      {
+        "name": "Viena Capellanes",
+        "brand": null,
+        "address": null,
+        "lat": 40.393114,
+        "lon": -3.6791531,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/10937814456"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.4123868,
+        "lon": -3.6909717,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11028002533"
+      },
+      {
+        "name": "Stop 76",
+        "brand": null,
+        "address": null,
+        "lat": 40.3941654,
+        "lon": -3.7084549,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11212581885"
+      },
+      {
+        "name": "Open 25",
+        "brand": null,
+        "address": "Calle de Antonio López, 88",
+        "lat": 40.3938403,
+        "lon": -3.7078043,
+        "opening_hours": "24/7",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11213078889"
+      },
+      {
+        "name": "Hostal",
+        "brand": null,
+        "address": null,
+        "lat": 40.4057019,
+        "lon": -3.6921484,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11221776324"
+      },
+      {
+        "name": "Frut Natura",
+        "brand": null,
+        "address": null,
+        "lat": 40.3919052,
+        "lon": -3.7085422,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11243994828"
+      },
+      {
+        "name": "Cantina Sputnik Legazpi",
+        "brand": null,
+        "address": "Calle del Hierro, 33",
+        "lat": 40.3888008,
+        "lon": -3.6893138,
+        "opening_hours": "Mo-We 08:00-23:30; Th-Fr 08:00-00:30; Sa 09:00-00:30; Su 09:00-22:30",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11341074269"
+      },
+      {
+        "name": "El Andén",
+        "brand": null,
+        "address": "Calle de Tortosa, 9",
+        "lat": 40.406228,
+        "lon": -3.692092,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11405206774"
+      },
+      {
+        "name": "Cafetería La Moloa",
+        "brand": null,
+        "address": null,
+        "lat": 40.4005484,
+        "lon": -3.7000279,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11582364791"
+      },
+      {
+        "name": "Sucre Salón de Té",
+        "brand": null,
+        "address": "Calle Casado del Alisal, 16",
+        "lat": 40.4138618,
+        "lon": -3.6894207,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11630400369"
+      },
+      {
+        "name": "Syra Coffee",
+        "brand": null,
+        "address": "Calle de Santa Isabel, 15",
+        "lat": 40.4107999,
+        "lon": -3.6981324,
+        "opening_hours": "Mo-Su 08:00-20:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11773633769"
+      },
+      {
+        "name": "Umami Speciality Coffee",
+        "brand": null,
+        "address": null,
+        "lat": 40.4124712,
+        "lon": -3.6938514,
+        "opening_hours": null,
+        "check_date": "2026-04-16",
+        "osm_url": "https://www.openstreetmap.org/node/11789775576"
+      },
+      {
+        "name": "Cafetería Santander",
+        "brand": null,
+        "address": null,
+        "lat": 40.3977481,
+        "lon": -3.6678776,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11911702759"
+      },
+      {
+        "name": "Granier",
+        "brand": "Granier",
+        "address": "Ronda de Atocha, 12",
+        "lat": 40.4068328,
+        "lon": -3.6966191,
+        "opening_hours": "Mo-Fr 08:00-18:00; Sa, Su 08:00-14:00",
+        "check_date": "2025-03-28",
+        "osm_url": "https://www.openstreetmap.org/node/11940591410"
+      },
+      {
+        "name": "Diamante Azul",
+        "brand": null,
+        "address": null,
+        "lat": 40.3963287,
+        "lon": -3.6947956,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11979212230"
+      },
+      {
+        "name": "Barrabrava",
+        "brand": null,
+        "address": null,
+        "lat": 40.4005834,
+        "lon": -3.7039213,
+        "opening_hours": "Mo-Su 12:00-24:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/11989972615"
+      },
+      {
+        "name": "Novel",
+        "brand": null,
+        "address": null,
+        "lat": 40.4002265,
+        "lon": -3.6732477,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12051576691"
+      },
+      {
+        "name": "1 Cup",
+        "brand": null,
+        "address": null,
+        "lat": 40.4085061,
+        "lon": -3.6932469,
+        "opening_hours": null,
+        "check_date": "2024-07-16",
+        "osm_url": "https://www.openstreetmap.org/node/12056846653"
+      },
+      {
+        "name": "Cañas Y Tapas",
+        "brand": null,
+        "address": "Calle del Doctor Drumen, 1",
+        "lat": 40.4090026,
+        "lon": -3.6928949,
+        "opening_hours": null,
+        "check_date": "2024-07-16",
+        "osm_url": "https://www.openstreetmap.org/node/12056864572"
+      },
+      {
+        "name": "Starbucks",
+        "brand": "Starbucks",
+        "address": "Calle del Doctor Drumen, 4",
+        "lat": 40.4088591,
+        "lon": -3.6929987,
+        "opening_hours": "08:00-21:00",
+        "check_date": "2026-03-29",
+        "osm_url": "https://www.openstreetmap.org/node/12081159379"
+      },
+      {
+        "name": "La Nueva Tabernita",
+        "brand": null,
+        "address": null,
+        "lat": 40.4041278,
+        "lon": -3.69191,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12095937701"
+      },
+      {
+        "name": "Panaria",
+        "brand": null,
+        "address": null,
+        "lat": 40.3988176,
+        "lon": -3.669905,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12171353888"
+      },
+      {
+        "name": "Umami",
+        "brand": null,
+        "address": "Calle de Moratín, 39",
+        "lat": 40.4126116,
+        "lon": -3.6953925,
+        "opening_hours": null,
+        "check_date": "2024-09-13",
+        "osm_url": "https://www.openstreetmap.org/node/12174422520"
+      },
+      {
+        "name": "La Tortilla Castiza",
+        "brand": null,
+        "address": "Calle Ribera de Curtidores, 26",
+        "lat": 40.4066533,
+        "lon": -3.7073755,
+        "opening_hours": null,
+        "check_date": "2024-09-24",
+        "osm_url": "https://www.openstreetmap.org/node/12196594554"
+      },
+      {
+        "name": "Ikigai Matcha House",
+        "brand": null,
+        "address": "Calle de Argumosa, 26",
+        "lat": 40.4075991,
+        "lon": -3.6966815,
+        "opening_hours": "Mo-Su 10:30-20:00; PH closed",
+        "check_date": "2024-10-02",
+        "osm_url": "https://www.openstreetmap.org/node/12215770781"
+      },
+      {
+        "name": "90°",
+        "brand": null,
+        "address": "Calle de Sánchez Bustillo, 7",
+        "lat": 40.4089536,
+        "lon": -3.6934849,
+        "opening_hours": null,
+        "check_date": "2024-10-28",
+        "osm_url": "https://www.openstreetmap.org/node/12293776732"
+      },
+      {
+        "name": "Pava Cafetería",
+        "brand": null,
+        "address": "Calle de San Graciano, 3",
+        "lat": 40.3928674,
+        "lon": -3.7028146,
+        "opening_hours": "Mo-Fr 09:00-19:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12365218382"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.3957132,
+        "lon": -3.6777245,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12458782202"
+      },
+      {
+        "name": "Cafeteria Rumbo",
+        "brand": null,
+        "address": null,
+        "lat": 40.3980471,
+        "lon": -3.6671887,
+        "opening_hours": null,
+        "check_date": "2025-02-09",
+        "osm_url": "https://www.openstreetmap.org/node/12570816664"
+      },
+      {
+        "name": "Luso",
+        "brand": null,
+        "address": null,
+        "lat": 40.4119924,
+        "lon": -3.6987066,
+        "opening_hours": null,
+        "check_date": "2025-02-14",
+        "osm_url": "https://www.openstreetmap.org/node/12587473072"
+      },
+      {
+        "name": "Cloud Tea",
+        "brand": null,
+        "address": null,
+        "lat": 40.3868059,
+        "lon": -3.7064445,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12633161253"
+      },
+      {
+        "name": "Mr. Orange",
+        "brand": null,
+        "address": null,
+        "lat": 40.3871146,
+        "lon": -3.7064883,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12633161286"
+      },
+      {
+        "name": "Cafetería Muinelo",
+        "brand": null,
+        "address": null,
+        "lat": 40.3870958,
+        "lon": -3.7052963,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12634700132"
+      },
+      {
+        "name": "Gran Café",
+        "brand": null,
+        "address": null,
+        "lat": 40.387356,
+        "lon": -3.7046593,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12640825067"
+      },
+      {
+        "name": "Cafetería y Pastelería Victoria",
+        "brand": null,
+        "address": null,
+        "lat": 40.3864186,
+        "lon": -3.704581,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12640825078"
+      },
+      {
+        "name": "Momotta",
+        "brand": null,
+        "address": null,
+        "lat": 40.385299,
+        "lon": -3.706847,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12644308426"
+      },
+      {
+        "name": "Sanchi",
+        "brand": null,
+        "address": null,
+        "lat": 40.3855966,
+        "lon": -3.7062123,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12644308436"
+      },
+      {
+        "name": "Honey 港饮店",
+        "brand": null,
+        "address": null,
+        "lat": 40.3842797,
+        "lon": -3.7061593,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12670244586"
+      },
+      {
+        "name": "Etual Café",
+        "brand": null,
+        "address": "Calle de la Alameda, 10",
+        "lat": 40.4121048,
+        "lon": -3.6939248,
+        "opening_hours": "Mo-Fr 08:00-20:00; Sa-Su 09:00-20:00",
+        "check_date": "2025-04-28",
+        "osm_url": "https://www.openstreetmap.org/node/12690365069"
+      },
+      {
+        "name": "T8 Tea Bar",
+        "brand": null,
+        "address": null,
+        "lat": 40.3832206,
+        "lon": -3.7058086,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12734727481"
+      },
+      {
+        "name": "Cafetería Amanda",
+        "brand": null,
+        "address": "Calle de Argumosa, 31",
+        "lat": 40.4079724,
+        "lon": -3.6972037,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12754056101"
+      },
+      {
+        "name": "Voragine",
+        "brand": null,
+        "address": "Calle del Casino, 8",
+        "lat": 40.406913,
+        "lon": -3.7049454,
+        "opening_hours": null,
+        "check_date": "2025-04-22",
+        "osm_url": "https://www.openstreetmap.org/node/12774727766"
+      },
+      {
+        "name": "Nubra Coffee Shop",
+        "brand": null,
+        "address": "Calle de la Alameda, 10",
+        "lat": 40.4119588,
+        "lon": -3.6938961,
+        "opening_hours": "09:00-17:00",
+        "check_date": "2026-04-16",
+        "osm_url": "https://www.openstreetmap.org/node/12794466825"
+      },
+      {
+        "name": "La Terraza De Alameda",
+        "brand": null,
+        "address": "Calle de la Alameda, 6",
+        "lat": 40.4121708,
+        "lon": -3.6939407,
+        "opening_hours": null,
+        "check_date": "2025-04-28",
+        "osm_url": "https://www.openstreetmap.org/node/12794466828"
+      },
+      {
+        "name": "Café del Brin",
+        "brand": null,
+        "address": null,
+        "lat": 40.4071499,
+        "lon": -3.6769322,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12809252059"
+      },
+      {
+        "name": "Néctar",
+        "brand": null,
+        "address": null,
+        "lat": 40.4050184,
+        "lon": -3.6741928,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13062877830"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.4022554,
+        "lon": -3.7110575,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13092879371"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.3995575,
+        "lon": -3.6901728,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13114249901"
+      },
+      {
+        "name": "El café de Don Manuel",
+        "brand": null,
+        "address": null,
+        "lat": 40.3958866,
+        "lon": -3.6960866,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13195901654"
+      },
+      {
+        "name": "Quisqueya",
+        "brand": null,
+        "address": "Calle de Voluntarios Macabebes, 3",
+        "lat": 40.3930712,
+        "lon": -3.6953669,
+        "opening_hours": "Mo,Tu,Th,Fr 09:00-19:00; We 09:00-13:00; Su 10:00-19:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13327124502"
+      },
+      {
+        "name": "Dulce Safari Atocha",
+        "brand": null,
+        "address": "Calle Fray Luis de León, 1",
+        "lat": 40.4055968,
+        "lon": -3.6990744,
+        "opening_hours": "Mo-Sa 10:00-19:00; Su 10:00-15:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13367764501"
+      },
+      {
+        "name": "Cafe Anayad",
+        "brand": null,
+        "address": "Calle de Granada, 11",
+        "lat": 40.4049747,
+        "lon": -3.6794615,
+        "opening_hours": "Mo-Fr 08:00-13:30,16:00-20:00; Sa,Su 09:00-20:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13372125783"
+      },
+      {
+        "name": "Güimar",
+        "brand": null,
+        "address": null,
+        "lat": 40.3960256,
+        "lon": -3.6957558,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13484165189"
+      },
+      {
+        "name": "El Tigre",
+        "brand": null,
+        "address": null,
+        "lat": 40.3844056,
+        "lon": -3.6716135,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13536183803"
+      },
+      {
+        "name": "La fontanería",
+        "brand": null,
+        "address": null,
+        "lat": 40.4026955,
+        "lon": -3.6905386,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13625731306"
+      },
+      {
+        "name": "Bar Santander",
+        "brand": null,
+        "address": null,
+        "lat": 40.3977495,
+        "lon": -3.667887,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13648473978"
+      },
+      {
+        "name": "Purakaí",
+        "brand": null,
+        "address": "Avenida de la Ciudad de Barcelona, 81B",
+        "lat": 40.4011147,
+        "lon": -3.6742449,
+        "opening_hours": "Mo-Su 10:00-22:00",
+        "check_date": "2026-03-17",
+        "osm_url": "https://www.openstreetmap.org/node/13656604801"
+      },
+      {
+        "name": "Novell",
+        "brand": null,
+        "address": null,
+        "lat": 40.4002953,
+        "lon": -3.6733585,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13719442047"
+      },
+      {
+        "name": "Caracolo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4114399,
+        "lon": -3.698811,
+        "opening_hours": "Mo-Fr 09:00-21:00; Sa-Su 10:00-21:00",
+        "check_date": "2026-05-14",
+        "osm_url": "https://www.openstreetmap.org/node/13827433701"
+      },
+      {
+        "name": "Café P.A.T.",
+        "brand": null,
+        "address": "Calle de Sánchez Barcáiztegui, 37",
+        "lat": 40.4059729,
+        "lon": -3.6731641,
+        "opening_hours": "Su 10:00-17:00; We-Sa 10:00-17:00, 20:00-23:00",
+        "check_date": "2026-08-26",
+        "osm_url": "https://www.openstreetmap.org/node/13912188601"
+      },
+      {
+        "name": "Cafetería Manzanares",
+        "brand": null,
+        "address": null,
+        "lat": 40.4012381,
+        "lon": -3.7095795,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13914281282"
+      },
+      {
+        "name": "El Bosque de Acacias",
+        "brand": null,
+        "address": null,
+        "lat": 40.4017845,
+        "lon": -3.7079973,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13914482309"
+      },
+      {
+        "name": "Lazo",
+        "brand": null,
+        "address": null,
+        "lat": 40.3986812,
+        "lon": -3.7016268,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13914607144"
+      },
+      {
+        "name": "Literal Coffee",
+        "brand": null,
+        "address": null,
+        "lat": 40.4130911,
+        "lon": -3.6958601,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/14053691801"
+      },
+      {
+        "name": "Oohlala Bistró",
+        "brand": null,
+        "address": "Calle Fray Luis de León, 1",
+        "lat": 40.405574,
+        "lon": -3.6990178,
+        "opening_hours": "Tu-Su 09:00-20:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/14123265619"
+      },
+      {
+        "name": "Terraza Playa",
+        "brand": null,
+        "address": null,
+        "lat": 40.3965572,
+        "lon": -3.7084251,
+        "opening_hours": "Mo-Su 10:00-01:00",
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/way/179426904"
+      },
+      {
+        "name": "Vivaz Retiro",
+        "brand": null,
+        "address": null,
+        "lat": 40.4091725,
+        "lon": -3.6785986,
+        "opening_hours": "Mo-Su 13:00-22:00",
+        "check_date": "2026-04-10",
+        "osm_url": "https://www.openstreetmap.org/way/194853751"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.3990487,
+        "lon": -3.7045683,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/way/426492111"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.3989121,
+        "lon": -3.70439,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/way/426492112"
+      },
+      {
+        "name": "El Tres",
+        "brand": null,
+        "address": null,
+        "lat": 40.4122666,
+        "lon": -3.6994443,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/way/686207617"
+      },
+      {
+        "name": null,
+        "brand": null,
+        "address": null,
+        "lat": 40.4035853,
+        "lon": -3.6900369,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/way/734132428"
+      }
+    ],
+    "coworking": [
+      {
+        "name": "Impact Hub",
+        "brand": "Impact Hub",
+        "address": "Calle de la Alameda, 22",
+        "lat": 40.410559,
+        "lon": -3.6939794,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/2683390844"
+      },
+      {
+        "name": "La Nave Nodriza",
+        "brand": null,
+        "address": "Calle de la Alameda, 9",
+        "lat": 40.4116966,
+        "lon": -3.6937723,
+        "opening_hours": null,
+        "check_date": "2025-04-28",
+        "osm_url": "https://www.openstreetmap.org/node/4596399466"
+      },
+      {
+        "name": "La Manual Coorking Creativo",
+        "brand": null,
+        "address": null,
+        "lat": 40.4088067,
+        "lon": -3.6999321,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/4704024291"
+      },
+      {
+        "name": "Freeland Innovation Center",
+        "brand": null,
+        "address": null,
+        "lat": 40.3984899,
+        "lon": -3.6716036,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/10978349505"
+      },
+      {
+        "name": "Spaces",
+        "brand": "Spaces",
+        "address": "Calle de Méndez Álvaro, 20",
+        "lat": 40.404179,
+        "lon": -3.6899129,
+        "opening_hours": null,
+        "check_date": "2024-08-07",
+        "osm_url": "https://www.openstreetmap.org/node/12097516240"
+      },
+      {
+        "name": "Colaboratorio Acacias",
+        "brand": null,
+        "address": "Paseo de las Acacias, 3",
+        "lat": 40.4045486,
+        "lon": -3.7036756,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12147415124"
+      },
+      {
+        "name": "Espacio Oculto Madrid",
+        "brand": null,
+        "address": null,
+        "lat": 40.3853938,
+        "lon": -3.7055999,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/12729605057"
+      },
+      {
+        "name": "La Comunera",
+        "brand": null,
+        "address": "Calle del Labrador, 20",
+        "lat": 40.4014009,
+        "lon": -3.7026135,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13035135025"
+      },
+      {
+        "name": "Utopicus Madnum",
+        "brand": "Utopicus",
+        "address": "Calle de Méndez Álvaro, 61",
+        "lat": 40.3968961,
+        "lon": -3.6808867,
+        "opening_hours": null,
+        "check_date": null,
+        "osm_url": "https://www.openstreetmap.org/node/13326943677"
+      }
+    ]
+  },
+  "source": "OpenStreetMap, via the Overpass API",
+  "attribution": "© OpenStreetMap contributors (ODbL)",
+  "captured_at": "2026-10-22T14:12:30.979054+00:00"
+}

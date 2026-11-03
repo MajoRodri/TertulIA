@@ -1,0 +1,1 @@
+"""Vision agent: analyses photos of venues and charts (issue #32)."""

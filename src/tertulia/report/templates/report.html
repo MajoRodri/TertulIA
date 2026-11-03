@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+/* ── Print baseline ─────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 10mm 12mm;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* ── Tokens ─────────────────────────────────────────────── */
+:root {
+  --azul:       #2B4EFF;
+  --azul-light: #EEF1FF;
+  --turquesa:   #2ABFBF;
+  --naranja:    #F47C30;
+  --ink:        #0F1730;
+  --body:       #3B4467;
+  --muted:      #7580A0;
+  --border:     #DDE1F0;
+  --canvas:     #F5F6FA;
+  --card:       #FFFFFF;
+  --verde:      #22C55E;
+  --amarillo:   #EAB308;
+  --rojo:       #EF4444;
+
+  --r: 12px;
+  --shadow: 0 2px 12px rgba(15,23,48,.08);
+}
+
+/* ── Page layout ────────────────────────────────────────── */
+/*
+  body background propagates to the page canvas when html is transparent —
+  this paints every printed page, including blank space after page breaks.
+*/
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--body);
+  line-height: 1.6;
+  background: #ffffff;
+}
+
+/* width:100% = 100% of the @page content area (not the full 210mm) — no overflow */
+.page {
+  width: 100%;
+  padding: 0;
+  position: relative;
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  page-break-inside: avoid;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10mm;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-logo {
+  height: 36px;
+  width: auto;
+}
+
+.header-titles { }
+
+.report-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--naranja);
+}
+
+.report-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -.02em;
+  line-height: 1.15;
+}
+
+.report-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.header-meta {
+  text-align: right;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.header-meta strong { color: var(--ink); }
+
+/* ── Simulated warning ───────────────────────────────────── */
+.simulated-notice {
+  background: #7c3500;
+  color: #fde68a;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 6mm;
+  letter-spacing: .01em;
+}
+
+/* ── Section heading ─────────────────────────────────────── */
+.section-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--naranja);
+  margin-bottom: 4px;
+}
+
+.section-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -.01em;
+  margin-bottom: 10px;
+  page-break-after: avoid;
+}
+
+.section-wrap {
+  margin-bottom: 8mm;
+}
+
+/* ── Brief grid ──────────────────────────────────────────── */
+.brief-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.brief-badge {
+  flex: 1 1 calc(50% - 8px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+}
+
+.brief-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--azul-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--azul);
+}
+
+.brief-icon svg { display: block; }
+
+.brief-text {}
+
+.brief-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 1px;
+}
+
+.brief-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.brief-context {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--azul);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--body);
+  box-shadow: var(--shadow);
+}
+
+/* ── Debate ──────────────────────────────────────────────── */
+.debate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.debate-msg {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.agent-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--canvas);
+}
+
+.agent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.agent-avatar.researcher { border-color: var(--azul); }
+.agent-avatar.analyst    { border-color: var(--turquesa); }
+.agent-avatar.vision     { border-color: #00B894; }
+.agent-avatar.writer     { border-color: #6C5CE7; }
+.agent-avatar.reviewer   { border-color: var(--naranja); }
+
+.bubble {
+  flex: 1;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0 10px 10px 10px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.bubble-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.bubble-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.bubble-role {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.bubble-simulated {
+  background: #b45309;
+  color: #fde68a;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-left: 4px;
+}
+
+.bubble-text {
+  font-size: 11.5px;
+  color: var(--body);
+  line-height: 1.55;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.bubble-text p          { margin: 0 0 5px; }
+.bubble-text p:last-child { margin-bottom: 0; }
+.bubble-text h1, .bubble-text h2, .bubble-text h3,
+.bubble-text h4, .bubble-text h5 {
+  font-size: 11.5px; font-weight: 700; color: var(--ink);
+  margin: 6px 0 3px;
+}
+.bubble-text ul, .bubble-text ol { margin: 3px 0 5px 16px; }
+.bubble-text li  { margin-bottom: 2px; }
+.bubble-text strong { font-weight: 700; color: var(--ink); }
+.bubble-text em  { font-style: italic; }
+.bubble-text code {
+  font-family: monospace; font-size: 10px;
+  background: var(--canvas); padding: 1px 3px; border-radius: 3px;
+}
+.bubble-text hr  { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+
+/* ── Verdict ─────────────────────────────────────────────── */
+.verdict-card {
+  border-radius: var(--r);
+  padding: 20px 22px;
+  page-break-inside: avoid;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.verdict-card.green  { background: #f0fdf4; border-left: 4px solid var(--verde); }
+.verdict-card.yellow { background: #fefce8; border-left: 4px solid var(--amarillo); }
+.verdict-card.red    { background: #fef2f2; border-left: 4px solid var(--rojo); }
+
+.traffic-col {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-top: 4px;
+}
+
+.tl-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.tl-dot.on.green  { background: var(--verde);    box-shadow: 0 0 10px var(--verde); }
+.tl-dot.on.yellow { background: var(--amarillo); box-shadow: 0 0 10px var(--amarillo); }
+.tl-dot.on.red    { background: var(--rojo);     box-shadow: 0 0 10px var(--rojo); }
+
+.verdict-body { flex: 1; }
+
+.verdict-signal {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.verdict-signal.green  { color: var(--verde); }
+.verdict-signal.yellow { color: var(--amarillo); }
+.verdict-signal.red    { color: var(--rojo); }
+
+.verdict-label-text {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.confidence-pct {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.confidence-label {
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.confidence-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.confidence-fill { height: 100%; border-radius: 999px; }
+.confidence-fill.green  { background: var(--verde); }
+.confidence-fill.yellow { background: var(--amarillo); }
+.confidence-fill.red    { background: var(--rojo); }
+
+.reasons-list { display: flex; flex-direction: column; gap: 5px; }
+
+.reason-item {
+  font-size: 11.5px;
+  color: var(--body);
+  padding-left: 14px;
+  position: relative;
+}
+
+.reason-item::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--turquesa);
+  font-size: 16px;
+  line-height: .95;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.sources-section { margin-top: 10mm; }
+.sources-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--azul);
+  margin-bottom: 6px;
+}
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.source-item {
+  display: flex;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--body);
+  line-height: 1.5;
+}
+.source-num {
+  flex-shrink: 0;
+  color: var(--muted);
+  min-width: 18px;
+}
+.source-title { font-weight: 600; }
+.source-url {
+  color: var(--azul);
+  word-break: break-all;
+}
+.source-date { color: var(--muted); white-space: nowrap; }
+
+/* ── Findings ────────────────────────────────────────────── */
+.findings-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+}
+.finding-item {
+  font-size: 11.5px;
+  color: var(--body);
+  padding-left: 14px;
+  position: relative;
+}
+.finding-item::before {
+  content: '·';
+  position: absolute;
+  left: 4px;
+  color: var(--turquesa);
+  font-size: 16px;
+  line-height: .95;
+}
+
+.legal-notice {
+  margin-top: 10mm;
+  padding: 10px 14px;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.legal-notice p + p { margin-top: 4px; }
+
+.report-footer {
+  margin-top: 6mm;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="report-header">
+    <div class="header-brand">
+      <img class="header-logo" src="{{ assets_url }}tertulia.png" alt="TertulIA" />
+      <div class="header-titles">
+        <div class="report-eyebrow">Inteligencia colectiva para negocios locales</div>
+        <div class="report-title">Informe de Viabilidad</div>
+        <div class="report-subtitle">{{ data.brief.sector }} · {{ data.brief.neighborhood }}</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div>{{ data.generated_on.strftime('%d/%m/%Y') }}</div>
+      <div>Ref. {{ data.job_id }}</div>
+    </div>
+  </div>
+
+  <!-- Simulated notice -->
+  {% if data.simulated %}
+  <div class="simulated-notice">¡Atención! DATOS DE EJEMPLO. Este informe no refleja datos reales.</div>
+  {% endif %}
+
+  <!-- Ficha del encargo -->
+  <div class="section-wrap">
+    <div class="section-eyebrow">Encargo</div>
+    <div class="section-title">Ficha del análisis</div>
+    <div class="brief-grid">
+      <div class="brief-badge">
+        <div class="brief-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        </div>
+        <div class="brief-text">
+          <div class="brief-label">Sector</div>
+          <div class="brief-value">{{ data.brief.sector }}</div>
+        </div>
+      </div>
+      <div class="brief-badge">
+        <div class="brief-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        </div>
+        <div class="brief-text">
+          <div class="brief-label">Barrio</div>
+          <div class="brief-value">{{ data.brief.neighborhood }}</div>
+        </div>
+      </div>
+      {% if data.brief.budget_eur %}
+      <div class="brief-badge">
+        <div class="brief-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="brief-text">
+          <div class="brief-label">Presupuesto</div>
+          <div class="brief-value">{{ "{:,.0f}".format(data.brief.budget_eur) }} €</div>
+        </div>
+      </div>
+      {% endif %}
+      {% if data.brief.area_m2 %}
+      <div class="brief-badge">
+        <div class="brief-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <div class="brief-text">
+          <div class="brief-label">Superficie</div>
+          <div class="brief-value">{{ data.brief.area_m2 | int }} m²</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% if data.brief.context %}
+    <div class="brief-context">{{ data.brief.context }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Debate -->
+  <div class="section-wrap">
+    <div class="section-eyebrow">Análisis colectivo</div>
+    <div class="section-title">Debate entre agentes</div>
+    <div class="debate-list">
+      {% for msg in data.debate %}
+      <div class="debate-msg">
+        <div class="agent-avatar {{ msg.agent }}">
+          <img src="{{ assets_url }}{{ agent_images[msg.agent] }}" alt="{{ msg.name }}" />
+        </div>
+        <div class="bubble">
+          <div class="bubble-header">
+            <span class="bubble-name">{{ msg.name }}</span>
+            <span class="bubble-role">{{ msg.role }}</span>
+            {% if data.simulated %}
+            <span class="bubble-simulated">ejemplo</span>
+            {% endif %}
+          </div>
+          <div class="bubble-text">{{ msg.message | md }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Hallazgos de la investigación -->
+  {% if data.findings %}
+  <div class="section-wrap">
+    <div class="section-eyebrow">Investigación</div>
+    <div class="section-title">Hallazgos de la investigación</div>
+    <ul class="findings-list">
+      {% for f in data.findings %}
+      <li class="finding-item">
+        {% if f.value is not none %}<strong>{{ f.value | fmt_val }}</strong>{% if f.unit %} {{ f.unit }}{% endif %} — {% endif %}{{ f.claim }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Veredicto -->
+  <div class="section-wrap">
+    <div class="section-eyebrow">Resultado</div>
+    <div class="section-title">Veredicto</div>
+    <div class="verdict-card {{ data.verdict.signal }}">
+      <div class="traffic-col">
+        <div class="tl-dot {% if data.verdict.signal == 'green' %}on green{% endif %}"></div>
+        <div class="tl-dot {% if data.verdict.signal == 'yellow' %}on yellow{% endif %}"></div>
+        <div class="tl-dot {% if data.verdict.signal == 'red' %}on red{% endif %}"></div>
+      </div>
+      <div class="verdict-body">
+        <div class="verdict-signal {{ data.verdict.signal }}">{{ signal_labels[data.verdict.signal] }}</div>
+        <div class="verdict-label-text">{{ data.verdict.label }}</div>
+        <div class="confidence-row">
+          <div class="confidence-pct">{{ data.verdict.confidence }}%</div>
+          <div class="confidence-label">porcentaje<br>de confianza</div>
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-fill {{ data.verdict.signal }}" style="width:{{ data.verdict.confidence }}%"></div>
+        </div>
+        <div class="reasons-list">
+          {% for r in data.verdict.reasons %}
+          <div class="reason-item">{{ r }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sources -->
+  {% if data.sources %}
+  <div class="sources-section">
+    <div class="sources-title">Fuentes consultadas</div>
+    <div class="sources-list">
+      {% for s in data.sources %}
+      <div class="source-item">
+        <span class="source-num">[{{ loop.index }}]</span>
+        <span>
+          <span class="source-title">{{ s.title }}</span>
+          {% if s.url %} · <span class="source-url">{{ s.url }}</span>{% endif %}
+          {% if s.retrieved_at %} · <span class="source-date">{{ s.retrieved_at[:10] }}</span>{% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Legal notice -->
+  <div class="legal-notice">
+    <p><strong>Aviso legal.</strong> Este informe ha sido generado de forma automática por un sistema de agentes de inteligencia artificial (TertulIA) con fines exclusivamente informativos. Su contenido no constituye asesoramiento profesional, financiero, legal ni comercial, y no reemplaza en ningún caso el criterio de un consultor o analista cualificado. Los datos, estimaciones y proyecciones incluidos se basan en fuentes públicas y modelos estadísticos; pueden contener inexactitudes y deben verificarse de forma independiente antes de tomar cualquier decisión de negocio.</p>
+    {% if data.debate | selectattr('agent', 'equalto', 'vision') | list %}
+    <p><strong>Proyecto académico.</strong> Las imágenes aportadas por el usuario se almacenan temporalmente en el servidor para el análisis y se envían al proveedor del modelo de IA (Google Gemini); no se comparten con terceros. Cualquier semejanza con establecimientos reales es meramente orientativa.</p>
+    {% endif %}
+  </div>
+
+  <!-- Footer -->
+  <div class="report-footer">
+    <span>TertulIA · Informe generado el {{ data.generated_on.strftime('%d/%m/%Y') }} · Ref. {{ data.job_id }}{% if data.tokens_used %} · {{ "{:,}".format(data.tokens_used) }} tokens{% endif %}</span>
+    <span>Análisis orientativo. Verifica las fuentes antes de tomar decisiones.</span>
+    {% if data.foursquare_used %}<span>Powered by Foursquare</span>{% endif %}
+  </div>
+
+</div>
+</body>
+</html>
