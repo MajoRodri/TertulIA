@@ -12,8 +12,7 @@
 
 ---
 
-<!-- Demo en vídeo: sustituir el bloque por el embed cuando esté disponible -->
-> 📹 **Vídeo demo:** *próximamente*
+[![Demo en vídeo](https://img.youtube.com/vi/aZfp4ED58oM/maxresdefault.jpg)](https://youtu.be/aZfp4ED58oM)
 
 ---
 
@@ -439,7 +438,7 @@ Mejoras previstas después de la entrega. Ninguna está en la versión actual.
 
 ### Producto
 
-- **Cuentas de analista y conversaciones guardadas.** Cada analista entra con su usuario y solo ve sus propios análisis (o los de su consultora, si se comparten). Cada análisis (encargo, debate de los agentes, chat de contexto, veredicto, informe PDF y trazas) se guarda en base de datos y se puede volver a abrir desde un historial. El grafo pasaría de `MemorySaver` (en memoria) a un guardado persistente (`SqliteSaver` o PostgreSQL). Esto trae consigo requisitos de privacidad: control de acceso, cifrado, plazo de conservación y borrado por usuario (RGPD).
+- **Cuentas de analista y conversaciones guardadas.** Cada analista entra con su usuario y recupera sus estudios desde un historial: encargo, debate de los agentes, chat de contexto, veredicto, informe PDF y trazas. El grafo pasaría de `MemorySaver` (en memoria) a un guardado persistente (por ejemplo, `SqliteSaver` o PostgreSQL).
 - **Monitorización continua.** Para locales ya abiertos: aviso (por ejemplo, por Telegram) si la competencia cambia precios o abre un local cerca.
 - **Más sectores**, además del café-cowork: cada sector es un perfil nuevo en `config/sectores/`.
 - **Comparación de barrios** en un mismo informe (los datos de Atocha y Delicias ya están guardados).
@@ -454,6 +453,7 @@ Mejoras previstas después de la entrega. Ninguna está en la versión actual.
 ### Seguridad y privacidad
 
 - **Nivel de pago de Gemini o modelo local** cuando haya datos de clientes reales (en el nivel gratuito, Google usa los datos para mejorar sus productos).
+- **Control de acceso y cifrado** de los análisis guardados, **plazo de conservación** y **borrado** de fotos, documentos, conversaciones y trazas (derecho de supresión, RGPD).
 - **Segunda capa contra prompt injection** con un clasificador de IA (por ejemplo, Model Armor).
 - **Contenedor aislado** para la ejecución de código del Analista (hoy no es un sandbox completo).
 
