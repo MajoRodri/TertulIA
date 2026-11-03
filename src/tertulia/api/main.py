@@ -900,9 +900,12 @@ def _build_chat_system_prompt(job: dict) -> str:
         "Eres un consultor experto en viabilidad de negocios. "
         "Responde en español de forma clara, directa y profesional. "
         "No repitas saludos ni preámbulos innecesarios.\n\n"
-        # H-50: prohibit inventing data the model doesn't have
-        "REGLA ESTRICTA: si no tienes el dato concreto, di exactamente "
-        "'No tengo ese dato' — nunca inventes cifras, rangos ni fuentes.\n\n"
+        "INSTRUCCIONES:\n"
+        "- Si el usuario APORTA datos nuevos (cifras, condiciones, acuerdos): acéptalos como válidos, "
+        "explica brevemente cómo cambian el análisis y qué implican para la viabilidad.\n"
+        "- Si el usuario PREGUNTA por un dato que no está en el debate ni en su mensaje: "
+        "di exactamente 'No tengo ese dato' — nunca inventes cifras, rangos ni fuentes.\n"
+        "- No regeneres el informe completo.\n\n"
         f"CONTEXTO DEL ANÁLISIS:\n"
         f"  Tipo de negocio: {brief.business_type}\n"
         f"  Barrio: {brief.neighbourhood}\n"
@@ -912,9 +915,7 @@ def _build_chat_system_prompt(job: dict) -> str:
         + (f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}\n\n" if doc_context else "")
         + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
         + (f"PREGUNTAS PREVIAS DEL USUARIO:\n{history_lines}\n\n" if history_lines else "")
-        + "Responde al usuario usando el debate del equipo como referencia cuando sea relevante. "
-        "No regeneres el informe completo. "
-        "Si el usuario pregunta por un dato concreto que no aparece en el debate, aplica la regla 'No tengo ese dato'."
+        + "Usa el debate como referencia para contextualizar tu respuesta. "
     )
 
 
