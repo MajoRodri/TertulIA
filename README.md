@@ -5,8 +5,7 @@
   <p><em>Inteligencia colectiva para negocios locales</em></p>
   <p>Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio de Madrid: investiga la competencia, analiza la economía y genera un informe en PDF con semáforo de viabilidad.</p>
 
-  <!-- Sustituir # por la URL cuando esté disponible -->
-  <a href="#"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
+  <a href="https://tertulia-production.up.railway.app/app.html"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
   &nbsp;
   <a href="#instalación-y-arranque"><img alt="Ejecutar en local" src="https://img.shields.io/badge/Ejecutar%20en%20local-1a1a2e?style=for-the-badge&logo=python&logoColor=white"/></a>
 </div>
@@ -120,28 +119,13 @@ El equipo de 5 agentes que hace el estudio. La API ejecuta la investigación, la
 
 <table>
   <tr>
-    <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora</td>
-    <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista</td>
-    <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual</td>
-    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor</td>
-    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora</td>
-  </tr>
-  <tr>
-    <td align="center"><code>researcher</code></td>
-    <td align="center"><code>analyst</code></td>
-    <td align="center"><code>vision</code></td>
-    <td align="center"><code>writer</code></td>
-    <td align="center"><code>reviewer</code></td>
+    <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora<br/><code>researcher</code><br/><br/><small>Competencia y público del barrio, con fuente</small><br/><code>search_competitors</code> · <code>search_audience_indicators</code> · <code>fetch</code></td>
+    <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista<br/><code>analyst</code><br/><br/><small>Punto de equilibrio y gráficos</small><br/><code>break_even</code> · <code>run_python</code></td>
+    <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual<br/><code>vision</code><br/><br/><small>Analiza las fotos aportadas</small><br/><code>analyse_image</code></td>
+    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor<br/><code>writer</code><br/><br/><small>Informe en Markdown y semáforo propuesto</small><br/>—</td>
+    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora<br/><code>reviewer</code><br/><br/><small>Comprueba cifras y fuentes del borrador</small><br/>—</td>
   </tr>
 </table>
-
-| Agente | Rol | Herramientas |
-| --- | --- | --- |
-| La Portera (`researcher`) | Competencia y público del barrio, con fuente | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
-| Berto (`vision`) | Analiza las fotos aportadas | `analyse_image` |
-| El Chulapo (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
-| El Pregonero (`writer`) | Informe en Markdown y semáforo propuesto | — |
-| La Revisora (`reviewer`) | Comprueba cifras y fuentes del borrador | — |
 
 > **Berta** presenta el veredicto en la interfaz; no es un agente de CrewAI.
 
@@ -390,6 +374,7 @@ Detalle completo: [`docs/etica-y-gobernanza.md`](docs/etica-y-gobernanza.md) · 
 | --- | --- | --- |
 | `POST` | `/api/analyze` | Inicia un análisis → `{ job_id }` |
 | `POST` | `/api/upload/{job_id}` | Sube imágenes → `{ paths }` |
+| `POST` | `/api/documents/{job_id}` | Sube documentos de contexto → `{ accepted, rejected }` |
 | `GET` | `/api/debate/{job_id}` | SSE con mensajes de los agentes |
 | `POST` | `/api/chat/{job_id}` | SSE con respuestas del chat |
 | `GET` | `/api/verdict/{job_id}` | Veredicto JSON (incluye `tokens_used`) |
@@ -406,10 +391,6 @@ pytest
 ```
 
 430+ tests. Sin claves, sin internet: usan modelos falsos y datos guardados.
-
-### Métricas de rendimiento
-
-<!-- Pendiente (Yohanna) — resultados comparativos chat normal vs. TertulIA. Ver docs/metricas.md -->
 
 ---
 
