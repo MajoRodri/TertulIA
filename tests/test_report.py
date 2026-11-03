@@ -53,7 +53,7 @@ def test_email_draft_contains_summary():
 
 def test_email_draft_signal_label():
     draft = build_email_draft(SAMPLE_DATA)
-    assert "Viabilidad media" in draft
+    assert "Datos insuficientes o riesgo" in draft
 
 
 def test_report_data_accepts_findings():
