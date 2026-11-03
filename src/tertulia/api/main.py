@@ -912,9 +912,9 @@ def _build_chat_system_prompt(job: dict) -> str:
         + (f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}\n\n" if doc_context else "")
         + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
         + (f"PREGUNTAS PREVIAS DEL USUARIO:\n{history_lines}\n\n" if history_lines else "")
-        + "Responde SOLO a lo que el usuario acaba de aportar en su mensaje. "
-        "No regeneres el informe completo ni uses datos del contexto "
-        "que el usuario no haya mencionado explícitamente ahora."
+        + "Responde al usuario usando el debate del equipo como referencia cuando sea relevante. "
+        "No regeneres el informe completo. "
+        "Si el usuario pregunta por un dato concreto que no aparece en el debate, aplica la regla 'No tengo ese dato'."
     )
 
 
