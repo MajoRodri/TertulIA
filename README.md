@@ -12,8 +12,8 @@
 
 ---
 
-<!-- Demo en vídeo — sustituir el bloque por el embed cuando esté disponible -->
-> 📹 **Vídeo demo** — *próximamente*
+<!-- Demo en vídeo: sustituir el bloque por el embed cuando esté disponible -->
+> 📹 **Vídeo demo:** *próximamente*
 
 ---
 
@@ -29,6 +29,7 @@
 - [Tests](#tests)
 - [Añadir un sector](#añadir-un-sector)
 - [Instalación y arranque](#instalación-y-arranque)
+- [Roadmap](#roadmap)
 - [Equipo](#equipo)
 
 ---
@@ -123,8 +124,8 @@ El equipo de 5 agentes que hace el estudio. La API ejecuta la investigación, la
     <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora<br/><code>researcher</code><br/><br/><small>Competencia y público del barrio, con fuente</small><br/><code>search_competitors</code> · <code>search_audience_indicators</code> · <code>fetch</code></td>
     <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista<br/><code>analyst</code><br/><br/><small>Punto de equilibrio y gráficos</small><br/><code>break_even</code> · <code>run_python</code></td>
     <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual<br/><code>vision</code><br/><br/><small>Analiza las fotos aportadas</small><br/><code>analyse_image</code></td>
-    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor<br/><code>writer</code><br/><br/><small>Informe en Markdown y semáforo propuesto</small><br/>—</td>
-    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora<br/><code>reviewer</code><br/><br/><small>Comprueba cifras y fuentes del borrador</small><br/>—</td>
+    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor<br/><code>writer</code><br/><br/><small>Informe en Markdown y semáforo propuesto</small><br/>(ninguna)</td>
+    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora<br/><code>reviewer</code><br/><br/><small>Comprueba cifras y fuentes del borrador</small><br/>(ninguna)</td>
   </tr>
 </table>
 
@@ -343,7 +344,7 @@ Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Mod
 | `Source` | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché) | La Portera |
 | `Finding` | Cada dato o cifra del informe, con su fuente o el código que lo calculó | Chulapo Analytics |
 | `Verdict` | El semáforo, con confianza, motivos, datos que faltan y corrección del analista | ¿Mola? |
-| `TraceEntry` | Una línea del log de auditoría | — |
+| `TraceEntry` | Una línea del log de auditoría | |
 
 **Reglas que imponen (Pydantic da error si no se cumplen):**
 
@@ -429,6 +430,32 @@ uvicorn tertulia.api.main:app --port 8000
 ```
 
 Abre `http://localhost:8000` en el navegador.
+
+---
+
+## Roadmap
+
+Mejoras previstas después de la entrega. Ninguna está en la versión actual.
+
+### Producto
+
+- **Cuentas de analista y conversaciones guardadas.** Cada analista entra con su usuario y solo ve sus propios análisis (o los de su consultora, si se comparten). Cada análisis (encargo, debate de los agentes, chat de contexto, veredicto, informe PDF y trazas) se guarda en base de datos y se puede volver a abrir desde un historial. El grafo pasaría de `MemorySaver` (en memoria) a un guardado persistente (`SqliteSaver` o PostgreSQL). Esto trae consigo requisitos de privacidad: control de acceso, cifrado, plazo de conservación y borrado por usuario (RGPD).
+- **Monitorización continua.** Para locales ya abiertos: aviso (por ejemplo, por Telegram) si la competencia cambia precios o abre un local cerca.
+- **Más sectores**, además del café-cowork: cada sector es un perfil nuevo en `config/sectores/`.
+- **Comparación de barrios** en un mismo informe (los datos de Atocha y Delicias ya están guardados).
+
+### Datos
+
+- **Reseñas de la competencia:** hoy el informe las deja en «sin dato». Dos vías: un campo opcional para que la persona usuaria pegue reseñas (con filtro anti prompt injection, registradas como fuente `user_input` y sin nombres de clientes) o la API de Google Places (revisar coste y condiciones de almacenamiento).
+- **Datos abiertos del Ayuntamiento de Madrid** (padrón y renta por barrio) para completar los indicadores de público con edades y renta.
+- **Base de datos propia con el extracto de OpenStreetMap de Madrid** (PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos sin depender del servidor público de Overpass.
+- **Medir los tokens por informe:** hoy el contador vale 0; con la medida real se cierra el coste por informe.
+
+### Seguridad y privacidad
+
+- **Nivel de pago de Gemini o modelo local** cuando haya datos de clientes reales (en el nivel gratuito, Google usa los datos para mejorar sus productos).
+- **Segunda capa contra prompt injection** con un clasificador de IA (por ejemplo, Model Armor).
+- **Contenedor aislado** para la ejecución de código del Analista (hoy no es un sandbox completo).
 
 ---
 
