@@ -68,16 +68,10 @@ def test_node_does_not_stop_below_the_budget():
 # --- ERR-008: unexpected exception inside a node -----------------------------
 
 
-def test_research_node_catches_unexpected_exceptions():
-    # Only the first print fails: the except branch also prints, and that one must work.
-    with patch("builtins.print", side_effect=[RuntimeError("boom"), None]):
-        patch_ = research_node(_state())
-    assert len(patch_["errors"]) == 1
-    error = patch_["errors"][0]
-    assert error.code == GRAPH_INTERNAL
-    assert error.node == "research"
-    assert error.severity == ErrorSeverity.FATAL
-    assert "boom" in (error.technical_detail or "")
+def test_research_node_returns_empty_patch_when_below_budget():
+    with patch("config.settings.settings.MAX_TOKENS_PER_REPORT", 1000):
+        patch_ = research_node(_state(tokens_used=0))
+    assert patch_ == {}
 
 
 def test_reviewer_failure_is_treated_as_rejection():

@@ -14,18 +14,22 @@ import base64
 import io
 import json
 import logging
+import threading
+import time
 import uuid
+from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Annotated, AsyncGenerator
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from config.settings import settings
 from tertulia.graph.builder import app as _graph
 from tertulia.report.models import AgentMessage as ReportMessage
 from tertulia.report.models import ReportBrief, ReportData, ReportFinding, ReportSource
@@ -36,6 +40,10 @@ from tertulia.trazas import save_traces
 
 # Project root: src/tertulia/api/main.py → 3 levels up
 _ROOT = Path(__file__).resolve().parents[3]
+
+# No-op when uvicorn has already set up handlers; ensures messages are visible
+# when the module runs outside uvicorn (scripts, tests, direct invocation).
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger(__name__)
 
 # MCP tools loaded once at startup and reused across debates (~9 s saved per debate).
@@ -61,13 +69,62 @@ app = FastAPI(title="TertulIA API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' https://cdn.jsdelivr.net https://esm.sh; "
+    "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
+    "img-src 'self' data: blob:; "
+    "connect-src 'self' https://esm.sh; "
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+    "worker-src blob:; "
+    "frame-ancestors 'none'"
+)
+
+
+@app.middleware("http")
+async def _csp_middleware(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Content-Security-Policy"] = _CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    return response
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
 
 # In-memory store: { job_id: { brief, verdict, messages, status } }
 _jobs: dict[str, dict] = {}
+
+# Serializes scoped_handlers() calls — crewai event bus is process-global
+_research_lock = threading.Lock()
+
+# Rate limiting buckets: { (ip, key): [timestamp, ...] }
+_rate_buckets: dict = defaultdict(list)
+_rate_call_count = 0
+
+
+def _check_rate_limit(ip: str, key: str, max_calls: int, window_s: int = 60) -> None:
+    """Raise HTTP 429 if ip has exceeded max_calls within the sliding window."""
+    global _rate_call_count
+    bucket_key = (ip, key)
+    now = time.monotonic()
+    _rate_buckets[bucket_key] = [t for t in _rate_buckets[bucket_key] if now - t < window_s]
+    if len(_rate_buckets[bucket_key]) >= max_calls:
+        raise HTTPException(status_code=429, detail="Demasiadas peticiones. Espera un momento.")
+    _rate_buckets[bucket_key].append(now)
+    _rate_call_count += 1
+    if _rate_call_count % 1000 == 0:
+        stale = [k for k, v in _rate_buckets.items() if not v or now - max(v) > window_s]
+        for k in stale:
+            del _rate_buckets[k]
 
 # ── Crew step metadata ────────────────────────────────────────────────────────
 # Each entry: (crew_step_name, list of agent display info + task output key)
@@ -127,7 +184,7 @@ def _skeleton_verdict() -> SchemaVerdict:
     return SchemaVerdict(
         light=TrafficLight.AMBER,
         confidence=0.72,
-        summary="Viabilidad media, riesgo controlado",
+        summary="Datos insuficientes o riesgo presente",
         reasons=[
             "Demanda confirmada: 3 competidores directos con valoración media de 4,2 ★",
             "Punto de equilibrio alcanzable con 68 clientes/día en escenario base (45% ocupación)",
@@ -150,43 +207,68 @@ def _verdict_from_draft(
     """
     import re
 
-    from tertulia.schemas.models import compute_confidence
+    # Confidence: 1 minus 10% per "sin dato" in the draft and 5% per suspicious source.
+    # MCP findings are always FOUND so the old compute_confidence() always returned 1.0.
+    sin_dato_count = len(re.findall(r"\bsin\s+dato\b", draft, re.IGNORECASE))
+    suspicious_count = sum(getattr(s, "suspicious", False) for s in sources)
+    confidence = round(max(0.0, min(1.0, 1.0 - sin_dato_count * 0.1 - suspicious_count * 0.05)), 2)
 
-    confidence = compute_confidence(findings, sources)
-
-    # Locate the semáforo / veredicto section (last ## heading that matches).
+    # Locate the semáforo / veredicto / resultado section (last ## heading that matches).
     semaforo_block = ""
     match = re.search(
-        r"#{1,3}[^#\n]*[Ss]em[aá]foro[^#\n]*\n(.*?)(?=\n#{1,3}|\Z)",
+        r"#{1,3}[^#\n]*(?:[Ss]em[aá]foro|[Vv]eredicto|[Rr]esultado)[^#\n]*\n(.*?)(?=\n#{1,3}|\Z)",
         draft,
         re.DOTALL,
     )
     if match:
         semaforo_block = match.group(1)
 
-    # Determine traffic light from color keywords.
-    search_in = semaforo_block or draft
-    if re.search(r"\b[Vv]erde\b", search_in):
-        light = TrafficLight.GREEN
-    elif re.search(r"\b[Rr]ojo\b", search_in):
-        light = TrafficLight.RED
+    # Determine traffic light: structured marker added to tasks.yaml takes precedence.
+    # Accept optional bullet prefix (- SEMAFORO: AMBAR) since some writers add it.
+    # Fall back to keyword search in the semáforo block for drafts without the marker.
+    structured = re.search(
+        r"^\s*\**(?:[-*+]\s+)?\**SEMAF[OÓ]RO:\s*[^\w]*(VERDE|[AÁ]MBAR|ROJO)",
+        draft,
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if structured:
+        token = structured.group(1).upper()
+        if "VERDE" in token:
+            light = TrafficLight.GREEN
+        elif "ROJO" in token:
+            light = TrafficLight.RED
+        else:
+            light = TrafficLight.AMBER
     else:
-        light = TrafficLight.AMBER
+        search_in = semaforo_block or draft
+        if re.search(r"\bverde\b", search_in, re.IGNORECASE):
+            light = TrafficLight.GREEN
+        elif re.search(r"\brojo\b", search_in, re.IGNORECASE):
+            light = TrafficLight.RED
+        else:
+            light = TrafficLight.AMBER
 
-    # Extract bullet-point reasons from the semáforo block.
+    # Extract bullet-point reasons: accept -, *, + and numbered lists (1. 2. etc.)
+    # Exclude the SEMAFORO: marker line itself — it is a machine token, not a human reason.
     reasons: list[str] = [
         m.group(1).strip()
-        for m in re.finditer(r"^[-*]\s+(.+)", semaforo_block, re.MULTILINE)
+        for m in re.finditer(r"^(?:[-*+]|\d+\.)\s+(.+)", semaforo_block, re.MULTILINE)
+        if not re.match(r"SEMAF[OÓ]RO:\s*", m.group(1), re.IGNORECASE)
     ]
     if not reasons:
-        reasons = ["Ver informe completo para los motivos del semáforo."]
+        # Fall back: any non-empty, non-heading line in the semáforo block
+        reasons = [
+            line.strip()
+            for line in semaforo_block.splitlines()
+            if line.strip() and not line.strip().startswith("#")
+            and not re.match(r"(?:[-*+]\s+)?SEMAF[OÓ]RO:\s*", line.strip(), re.IGNORECASE)
+        ] or ["Ver informe completo para los motivos del semáforo."]
 
-    # Build summary: first non-bullet, non-empty line in the semáforo block,
-    # or fall back to the first line of the Resumen section.
+    # Build summary: first non-bullet, non-heading, non-empty line in the semáforo block.
     summary = ""
     for line in semaforo_block.splitlines():
         line = line.strip()
-        if line and not line.startswith(("-", "*", "#")):
+        if line and not line.startswith(("-", "*", "+", "#")) and not re.match(r"^\d+\.", line):
             summary = line
             break
     if not summary:
@@ -220,10 +302,10 @@ async def _compute_and_cache_verdict(job_id: str) -> None:
         context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
     if chat_history:
         history_text = "\n".join(
-            f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
-            for h in chat_history
+            f"Usuario: {h['text']}" for h in chat_history if h["role"] == "user"
         )
-        context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+        if history_text:
+            context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
 
     from tertulia.guardrails.anonimizacion import _scrub
     chat_context = _scrub("\n\n".join(context_parts)) if context_parts else ""
@@ -249,7 +331,7 @@ async def _compute_and_cache_verdict(job_id: str) -> None:
                 chat_context=chat_context,
                 mcp_research_summary="\n".join(job.get("mcp_research_summary", [])),
             )
-            result = await asyncio.to_thread(run_step, "writing", inputs, llm_from_settings())
+            result, _tokens = await asyncio.to_thread(run_step, "writing", inputs, llm_from_settings())
             draft = result.get("writing_task") or draft
             _jobs[job_id]["draft_report"]           = draft
             _jobs[job_id]["chat_context_precomputed"] = True
@@ -328,49 +410,51 @@ async def _prepare_crew(brief: BusinessBrief):
 
         def _run(step: str, inp: dict) -> dict:
             if step != "research":
-                return run_step(step, inp, llm, _tools_map)
-            # For the research step, listen for Foursquare usage via MCP events.
-            # Import errors mean tracking is unavailable — run without it.
-            try:
-                import json as _json
-
-                from crewai.events import crewai_event_bus
-                from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
-            except Exception:
-                return run_step(step, inp, llm, _tools_map)
-
-            detected = [False]
-
-            def _check(source, event):
-                if event.tool_name != "search_competitors":
-                    return
+                result, tokens = run_step(step, inp, llm, _tools_map)
+            else:
+                # For the research step, listen for Foursquare usage via MCP events.
+                # Import errors mean tracking is unavailable — run without it.
                 try:
-                    r = _json.loads(event.result) if isinstance(event.result, str) else event.result
-                    if not isinstance(r, dict):
-                        return
-                    if r.get("foursquare_status") == "used":
-                        detected[0] = True
-                    from tertulia.tools.adapters import mcp_response_to_sources_and_findings
-                    start_src = 1 + len(_tracking.get("mcp_sources", []))
-                    start_fnd = 1 + len(_tracking.get("mcp_findings", []))
-                    srcs, fnds, summary = mcp_response_to_sources_and_findings(
-                        r,
-                        start_source_index=start_src,
-                        start_finding_index=start_fnd,
-                    )
-                    _tracking.setdefault("mcp_sources", []).extend(srcs)
-                    _tracking.setdefault("mcp_findings", []).extend(fnds)
-                    _tracking.setdefault("mcp_research_summary", []).append(summary)
-                except Exception:
-                    pass
+                    import json as _json
 
-            # scoped_handlers() is process-global: safe with one analysis at a time.
-            # Concurrent analyses would share the scope and cross-contaminate listeners.
-            with crewai_event_bus.scoped_handlers():
-                crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
-                result = run_step(step, inp, llm, _tools_map)
-            if detected[0]:
-                _tracking["foursquare_used"] = True
+                    from crewai.events import crewai_event_bus
+                    from crewai.events.types.mcp_events import MCPToolExecutionCompletedEvent
+                except Exception:
+                    result, tokens = run_step(step, inp, llm, _tools_map)
+                else:
+                    detected = [False]
+
+                    def _check(source, event):
+                        if event.tool_name != "search_competitors":
+                            return
+                        try:
+                            r = _json.loads(event.result) if isinstance(event.result, str) else event.result
+                            if not isinstance(r, dict):
+                                return
+                            if r.get("foursquare_status") == "used":
+                                detected[0] = True
+                            from tertulia.tools.adapters import mcp_response_to_sources_and_findings
+                            start_src = 1 + len(_tracking.get("mcp_sources", []))
+                            start_fnd = 1 + len(_tracking.get("mcp_findings", []))
+                            srcs, fnds, summary = mcp_response_to_sources_and_findings(
+                                r,
+                                start_source_index=start_src,
+                                start_finding_index=start_fnd,
+                            )
+                            _tracking.setdefault("mcp_sources", []).extend(srcs)
+                            _tracking.setdefault("mcp_findings", []).extend(fnds)
+                            _tracking.setdefault("mcp_research_summary", []).append(summary)
+                        except Exception:
+                            pass
+
+                    # _research_lock serializes scoped_handlers() across concurrent requests —
+                    # crewai event bus is process-global and would cross-contaminate listeners.
+                    with _research_lock, crewai_event_bus.scoped_handlers():
+                        crewai_event_bus.on(MCPToolExecutionCompletedEvent)(_check)
+                        result, tokens = run_step(step, inp, llm, _tools_map)
+                    if detected[0]:
+                        _tracking["foursquare_used"] = True
+            _tracking["tokens_used"] = _tracking.get("tokens_used", 0) + tokens
             return result
 
         def _rebuild(acc: dict) -> dict:
@@ -400,16 +484,17 @@ def _accumulate(step: str, result: dict[str, str], acc: dict) -> None:
     elif step == "writing":
         acc["draft_report"]    = result.get("writing_task", "")
     elif step == "review":
-        acc["review_result"]   = result.get("review_task", "")
+        pass
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.post("/api/analyze")
-async def analyze(brief: BusinessBrief):
+async def analyze(brief: BusinessBrief, request: Request):
+    _check_rate_limit(request.client.host, "analyze", settings.RATE_LIMIT_ANALYZE)
     from tertulia.guardrails.anonimizacion import anonymize_business_brief
     brief = anonymize_business_brief(brief)
-    job_id = f"job-{uuid.uuid4().hex[:8]}"
+    job_id = f"job-{uuid.uuid4().hex}"
     _jobs[job_id] = {
         "brief": brief,
         "status": "running",
@@ -503,6 +588,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
     _jobs[job_id]["simulated"]         = debate_simulated
     _jobs[job_id]["verdict_ready"]     = False
     _jobs[job_id]["paused_at"]         = datetime.now(timezone.utc)
+    _jobs[job_id]["tokens_used"]          = _tracking.get("tokens_used", 0) if crew else 0
     _jobs[job_id]["foursquare_used"]      = _tracking.get("foursquare_used", False) if crew else False
     _jobs[job_id]["mcp_sources"]          = _tracking.get("mcp_sources", []) if crew else []
     _jobs[job_id]["mcp_findings"]         = _tracking.get("mcp_findings", []) if crew else []
@@ -520,7 +606,7 @@ async def _stream_debate(job_id: str) -> AsyncGenerator[str, None]:
         "mcp_research_summary": "\n".join(_jobs[job_id].get("mcp_research_summary", [])),
         "review_round": 0, "reviewer_comments": [],
         "verdict": _jobs[job_id]["verdict"],
-        "traces": [], "tokens_used": 0,
+        "traces": [], "tokens_used": _tracking.get("tokens_used", 0) if crew else 0,
         "human_approved": False, "expired": False, "errors": [],
         "chat_context": "", "chat_context_applied": False,
         "discarded_competitors": [],
@@ -621,8 +707,8 @@ def _classify_document(llm, text: str, declared_type: str, brief) -> tuple[bool,
         reason = response.split(":", 1)[-1].strip() if ":" in response else response
         return False, reason
     except Exception:
-        log.exception("Document classification failed — accepting as fallback")
-        return True, label  # fail-open: no bloquear al usuario si falla la clasificación
+        log.warning("Document classification failed — rejecting for safety", exc_info=True)
+        return False, "No se pudo verificar la relevancia del documento"
 
 
 MAX_DOC_CONTEXT_CHARS = 50_000  # total cap across all uploaded documents
@@ -803,15 +889,20 @@ def _build_chat_system_prompt(job: dict) -> str:
         f"  [{m.get('name', m.get('agent', '?'))}]: {m.get('message', '')}"
         for m in (job.get("messages") or [])
     )
+    # H-51: only user messages go to the writer context — assistant answers are not user data
     history_lines = "\n".join(
-        f"  {'Usuario' if h['role'] == 'user' else 'Asistente'}: {h['text']}"
-        for h in (job.get("chat_history") or [])[:-1]  # exclude the current message
+        f"  Usuario: {h['text']}"
+        for h in (job.get("chat_history") or [])[:-1]
+        if h["role"] == "user"
     )
     doc_context = job.get("doc_context", "")
     return (
         "Eres un consultor experto en viabilidad de negocios. "
         "Responde en español de forma clara, directa y profesional. "
         "No repitas saludos ni preámbulos innecesarios.\n\n"
+        # H-50: prohibit inventing data the model doesn't have
+        "REGLA ESTRICTA: si no tienes el dato concreto, di exactamente "
+        "'No tengo ese dato' — nunca inventes cifras, rangos ni fuentes.\n\n"
         f"CONTEXTO DEL ANÁLISIS:\n"
         f"  Tipo de negocio: {brief.business_type}\n"
         f"  Barrio: {brief.neighbourhood}\n"
@@ -820,7 +911,7 @@ def _build_chat_system_prompt(job: dict) -> str:
         f"  Notas del usuario: {brief.notes or '(ninguna)'}\n\n"
         + (f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}\n\n" if doc_context else "")
         + f"DEBATE DEL EQUIPO:\n{debate_lines or '  (sin debate previo)'}\n\n"
-        + (f"CONVERSACIÓN PREVIA:\n{history_lines}\n\n" if history_lines else "")
+        + (f"PREGUNTAS PREVIAS DEL USUARIO:\n{history_lines}\n\n" if history_lines else "")
         + "Responde SOLO a lo que el usuario acaba de aportar en su mensaje. "
         "No regeneres el informe completo ni uses datos del contexto "
         "que el usuario no haya mencionado explícitamente ahora."
@@ -874,17 +965,21 @@ async def _stream_chat(
     response_text: str | None = None
     try:
         from tertulia.crew.crew import llm_from_settings
+        from tertulia.guardrails.anonimizacion import _scrub
+
+        # H-53: anonymize PII in the user message before it reaches the LLM
+        safe_message = _scrub(message) if message else message
 
         # Image-only with no text: use a minimal prompt so the LLM only describes what it sees
-        if image_data and not message and not chat_doc_text:
+        if image_data and not safe_message and not chat_doc_text:
             system_prompt = _build_vision_only_prompt(job)
         else:
             system_prompt = _build_chat_system_prompt(job)
 
         # Build user content: always a list if there are images or doc text
         if image_data or chat_doc_text:
-            if message:
-                msg_text = message
+            if safe_message:
+                msg_text = safe_message
             elif image_data and not chat_doc_text:
                 msg_text = "Analiza esta imagen y comenta brevemente qué ves que sea relevante para el negocio."
             else:
@@ -900,7 +995,7 @@ async def _stream_chat(
                 b64 = base64.b64encode(img_bytes).decode()
                 user_content.append({"inlineData": {"mimeType": mime, "data": b64}})
         else:
-            user_content = message
+            user_content = safe_message
 
         messages = [
             {"role": "system", "content": system_prompt},
@@ -941,6 +1036,14 @@ async def vision_analysis(job_id: str):
     )
 
 
+def _strip_path_lines(text: str) -> str:
+    lines = [
+        line for line in text.splitlines()
+        if not (line.strip().lstrip("[").startswith("job-") and "/uploads/" in line)
+    ]
+    return "\n".join(lines)
+
+
 async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
     """Runs only the vision task with the latest image paths stored in the job."""
     brief: BusinessBrief = _jobs[job_id]["brief"]
@@ -965,12 +1068,15 @@ async def _stream_vision(job_id: str) -> AsyncGenerator[str, None]:
 
         yield f"data: {json.dumps({'thinking': True, 'agent': 'vision', 'name': 'Berto'})}\n\n"
 
-        result = await asyncio.to_thread(
+        # "research" runs both the researcher and vision tasks in the same crew step.
+        # Passing [] for "researcher" leaves it with no tools so only the vision task
+        # executes; the researcher completes immediately with nothing to call.
+        result, _tokens = await asyncio.to_thread(
             run_step, "research", inputs, llm,
             {"vision": vision_tools, "researcher": [], "analyst": [], "writer": [], "reviewer": []},
         )
 
-        text = result.get("vision_task", "").strip()
+        text = _strip_path_lines(result.get("vision_task", "")).strip()
         if text:
             payload = {
                 "agent": "vision", "name": "Berto",
@@ -999,6 +1105,9 @@ async def get_verdict(job_id: str):
     result = verdict.model_dump()
     result["tokens_used"] = job.get("tokens_used", 0)
     result["simulated"] = job.get("simulated", False)
+    result["foursquare_used"] = job.get("foursquare_used", False)
+    # Confidence is only meaningful for real debates (not demo/skeleton).
+    result["confidence_reliable"] = not job.get("debate_simulated", True)
     return result
 
 
@@ -1012,7 +1121,6 @@ async def approve(job_id: str, req: ApproveRequest):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    from config.settings import settings
     graph_config = {"configurable": {"thread_id": job_id}}
 
     paused_at = job.get("paused_at")
@@ -1047,10 +1155,10 @@ async def approve(job_id: str, req: ApproveRequest):
             context_parts.append(f"DOCUMENTOS APORTADOS POR EL USUARIO:\n{doc_context}")
         if chat_history:
             history_text = "\n".join(
-                f"Usuario: {h['text']}" if h["role"] == "user" else f"Asistente: {h['text']}"
-                for h in chat_history
+                f"Usuario: {h['text']}" for h in chat_history if h["role"] == "user"
             )
-            context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
+            if history_text:
+                context_parts.append(f"CONVERSACIÓN DE CONTEXTO:\n{history_text}")
         if context_parts:
             from tertulia.guardrails.anonimizacion import _scrub
             state_update["chat_context"] = _scrub("\n\n".join(context_parts))
@@ -1074,6 +1182,9 @@ async def approve(job_id: str, req: ApproveRequest):
             "findings": final.get("findings", []),
             "tokens_used": final.get("tokens_used", 0),
         })
+        new_draft = final.get("draft_report", "")
+        if new_draft and new_draft != _jobs[job_id].get("draft_report", ""):
+            _jobs[job_id]["draft_report"] = new_draft
         try:
             await asyncio.to_thread(save_traces, final.get("traces", []), job_id)
         except Exception:
@@ -1186,7 +1297,8 @@ _MAX_IMG_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
 @app.post("/api/upload/{job_id}")
-async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()]):
+async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()], request: Request):
+    _check_rate_limit(request.client.host, "upload", settings.RATE_LIMIT_UPLOAD)
     if job_id not in _jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -1201,6 +1313,16 @@ async def upload_images(job_id: str, files: Annotated[list[UploadFile], File()])
         data = await f.read()
         if len(data) > _MAX_IMG_BYTES:
             raise HTTPException(status_code=413, detail=f"{name!r} supera los 10 MB permitidos")
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(data))
+            img.verify()
+            img = Image.open(io.BytesIO(data))  # reopen: verify() exhausts the stream
+            buf = io.BytesIO()
+            img.save(buf, format=img.format or ("PNG" if Path(name).suffix.lower() == ".png" else "JPEG"))
+            data = buf.getvalue()
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"{name!r} no es una imagen válida") from None
         dest = upload_dir / name
         dest.write_bytes(data)
         saved.append(f"{job_id}/uploads/{name}")
