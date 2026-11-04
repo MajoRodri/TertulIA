@@ -60,17 +60,23 @@ export function initChat(jobId, imagePicker = null, docPicker = null) {
       clearDocs();
       appendUserMessage(text, files, docs);
       setInputLocked(true);
+      let gotResponse = false;
       try {
         await sendChatMessage(jobId, text, files, (msg) => {
           if (msg.warning) {
             appendWarningMessage(msg.warning);
+            gotResponse = true;
           } else if (msg.thinking) {
             showTypingIndicator(msg.name, msg.agent);
           } else {
             removeTypingIndicator();
             appendAgentMessage(msg);
+            gotResponse = true;
           }
         }, docs, docTypes);
+        if (!gotResponse && docs.length && !text && !files.length) {
+          appendWarningMessage("El documento no pudo procesarse o no es relevante para este análisis. Selecciona el tipo de documento correcto e inténtalo de nuevo.");
+        }
       } finally {
         removeTypingIndicator();
         setInputLocked(false);

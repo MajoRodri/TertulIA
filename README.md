@@ -5,16 +5,31 @@
   <p><em>Inteligencia colectiva para negocios locales</em></p>
   <p>Sistema multiagente que analiza la viabilidad de abrir un negocio en un barrio de Madrid: investiga la competencia, analiza la economía y genera un informe en PDF con semáforo de viabilidad.</p>
 
-  <!-- Sustituir # por la URL cuando esté disponible -->
-  <a href="#"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
+  <a href="https://tertulia-production.up.railway.app/app.html"><img alt="Ver en vivo" src="https://img.shields.io/badge/Ver%20en%20vivo-2B4EFF?style=for-the-badge&logo=googlechrome&logoColor=white"/></a>
   &nbsp;
   <a href="#instalación-y-arranque"><img alt="Ejecutar en local" src="https://img.shields.io/badge/Ejecutar%20en%20local-1a1a2e?style=for-the-badge&logo=python&logoColor=white"/></a>
 </div>
 
 ---
 
-<!-- Demo en vídeo — sustituir el bloque por el embed cuando esté disponible -->
-> 📹 **Vídeo demo** — *próximamente*
+[![Demo en vídeo](https://img.youtube.com/vi/Y433lNYdBMo/maxresdefault.jpg)](https://youtu.be/Y433lNYdBMo)
+
+---
+
+## Contenido
+
+- [¿Qué es TertulIA?](#qué-es-tertulia)
+- [El problema](#el-problema)
+- [Arquitectura](#arquitectura)
+- [Agentes (CrewAI)](#agentes-crewai)
+- [Investigación y datos (MCP)](#investigación-y-datos-mcp)
+- [Seguridad](#seguridad)
+- [API](#api)
+- [Tests](#tests)
+- [Añadir un sector](#añadir-un-sector)
+- [Instalación y arranque](#instalación-y-arranque)
+- [Roadmap](#roadmap)
+- [Equipo](#equipo)
 
 ---
 
@@ -33,21 +48,6 @@ El proceso completo tiene cinco pasos: rellenar el encargo, esperar el debate de
 Decidir si un negocio tiene sentido en un barrio exige mucha información: competencia, tipo de público, precios y costes. Un estudio de viabilidad profesional requiere tiempo y dinero, y queda fuera del alcance de muchos emprendedores.
 
 Parte de esa información es pública, pero está dispersa y cruzarla a mano lleva horas. **TertulIA reúne datos de OpenStreetMap, Foursquare, webs públicas y lo que aporta la propia persona, y genera el informe en unos 3-4+ minutos.**
-
----
-
-## Contenido
-
-- [¿Qué es TertulIA?](#qué-es-tertulia)
-- [Arquitectura](#arquitectura)
-- [Agentes (CrewAI)](#agentes-crewai)
-- [Investigación y datos (MCP)](#investigación-y-datos-mcp)
-- [Seguridad](#seguridad)
-- [API](#api)
-- [Tests](#tests)
-- [Añadir un sector](#añadir-un-sector)
-- [Instalación y arranque](#instalación-y-arranque)
-- [Equipo](#equipo)
 
 ---
 
@@ -120,28 +120,13 @@ El equipo de 5 agentes que hace el estudio. La API ejecuta la investigación, la
 
 <table>
   <tr>
-    <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora</td>
-    <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista</td>
-    <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual</td>
-    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor</td>
-    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora</td>
-  </tr>
-  <tr>
-    <td align="center"><code>researcher</code></td>
-    <td align="center"><code>analyst</code></td>
-    <td align="center"><code>vision</code></td>
-    <td align="center"><code>writer</code></td>
-    <td align="center"><code>reviewer</code></td>
+    <td align="center"><img src="assets/portera.png" width="80"/><br/><b>La Portera</b><br/>Investigadora<br/><code>researcher</code><br/><br/><small>Competencia y público del barrio, con fuente</small><br/><code>search_competitors</code> · <code>search_audience_indicators</code> · <code>fetch</code></td>
+    <td align="center"><img src="assets/chulapo.png" width="80"/><br/><b>El Chulapo</b><br/>Analista<br/><code>analyst</code><br/><br/><small>Punto de equilibrio y gráficos</small><br/><code>break_even</code> · <code>run_python</code></td>
+    <td align="center"><img src="assets/berto.png" width="80"/><br/><b>Berto</b><br/>Especialista Visual<br/><code>vision</code><br/><br/><small>Analiza las fotos aportadas</small><br/><code>analyse_image</code></td>
+    <td align="center"><img src="assets/pregonero.png" width="80"/><br/><b>El Pregonero</b><br/>Redactor<br/><code>writer</code><br/><br/><small>Informe en Markdown y semáforo propuesto</small><br/>(ninguna)</td>
+    <td align="center"><img src="assets/revisora.png" width="80"/><br/><b>La Revisora</b><br/>Revisora<br/><code>reviewer</code><br/><br/><small>Comprueba cifras y fuentes del borrador</small><br/>(ninguna)</td>
   </tr>
 </table>
-
-| Agente | Rol | Herramientas |
-| --- | --- | --- |
-| La Portera (`researcher`) | Competencia y público del barrio, con fuente | `search_competitors`, `search_audience_indicators`, `fetch` (MCP) |
-| Berto (`vision`) | Analiza las fotos aportadas | `analyse_image` |
-| El Chulapo (`analyst`) | Punto de equilibrio y gráficos | `break_even`, `run_python` |
-| El Pregonero (`writer`) | Informe en Markdown y semáforo propuesto | — |
-| La Revisora (`reviewer`) | Comprueba cifras y fuentes del borrador | — |
 
 > **Berta** presenta el veredicto en la interfaz; no es un agente de CrewAI.
 
@@ -358,7 +343,7 @@ Propuestos por Helen como Product Owner y acordados por el equipo el 21 oct. Mod
 | `Source` | De dónde sale un dato (URL, fecha, herramienta, si es sospechoso, si viene de caché) | La Portera |
 | `Finding` | Cada dato o cifra del informe, con su fuente o el código que lo calculó | Chulapo Analytics |
 | `Verdict` | El semáforo, con confianza, motivos, datos que faltan y corrección del analista | ¿Mola? |
-| `TraceEntry` | Una línea del log de auditoría | — |
+| `TraceEntry` | Una línea del log de auditoría | |
 
 **Reglas que imponen (Pydantic da error si no se cumplen):**
 
@@ -390,6 +375,7 @@ Detalle completo: [`docs/etica-y-gobernanza.md`](docs/etica-y-gobernanza.md) · 
 | --- | --- | --- |
 | `POST` | `/api/analyze` | Inicia un análisis → `{ job_id }` |
 | `POST` | `/api/upload/{job_id}` | Sube imágenes → `{ paths }` |
+| `POST` | `/api/documents/{job_id}` | Sube documentos de contexto → `{ accepted, rejected }` |
 | `GET` | `/api/debate/{job_id}` | SSE con mensajes de los agentes |
 | `POST` | `/api/chat/{job_id}` | SSE con respuestas del chat |
 | `GET` | `/api/verdict/{job_id}` | Veredicto JSON (incluye `tokens_used`) |
@@ -406,10 +392,6 @@ pytest
 ```
 
 430+ tests. Sin claves, sin internet: usan modelos falsos y datos guardados.
-
-### Métricas de rendimiento
-
-<!-- Pendiente (Yohanna) — resultados comparativos chat normal vs. TertulIA. Ver docs/metricas.md -->
 
 ---
 
@@ -439,13 +421,41 @@ pip install -e .
 
 # 3. Configurar las claves
 cp .env.example .env    # en Windows: copy .env.example .env
-#    LLM_API_KEY es obligatoria; FOURSQUARE_API_KEY es opcional
+#    Obligatoria: LLM_API_KEY
+#    Opcionales:  FOURSQUARE_API_KEY (enriquece resultados de competencia)
 
 # 4. Arrancar
 uvicorn tertulia.api.main:app --port 8000
 ```
 
 Abre `http://localhost:8000` en el navegador.
+
+---
+
+## Roadmap
+
+Mejoras previstas después de la entrega. Ninguna está en la versión actual.
+
+### Producto
+
+- **Cuentas de analista y conversaciones guardadas.** Cada analista entra con su usuario y recupera sus estudios desde un historial: encargo, debate de los agentes, chat de contexto, veredicto, informe PDF y trazas. El grafo pasaría de `MemorySaver` (en memoria) a un guardado persistente (por ejemplo, `SqliteSaver` o PostgreSQL).
+- **Monitorización continua.** Para locales ya abiertos: aviso (por ejemplo, por Telegram) si la competencia cambia precios o abre un local cerca.
+- **Más sectores**, además del café-cowork: cada sector es un perfil nuevo en `config/sectores/`.
+- **Comparación de barrios** en un mismo informe (los datos de Atocha y Delicias ya están guardados).
+
+### Datos
+
+- **Reseñas de la competencia:** hoy el informe las deja en «sin dato». Dos vías: un campo opcional para que la persona usuaria pegue reseñas (con filtro anti prompt injection, registradas como fuente `user_input` y sin nombres de clientes) o la API de Google Places (revisar coste y condiciones de almacenamiento).
+- **Datos abiertos del Ayuntamiento de Madrid** (padrón y renta por barrio) para completar los indicadores de público con edades y renta.
+- **Base de datos propia con el extracto de OpenStreetMap de Madrid** (PostgreSQL + PostGIS), actualizada cada noche: consultas en milisegundos sin depender del servidor público de Overpass.
+- **Medir los tokens por informe:** hoy el contador vale 0; con la medida real se cierra el coste por informe.
+
+### Seguridad y privacidad
+
+- **Nivel de pago de Gemini o modelo local** cuando haya datos de clientes reales (en el nivel gratuito, Google usa los datos para mejorar sus productos).
+- **Control de acceso y cifrado** de los análisis guardados, **plazo de conservación** y **borrado** de fotos, documentos, conversaciones y trazas (derecho de supresión, RGPD).
+- **Segunda capa contra prompt injection** con un clasificador de IA (por ejemplo, Model Armor).
+- **Contenedor aislado** para la ejecución de código del Analista (hoy no es un sandbox completo).
 
 ---
 
